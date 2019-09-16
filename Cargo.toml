@@ -1,5 +1,5 @@
 [package]
-name = "ztrue"
+name = "trust"
 version = "0.1.0"
 authors = ["Zelalem Mekonen <zola@programmer.net>"]
 edition = "2018"
@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 frank_jwt = "3.1.1"
 rocket = "0.4.1"
-diesel = "1.4.0"
+diesel = { version = "1.4.0", features = ["postgres", "mysql"] }
 dotenv = "0.14.1"
 serde = { version = "1.0", features = ["derive"]}
 envy = "0.4"
