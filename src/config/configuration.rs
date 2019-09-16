@@ -10,6 +10,7 @@ use std::process::exit;
 #[derive(Deserialize)]
 pub struct Config {
     pub host: String,
+    pub port: u16,
     pub site_url: String,
     pub database_url: String,
     pub db_driver: String,
