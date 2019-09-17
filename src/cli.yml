@@ -1,0 +1,34 @@
+name: trust
+version: "0.1.0"
+author: Zelalem Mekonen <zola@programmer.net>
+about: trust is a user authentication & authorization microservice written in rust.
+subcommands:
+    - run:
+        about: run trust
+    - users:
+        about: manage users
+        subcommands:
+          - create:
+              about: create user
+              args:
+                - email:
+                    help: user email
+                    required: true
+                - password:
+                    help: user password
+                    required: true
+                - aud:
+                    help: user audience
+                    required: true
+                - admin:
+                    short: a
+                    long: admin
+                    help: user is admin
+                - super_admin:
+                    short: s
+                    long: super_admin
+                    help: user is super admin
+                - confirm:
+                    short: c
+                    long: confirm
+                    help: auto confirm user

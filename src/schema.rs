@@ -1,0 +1,27 @@
+table! {
+    users (id) {
+        id -> Int8,
+        instance_id -> Varchar,
+        name -> Nullable<Varchar>,
+        email -> Varchar,
+        avatar -> Nullable<Text>,
+        aud -> Varchar,
+        role -> Nullable<Varchar>,
+        password -> Nullable<Varchar>,
+        confirmed -> Bool,
+        invited_at -> Nullable<Timestamp>,
+        confirmation_token -> Nullable<Varchar>,
+        confirmation_sent_at -> Nullable<Timestamp>,
+        recovery_token -> Nullable<Varchar>,
+        recovery_sent_at -> Nullable<Timestamp>,
+        email_change_token -> Nullable<Varchar>,
+        email_change -> Nullable<Varchar>,
+        email_change_sent_at -> Nullable<Timestamp>,
+        last_signin_at -> Nullable<Timestamp>,
+        app_metadata -> Nullable<Json>,
+        user_metadata -> Nullable<Json>,
+        is_super_admin -> Bool,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}

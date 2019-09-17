@@ -17,7 +17,7 @@ pub struct HealthCheck {
 #[get("/health")]
 pub fn health() -> Json<HealthCheck> {
     return Json(HealthCheck {
-        version: env::var("CARGO_PKG_VERSION").unwrap(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
         name: String::from("trust"),
         description: String::from(
             "trust is a user authentication and authorization microservice written in rust",
