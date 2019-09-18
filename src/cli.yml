@@ -7,6 +7,8 @@ subcommands:
         about: run trust
     - migrate:
         about: run migrations
+    - version:
+        about: version
     - users:
         about: manage users
         subcommands:
