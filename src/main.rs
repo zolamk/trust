@@ -48,8 +48,8 @@ fn main() {
 
     match matches.subcommand() {
         ("run", _sub_m) => run(config),
-        ("users", sub_m) => cmd::users(sub_m, pool),
-        ("migrate", sub_m) => cmd::migrations(pool),
+        ("users", sub_m) => cmd::users(sub_m, pool, config),
+        ("migrate", _sub_m) => cmd::migrations(pool),
         ("version", _sub_m) => cmd::version(),
         _ => {}
     }

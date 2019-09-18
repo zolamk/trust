@@ -8,9 +8,15 @@ use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::Error::DatabaseError;
 
+use crate::config::Config;
+
 use crate::models::user::{NewUser, User};
 
-fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>) {
+fn new_user(
+    matches: Option<&ArgMatches>,
+    connection_pool: Pool<ConnectionManager<PgConnection>>,
+    config: Config,
+) {
     let matches = matches.unwrap();
 
     let mut user = NewUser::default();
@@ -33,7 +39,7 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
     user.is_super_admin = matches.is_present("super_admin");
 
-    user.confirmed = matches.is_present("confirm");
+    user.confirmed = config.auto_confirm || matches.is_present("confirm");
 
     user.hash_password();
 
@@ -68,11 +74,15 @@ fn remove_user(
     }
 }
 
-pub fn users(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>) {
+pub fn users(
+    matches: Option<&ArgMatches>,
+    connection_pool: Pool<ConnectionManager<PgConnection>>,
+    config: Config,
+) {
     let matches = matches.unwrap();
 
     match matches.subcommand() {
-        ("create", sub_m) => new_user(sub_m, connection_pool),
+        ("create", sub_m) => new_user(sub_m, connection_pool, config),
         ("remove", sub_m) => remove_user(sub_m, connection_pool),
         _ => {}
     }
