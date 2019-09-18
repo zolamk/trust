@@ -8,7 +8,7 @@ use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::Error::DatabaseError;
 
-use crate::models::user::NewUser;
+use crate::models::user::{NewUser, User};
 
 fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>) {
     let matches = matches.unwrap();
@@ -50,8 +50,22 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
     }
 }
 
-fn delete_user(matches: Option<&ArgMatches>) {
+fn remove_user(
+    matches: Option<&ArgMatches>,
+    connection_pool: Pool<ConnectionManager<PgConnection>>,
+) {
+    let connection = connection_pool
+        .get()
+        .expect("unable to get connection to database");
+
     let matches = matches.unwrap();
+
+    let email = matches.value_of("email").unwrap().to_string();
+
+    match User::delete_by_email(email, &connection) {
+        Ok(_val) => println!("user deleted successfully"),
+        Err(err) => println!("{}", err),
+    }
 }
 
 pub fn users(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>) {
@@ -59,7 +73,7 @@ pub fn users(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManag
 
     match matches.subcommand() {
         ("create", sub_m) => new_user(sub_m, connection_pool),
-        ("delete", sub_m) => delete_user(sub_m),
+        ("remove", sub_m) => remove_user(sub_m, connection_pool),
         _ => {}
     }
 }

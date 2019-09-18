@@ -1,6 +1,5 @@
 create table users (
     id bigserial primary key,
-    instance_id varchar(250) not null,
     name varchar(250),
     email varchar(250) not null constraint uq_email unique,
     avatar text,

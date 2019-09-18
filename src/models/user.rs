@@ -6,11 +6,17 @@ use chrono::NaiveDateTime;
 
 use bcrypt::{hash, verify, DEFAULT_COST};
 
-use diesel::insert_into;
+use diesel::{delete, insert_into};
 
 use diesel::PgConnection;
 
 use crate::schema::users;
+
+use crate::schema::users::dsl::*;
+
+use diesel::ExpressionMethods;
+use diesel::QueryDsl;
+use diesel::RunQueryDsl;
 
 #[derive(Default, Queryable)]
 pub struct User {
@@ -54,6 +60,10 @@ pub struct NewUser {
 }
 
 impl User {
+    pub fn delete_by_email(e: String, connection: &PgConnection) -> diesel::QueryResult<usize> {
+        return delete(users.filter(email.eq(e))).execute(connection);
+    }
+
     pub fn hash_password(&mut self) {
         match &self.password {
             Some(v) => self.password = Some(hash(v, DEFAULT_COST).unwrap()),
@@ -61,9 +71,9 @@ impl User {
         }
     }
 
-    pub fn verify_password(&mut self, password: String) -> bool {
+    pub fn verify_password(&mut self, pass: String) -> bool {
         match &self.password {
-            Some(v) => verify(password, v).unwrap(),
+            Some(v) => verify(pass, v).unwrap(),
             None => false,
         }
     }
@@ -78,10 +88,6 @@ impl NewUser {
     }
 
     pub fn save(&self, connection: &PgConnection) -> diesel::QueryResult<usize> {
-        use crate::schema::users::dsl::*;
-
-        use diesel::RunQueryDsl;
-
         return insert_into(users).values(self).execute(connection);
     }
 }

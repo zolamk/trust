@@ -32,3 +32,9 @@ subcommands:
                     short: c
                     long: confirm
                     help: auto confirm user
+          - remove:
+              about: remove user
+              args:
+                - email:
+                    help: user email
+                    required: true
