@@ -6,6 +6,8 @@ extern crate rocket;
 extern crate clap;
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 
 mod cmd;
 mod config;
@@ -47,6 +49,7 @@ fn main() {
     match matches.subcommand() {
         ("run", _sub_m) => run(config),
         ("users", sub_m) => cmd::users(sub_m, pool),
+        ("migrate", sub_m) => cmd::migrations(sub_m, pool),
         _ => {}
     }
 }

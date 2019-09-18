@@ -5,6 +5,8 @@ about: trust is a user authentication & authorization microservice written in ru
 subcommands:
     - run:
         about: run trust
+    - migrate:
+        about: run migrations
     - users:
         about: manage users
         subcommands:
