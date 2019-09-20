@@ -1,5 +1,6 @@
 extern crate bcrypt;
 extern crate chrono;
+extern crate serde;
 extern crate serde_json;
 
 use chrono::NaiveDateTime;
@@ -14,14 +15,15 @@ use crate::schema::users;
 
 use crate::schema::users::dsl::*;
 
+use serde::{Deserialize, Serialize};
+
 use diesel::ExpressionMethods;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 
-#[derive(Default, Queryable)]
+#[derive(Queryable)]
 pub struct User {
     pub id: i64,
-    pub instance_id: String,
     pub name: Option<String>,
     pub email: String,
     pub avatar: Option<String>,
@@ -41,14 +43,13 @@ pub struct User {
     pub app_metadata: Option<serde_json::Value>,
     pub user_metadata: Option<serde_json::Value>,
     pub is_super_admin: bool,
-    pub created_at: Option<NaiveDateTime>,
-    pub updated_at: Option<NaiveDateTime>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
-#[derive(Default, Insertable, Queryable)]
+#[derive(Default, Insertable, Deserialize, Serialize)]
 #[table_name = "users"]
 pub struct NewUser {
-    pub instance_id: String,
     pub name: Option<String>,
     pub email: String,
     pub avatar: Option<String>,
@@ -57,11 +58,17 @@ pub struct NewUser {
     pub password: Option<String>,
     pub is_super_admin: bool,
     pub confirmed: bool,
+    pub confirmation_token: Option<String>,
+    pub confirmation_sent_at: Option<NaiveDateTime>,
 }
 
 impl User {
     pub fn delete_by_email(e: String, connection: &PgConnection) -> diesel::QueryResult<usize> {
         return delete(users.filter(email.eq(e))).execute(connection);
+    }
+
+    pub fn delete(&self, connection: &PgConnection) -> diesel::QueryResult<usize> {
+        return delete(users.filter(id.eq(self.id))).execute(connection);
     }
 
     pub fn hash_password(&mut self) {

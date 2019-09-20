@@ -1,7 +1,6 @@
 table! {
     users (id) {
         id -> Int8,
-        instance_id -> Varchar,
         name -> Nullable<Varchar>,
         email -> Varchar,
         avatar -> Nullable<Text>,

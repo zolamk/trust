@@ -1,4 +1,5 @@
 #![feature(proc_macro_hygiene, decl_macro)]
+#![feature(type_ascription)]
 
 #[macro_use]
 extern crate rocket;
@@ -8,10 +9,16 @@ extern crate clap;
 extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
+#[macro_use]
+extern crate rocket_contrib;
+
+extern crate lettre;
 
 mod cmd;
 mod config;
+mod crypto;
 mod handlers;
+mod mailer;
 mod models;
 mod schema;
 
@@ -19,8 +26,9 @@ use clap::App;
 use config::Config;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
+use mailer::EmailTemplates;
 
-fn run(config: Config) {
+fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
     let rocket_config = rocket::config::Config::build(rocket::config::Environment::Production)
         .address(config.host.clone())
         .port(config.port)
@@ -28,9 +36,19 @@ fn run(config: Config) {
 
     let app = rocket::custom(rocket_config);
 
-    app.mount("/", routes![handlers::health_check::health])
-        .manage(config)
-        .launch();
+    let email_templates = EmailTemplates::new(config.clone());
+
+    app.mount(
+        "/",
+        routes![
+            handlers::health_check::health,
+            handlers::users::signup::signup
+        ],
+    )
+    .manage(config)
+    .manage(connection_pool)
+    .manage(email_templates)
+    .launch();
 }
 
 fn main() {
@@ -47,8 +65,8 @@ fn main() {
     let matches = cli.get_matches();
 
     match matches.subcommand() {
-        ("run", _sub_m) => run(config),
-        ("users", sub_m) => cmd::users(sub_m, pool, config),
+        ("run", _sub_m) => run(pool, Config::new()),
+        ("users", sub_m) => cmd::users(sub_m, pool, Config::new()),
         ("migrate", _sub_m) => cmd::migrations(pool),
         ("version", _sub_m) => cmd::version(),
         _ => {}
