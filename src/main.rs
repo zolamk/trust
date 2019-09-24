@@ -11,8 +11,8 @@ extern crate diesel;
 extern crate diesel_migrations;
 #[macro_use]
 extern crate rocket_contrib;
-
 extern crate lettre;
+extern crate simple_logger;
 
 mod cmd;
 mod config;
@@ -26,7 +26,9 @@ use clap::App;
 use config::Config;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
+use log::Level;
 use mailer::EmailTemplates;
+use std::str::FromStr;
 
 fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
     let rocket_config = rocket::config::Config::build(rocket::config::Environment::Production)
@@ -63,6 +65,8 @@ fn main() {
     let cli = App::from_yaml(cli_yaml);
 
     let matches = cli.get_matches();
+
+    simple_logger::init_with_level(Level::from_str(&config.log_level).unwrap());
 
     match matches.subcommand() {
         ("run", _sub_m) => run(pool, Config::new()),

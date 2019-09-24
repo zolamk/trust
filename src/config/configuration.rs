@@ -4,7 +4,6 @@ extern crate serde;
 
 use dotenv::dotenv;
 use serde::Deserialize;
-use std::path::PathBuf;
 use std::process::exit;
 
 #[derive(Deserialize, Clone)]
@@ -24,14 +23,13 @@ pub struct Config {
     pub jwt_private_key_path: Option<String>,
     pub jwt_public_key_path: Option<String>,
     pub jwt_secret: Option<String>,
-    pub log_file: Option<PathBuf>,
     pub log_level: String,
     pub port: u16,
     pub site_url: String,
     pub smtp_admin_email: String,
     pub smtp_host: String,
     pub smtp_password: String,
-    pub smtp_port: u32,
+    pub smtp_port: u16,
     pub smtp_username: String,
     pub aud: String,
     pub mailer_template_confirmation: Option<String>,

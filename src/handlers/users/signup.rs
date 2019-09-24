@@ -2,6 +2,7 @@ extern crate diesel;
 extern crate handlebars;
 extern crate lettre;
 extern crate lettre_email;
+extern crate native_tls;
 extern crate rocket;
 extern crate rocket_contrib;
 extern crate serde;
@@ -13,22 +14,24 @@ use diesel::result::DatabaseErrorKind;
 use diesel::result::Error::{DatabaseError, NotFound};
 use rocket::http::Status;
 
+use crate::config::Config;
+use crate::crypto::secure_token;
 use crate::mailer::EmailTemplates;
+use crate::models::user::NewUser;
 use chrono::Utc;
 use diesel::result::Error;
 use handlebars::Handlebars;
-use lettre::smtp::authentication::Credentials;
-use lettre::SmtpClient;
-use lettre::SmtpTransport;
-use lettre::Transport;
+use lettre::smtp::authentication::{Credentials, Mechanism};
+use lettre::smtp::{ConnectionReuseParameters, SmtpClient};
+use lettre::{ClientSecurity, ClientTlsParameters, Transport};
 use lettre_email::Email;
+use log::error;
+use log::info;
+use native_tls::{Protocol, TlsConnector};
 use rocket::response::status;
 use rocket::State;
 use rocket_contrib::json::{Json, JsonValue};
-
-use crate::config::Config;
-use crate::crypto::secure_token;
-use crate::models::user::NewUser;
+use std::net::SocketAddr;
 
 use serde::{Deserialize, Serialize};
 
@@ -119,8 +122,8 @@ pub fn signup(
 
             let email = send_confirmation_email(template, confirmation_url, user, config);
 
-            if !email.is_ok() {
-                return Err(result.err().unwrap());
+            if email.is_err() {
+                return Err(email.err().unwrap());
             }
         }
 
@@ -168,35 +171,51 @@ fn send_confirmation_email(
     user: NewUser,
     config: State<Config>,
 ) -> Result<(), Error> {
+    let tls_connector = TlsConnector::builder().build().unwrap();
+
+    let tls_parameters = ClientTlsParameters::new(config.smtp_host.clone(), tls_connector);
+
+    let credentials = Credentials::new(config.smtp_username.clone(), config.smtp_password.clone());
+
+    let mut mailer = SmtpClient::new(
+        (&config.smtp_host[..], config.smtp_port),
+        ClientSecurity::Required(tls_parameters),
+    )
+    .unwrap()
+    .authentication_mechanism(Mechanism::Login)
+    .credentials(credentials)
+    .timeout(Some(std::time::Duration::new(10, 0)))
+    .connection_reuse(ConnectionReuseParameters::ReuseUnlimited)
+    .transport();
+
     let confirmation_email = Handlebars::new().render_template(
         &template,
         &json!({
             "email": user.email.clone(),
             "site_url": config.site_url.clone(),
-            "confirmatio_url": confirmation_url,
+            "confirmation_url": confirmation_url,
         }),
     );
+
+    if confirmation_email.is_err() {
+        return Err(Error::RollbackTransaction);
+    }
 
     let email = Email::builder()
         .from(config.smtp_admin_email.clone())
         .to(user.email)
-        .text(confirmation_email.unwrap())
+        .html(confirmation_email.unwrap())
         .build();
 
-    if !email.is_ok() {
+    if email.is_err() {
+        error!("{}", email.err().unwrap());
         return Err(Error::RollbackTransaction);
     }
 
-    let credentials = Credentials::new(config.smtp_username.clone(), config.smtp_password.clone());
-
-    let mut mailer = SmtpClient::new_simple(&config.smtp_host.clone())
-        .unwrap()
-        .credentials(credentials)
-        .transport();
-
     let email = mailer.send(email.unwrap().into());
 
-    if !email.is_ok() {
+    if email.is_err() {
+        error!("{}", email.err().unwrap());
         return Err(Error::RollbackTransaction);
     }
 

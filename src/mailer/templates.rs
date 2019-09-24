@@ -6,7 +6,7 @@ use crate::config::Config;
 use std::fs::read_to_string;
 use std::path::Path;
 
-static default_confirmation_email: &str = "<h2>Confirm your signup</h2><p>Follow this link to confirm your signup</p><p><a href='{{ confirmation_url }}'>Confirm</a></p>";
+static DEFAULT_CONFIRMATION_EMAIL: &str = "<h2>Confirm your signup</h2><p>Follow this link to confirm your signup</p><p><a href='{{ confirmation_url }}'>Confirm</a></p>";
 
 #[derive(Clone)]
 pub struct EmailTemplates {
@@ -18,7 +18,7 @@ impl EmailTemplates {
     pub fn new(config: Config) -> EmailTemplates {
         let mut email_templates = EmailTemplates {
             config: config,
-            confirmation_email: default_confirmation_email.to_string(),
+            confirmation_email: DEFAULT_CONFIRMATION_EMAIL.to_string(),
         };
 
         if email_templates
