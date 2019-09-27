@@ -7,7 +7,7 @@ use chrono::NaiveDateTime;
 
 use bcrypt::{hash, verify, DEFAULT_COST};
 
-use diesel::{delete, insert_into};
+use diesel::{delete, insert_into, update};
 
 use diesel::PgConnection;
 
@@ -21,7 +21,7 @@ use diesel::ExpressionMethods;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 
-#[derive(Queryable)]
+#[derive(Queryable, AsChangeset)]
 pub struct User {
     pub id: i64,
     pub name: Option<String>,
@@ -83,6 +83,12 @@ impl User {
             Some(v) => verify(pass, v).unwrap(),
             None => false,
         }
+    }
+
+    pub fn confirm(&mut self, connection: &PgConnection) -> diesel::QueryResult<usize> {
+        return update(users.filter(id.eq(self.id)))
+            .set((confirmed.eq(true), confirmation_token.eq("")))
+            .execute(connection);
     }
 }
 

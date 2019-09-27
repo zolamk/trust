@@ -44,7 +44,8 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
         "/",
         routes![
             handlers::health_check::health,
-            handlers::users::signup::signup
+            handlers::users::signup::signup,
+            handlers::users::confirm::confirm,
         ],
     )
     .manage(config)
@@ -66,7 +67,7 @@ fn main() {
 
     let matches = cli.get_matches();
 
-    simple_logger::init_with_level(Level::from_str(&config.log_level).unwrap());
+    simple_logger::init_with_level(Level::from_str(&config.log_level).unwrap()).unwrap();
 
     match matches.subcommand() {
         ("run", _sub_m) => run(pool, Config::new()),

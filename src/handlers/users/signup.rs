@@ -26,12 +26,10 @@ use lettre::smtp::{ConnectionReuseParameters, SmtpClient};
 use lettre::{ClientSecurity, ClientTlsParameters, Transport};
 use lettre_email::Email;
 use log::error;
-use log::info;
-use native_tls::{Protocol, TlsConnector};
+use native_tls::TlsConnector;
 use rocket::response::status;
 use rocket::State;
 use rocket_contrib::json::{Json, JsonValue};
-use std::net::SocketAddr;
 
 use serde::{Deserialize, Serialize};
 
@@ -53,10 +51,15 @@ pub fn signup(
     let mut user = NewUser::default();
 
     user.avatar = signup_form.avatar.clone();
+
     user.confirmed = config.auto_confirm;
+
     user.name = signup_form.name.clone();
+
     user.email = signup_form.email.clone();
+
     user.password = Some(signup_form.password.clone());
+
     user.aud = config.aud.clone();
 
     user.hash_password();
@@ -89,25 +92,33 @@ pub fn signup(
             if u.confirmed {
                 return conflict_error;
             }
+
+            // if user is not confirmed delete the unconfirmed user
+            let result = u.delete(&connection);
+
+            if result.is_err() {
+                error!("{}", result.err().unwrap());
+                return internal_error;
+            }
         }
         Err(err) => match err {
             NotFound => {}
             _ => {
-                println!("{}", err);
+                error!("{}", err);
                 return internal_error;
             }
         },
     }
 
     if !config.auto_confirm {
-        user.confirmation_token = Some(secure_token(60));
+        user.confirmation_token = Some(secure_token(100));
         user.confirmation_sent_at = Some(Utc::now().naive_utc());
     }
 
     let transaction = connection.transaction::<_, Error, _>(|| {
         let result = user.save(&connection);
 
-        if !result.is_ok() {
+        if result.is_err() {
             return Err(result.err().unwrap());
         }
 
