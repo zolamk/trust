@@ -2,13 +2,19 @@ extern crate dotenv;
 extern crate envy;
 extern crate serde;
 
+use crate::hook::HookEvent;
 use dotenv::dotenv;
+use log::error;
 use serde::Deserialize;
+use std::fs;
+use std::path::Path;
 use std::process::exit;
 
 #[derive(Deserialize, Clone)]
 pub struct Config {
+    pub aud: String,
     pub auto_confirm: bool,
+    pub confirmed_redirect: String,
     pub database_url: String,
     pub db_driver: String,
     pub facebook_client_id: Option<String>,
@@ -18,12 +24,17 @@ pub struct Config {
     pub google_client_secret: Option<String>,
     pub google_enabled: bool,
     pub host: String,
-    #[serde(default = "default_algorithm")]
+    pub instance_url: String,
     pub jwt_algorithm: String,
     pub jwt_private_key_path: Option<String>,
     pub jwt_public_key_path: Option<String>,
-    pub jwt_secret: Option<String>,
+    pub jwt_secret: String,
     pub log_level: String,
+    pub mailer_template_confirmation: Option<String>,
+    pub mailer_template_email_change: Option<String>,
+    pub mailer_template_invitation: Option<String>,
+    pub mailer_templtate_recovery: Option<String>,
+    pub operator_token: String,
     pub port: u16,
     pub site_url: String,
     pub smtp_admin_email: String,
@@ -31,11 +42,12 @@ pub struct Config {
     pub smtp_password: String,
     pub smtp_port: u16,
     pub smtp_username: String,
-    pub aud: String,
-    pub mailer_template_confirmation: Option<String>,
-    pub mailer_template_invitation: Option<String>,
-    pub mailer_templtate_recovery: Option<String>,
-    pub mailer_template_email_change: Option<String>,
+    #[serde(skip_serializing, skip_deserializing)]
+    private_key: Option<String>,
+    #[serde(skip_serializing, skip_deserializing)]
+    public_key: Option<String>,
+    #[serde(skip_serializing, skip_deserializing)]
+    jwt_type: String,
 }
 
 impl Config {
@@ -43,15 +55,70 @@ impl Config {
         dotenv().ok();
 
         match envy::from_env::<Config>() {
-            Ok(config) => config,
+            Ok(mut config) => match config.jwt_algorithm.as_ref() {
+                "RS256" | "RS384" | "RS512" | "ES256" | "ES384" | "ES512" => {
+                    assert_eq!(config.jwt_private_key_path.is_some(), true, "expected JWT_PRIVATE_KEY_PATH to be set for all supported assymetric algorithms");
+
+                    assert_eq!(config.jwt_public_key_path.is_some(), true, "expected JWT_PUBLIC_KEY_PATH to be set for all supported assymetric algorithms");
+
+                    config.private_key = match fs::read_to_string(Path::new(
+                        &config.jwt_private_key_path.clone().unwrap(),
+                    )) {
+                        Ok(key) => Some(key),
+                        Err(err) => {
+                            panic!("unable to read private key file: {}", err);
+                        }
+                    };
+
+                    config.public_key = match fs::read_to_string(Path::new(
+                        &config.jwt_public_key_path.clone().unwrap(),
+                    )) {
+                        Ok(key) => Some(key),
+                        Err(err) => {
+                            panic!("unable to read public key file: {}", err);
+                        }
+                    };
+
+                    config.jwt_type = String::from("assymetric");
+
+                    return config;
+                }
+                "HS256" | "HS384" | "HS512" => {
+                    config.jwt_type = String::from("symmetric");
+
+                    return config;
+                }
+                other => {
+                    error!("unsupported algorithm {}", other);
+                    std::process::exit(1);
+                }
+            },
             Err(e) => {
                 println!("{}", e);
                 exit(1);
             }
         }
     }
-}
 
-fn default_algorithm() -> String {
-    return "rs512".to_string();
+    fn get_private_key(self) -> String {
+        return self.private_key.unwrap();
+    }
+
+    fn get_public_key(self) -> String {
+        return self.public_key.unwrap();
+    }
+
+    pub fn get_signing_key(self) -> String {
+        if self.jwt_type.eq("assymetric") {
+            return self.get_private_key();
+        }
+        return self.jwt_secret;
+    }
+
+    pub fn get_decoding_key(self) -> String {
+        if self.jwt_type.eq("assymetric") {
+            return self.get_public_key();
+        }
+        return self.jwt_secret;
+    }
 }

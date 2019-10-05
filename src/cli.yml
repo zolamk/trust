@@ -9,6 +9,29 @@ subcommands:
         about: run migrations
     - version:
         about: version
+    - operator:
+        about: utility commands for operators
+        subcommands:
+            - create-signature:
+                about: create operator signature
+                args:
+                  - site_url:
+                      help: Site URL
+                      required: true
+                  - confirmed_redirect_url:
+                      help: URL to redirect to after user has confirmed their email
+                      required: true
+                  - login_hook:
+                      short: l
+                      long: login_hook
+                      help: Webhook for login event
+                      takes_value: true
+                  - signup_hook:
+                      short: s
+                      long: signup_hook
+                      help: Webhook for signup event
+                      takes_value: true
+
     - users:
         about: manage users
         subcommands:

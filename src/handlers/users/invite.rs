@@ -6,7 +6,6 @@ extern crate native_tls;
 extern crate rocket;
 extern crate rocket_contrib;
 extern crate serde;
-extern crate serde_json;
 
 use crate::diesel::Connection;
 use diesel::pg::PgConnection;
@@ -17,12 +16,10 @@ use rocket::http::Status;
 
 use crate::config::Config;
 use crate::crypto::secure_token;
-use crate::error::Error;
-use crate::hook::{HookEvent, Webhook};
 use crate::mailer::EmailTemplates;
-use crate::models::operator_signature::OperatorSignature;
-use crate::models::user::{NewUser, User};
+use crate::models::user::NewUser;
 use chrono::Utc;
+use diesel::result::Error;
 use handlebars::Handlebars;
 use lettre::smtp::authentication::{Credentials, Mechanism};
 use lettre::smtp::{ConnectionReuseParameters, SmtpClient};
@@ -37,20 +34,17 @@ use rocket_contrib::json::{Json, JsonValue};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-pub struct SignUpForm {
+pub struct InviteForm {
     pub name: Option<String>,
     pub email: String,
-    pub avatar: Option<String>,
-    pub password: String,
 }
 
-#[post("/signup", data = "<signup_form>")]
-pub fn signup(
+#[post("/invite", data = "<invite_form>")]
+pub fn invite(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     email_templates: State<EmailTemplates>,
-    signup_form: Json<SignUpForm>,
-    operator_signature: OperatorSignature,
+    invite_form: Json<InviteForm>,
 ) -> status::Custom<JsonValue> {
     let mut user = NewUser::default();
 
@@ -64,7 +58,7 @@ pub fn signup(
 
     user.password = Some(signup_form.password.clone());
 
-    user.aud = config.aud.to_string();
+    user.aud = config.aud.clone();
 
     user.hash_password();
 
@@ -91,7 +85,7 @@ pub fn signup(
     };
 
     // check if user already exists
-    match crate::models::user::get_by_email(user.email.clone(), &connection) {
+    match crate::models::get_user_by_email(user.email.clone(), &connection) {
         Ok(u) => {
             if u.confirmed {
                 return conflict_error;
@@ -120,38 +114,16 @@ pub fn signup(
     }
 
     let transaction = connection.transaction::<_, Error, _>(|| {
-        let user = user.save(&connection);
+        let result = user.save(&connection);
 
-        if user.is_err() {
-            return Err(Error::DieselError(user.err().unwrap()));
-        }
-
-        let user = user.unwrap();
-
-        use serde_json::json;
-
-        let payload = json!({
-            "event": HookEvent::Signup,
-            "user": user,
-        });
-
-        let hook = Webhook::new(
-            HookEvent::Signup,
-            payload,
-            config.inner().clone(),
-            operator_signature,
-        );
-
-        let hook = hook.trigger();
-
-        if hook.is_err() {
-            return Err(Error::HookError(hook.err().unwrap()));
+        if result.is_err() {
+            return Err(result.err().unwrap());
         }
 
         if !config.auto_confirm {
             let confirmation_url = format!(
-                "{}/confirm?confirmation_token={}",
-                config.instance_url,
+                "{}/confirmation_token={}",
+                config.site_url,
                 user.confirmation_token.clone().unwrap(),
             );
 
@@ -180,60 +152,39 @@ pub fn signup(
     let err = transaction.err().unwrap();
 
     match err {
-        Error::DieselError(err) => match err {
-            DatabaseError(kind, _info) => match kind {
-                DatabaseErrorKind::UniqueViolation => {
-                    return status::Custom(
-                        Status::Conflict,
-                        json!({
-                            "code": "email_registered",
-                            "message": "a user with this email has already been registered",
-                        }),
-                    )
-                }
-                _ => {
-                    println!("{:?}", kind);
-                    return internal_error;
-                }
-            },
+        DatabaseError(kind, _info) => match kind {
+            DatabaseErrorKind::UniqueViolation => {
+                return status::Custom(
+                    Status::Conflict,
+                    json!({
+                        "code": "email_registered",
+                        "message": "a user with this email has already been registered",
+                    }),
+                )
+            }
             _ => {
-                println!("{}", err);
+                println!("{:?}", kind);
                 return internal_error;
             }
         },
-
-        Error::HookError(err) => {
-            if err.status.code >= 500 {
-                return status::Custom(
-                    Status::UnprocessableEntity,
-                    json!({
-                        "code": "hook_error",
-                        "message": "error handling webhook"
-                    }),
-                );
-            } else {
-                return status::Custom(err.status, JsonValue(err.body));
-            }
+        _ => {
+            println!("{}", err);
+            return internal_error;
         }
-
-        _ => return internal_error,
     }
 }
 
 fn send_confirmation_email(
     template: String,
     confirmation_url: String,
-    user: User,
+    user: NewUser,
     config: State<Config>,
 ) -> Result<(), Error> {
     let tls_connector = TlsConnector::builder().build().unwrap();
 
-    let tls_parameters = ClientTlsParameters::new(config.smtp_host.to_string(), tls_connector);
+    let tls_parameters = ClientTlsParameters::new(config.smtp_host.clone(), tls_connector);
 
-    let credentials = Credentials::new(
-        config.smtp_username.to_string(),
-        config.smtp_password.to_string(),
-    );
+    let credentials = Credentials::new(config.smtp_username.clone(), config.smtp_password.clone());
 
     let mut mailer = SmtpClient::new(
         (&config.smtp_host[..], config.smtp_port),
@@ -256,8 +207,7 @@ fn send_confirmation_email(
     );
 
     if confirmation_email.is_err() {
-        let err = confirmation_email.err().unwrap();
-        return Err(Error::TemplateError(err));
+        return Err(Error::RollbackTransaction);
     }
 
     let email = Email::builder()
@@ -267,17 +217,15 @@ fn send_confirmation_email(
         .build();
 
     if email.is_err() {
-        let err = email.err().unwrap();
-        error!("{}", err);
-        return Err(Error::EmailError(err));
+        error!("{}", email.err().unwrap());
+        return Err(Error::RollbackTransaction);
     }
 
     let email = mailer.send(email.unwrap().into());
 
     if email.is_err() {
-        let err = email.err().unwrap();
-        error!("{}", err);
-        return Err(Error::SMTPError(err));
+        error!("{}", email.err().unwrap());
+        return Err(Error::RollbackTransaction);
     }
 
     return Ok(());

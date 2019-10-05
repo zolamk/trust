@@ -7,63 +7,45 @@ extern crate rocket;
 extern crate rocket_contrib;
 extern crate serde;
 
-use crate::diesel::Connection;
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::result::DatabaseErrorKind;
-use diesel::result::Error::{DatabaseError, NotFound};
-use rocket::http::Status;
+use diesel::result::Error::NotFound;
 
 use crate::config::Config;
 use log::error;
-use rocket::response::status;
+use rocket::response::Redirect;
 use rocket::State;
-use rocket_contrib::json::{Json, JsonValue};
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize)]
-pub struct ConfirmForm {
-    pub token: String,
-}
-
-#[post("/confirm", data = "<confirm_form>")]
+#[get("/confirm?<confirmation_token>")]
 pub fn confirm(
-    config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    confirm_form: Json<ConfirmForm>,
-) -> status::Custom<JsonValue> {
-    let internal_error = status::Custom(
-        Status::InternalServerError,
-        json!({
-            "code": "internal_error"
-        }),
-    );
+    config: State<Config>,
+    confirmation_token: String,
+) -> Redirect {
+    let internal_error_redirect =
+        Redirect::to(format!("{}?code=internal_error", config.confirmed_redirect));
 
-    let no_user_err = status::Custom(
-        Status::UnprocessableEntity,
-        json!({
-            "code": "user_not_found"
-        }),
-    );
+    let user_not_found_redirect =
+        Redirect::to(format!("{}?code=user_not_found", config.confirmed_redirect));
+
+    let success_redirect = Redirect::to(format!("{}?code=success", config.confirmed_redirect));
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
         Err(err) => {
             error!("{}", err);
-            return internal_error;
+            return internal_error_redirect;
         }
     };
 
-    let user =
-        crate::models::get_user_by_confirmation_token(confirm_form.token.clone(), &connection);
+    let user = crate::models::user::get_by_confirmation_token(confirmation_token, &connection);
 
     if user.is_err() {
         match user.err().unwrap() {
-            NotFound => return no_user_err,
+            NotFound => return user_not_found_redirect,
             err => {
                 error!("{}", err);
-                return internal_error;
+                return internal_error_redirect;
             }
         }
     }
@@ -74,13 +56,8 @@ pub fn confirm(
 
     if user.is_err() {
         error!("{}", user.err().unwrap());
-        return internal_error;
+        return internal_error_redirect;
     }
 
-    return status::Custom(
-        Status::Ok,
-        json!({
-            "code": "confirmed_successfully"
-        }),
-    );
+    return success_redirect;
 }

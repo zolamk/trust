@@ -21,7 +21,7 @@ use diesel::ExpressionMethods;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 
-#[derive(Queryable, AsChangeset)]
+#[derive(Queryable, AsChangeset, Serialize)]
 pub struct User {
     pub id: i64,
     pub name: Option<String>,
@@ -29,19 +29,25 @@ pub struct User {
     pub avatar: Option<String>,
     pub aud: String,
     pub role: Option<String>,
+    #[serde(skip_serializing)]
     pub password: Option<String>,
+    #[serde(skip_serializing)]
     pub confirmed: bool,
     pub invited_at: Option<NaiveDateTime>,
+    #[serde(skip_serializing)]
     pub confirmation_token: Option<String>,
     pub confirmation_sent_at: Option<NaiveDateTime>,
     pub recovery_token: Option<String>,
+    #[serde(skip_serializing)]
     pub recovery_sent_at: Option<NaiveDateTime>,
+    #[serde(skip_serializing)]
     pub email_change_token: Option<String>,
     pub email_change: Option<String>,
     pub email_change_sent_at: Option<NaiveDateTime>,
     pub last_signin_at: Option<NaiveDateTime>,
     pub app_metadata: Option<serde_json::Value>,
     pub user_metadata: Option<serde_json::Value>,
+    #[serde(skip_serializing)]
     pub is_super_admin: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -100,7 +106,7 @@ impl NewUser {
         }
     }
 
-    pub fn save(&self, connection: &PgConnection) -> diesel::QueryResult<usize> {
-        return insert_into(users).values(self).execute(connection);
+    pub fn save(&self, connection: &PgConnection) -> diesel::QueryResult<User> {
+        return insert_into(users).values(self).get_result(connection);
     }
 }

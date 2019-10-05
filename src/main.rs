@@ -4,6 +4,8 @@
 #[macro_use]
 extern crate rocket;
 #[macro_use]
+extern crate serde_json;
+#[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate diesel;
@@ -17,7 +19,9 @@ extern crate simple_logger;
 mod cmd;
 mod config;
 mod crypto;
+mod error;
 mod handlers;
+mod hook;
 mod mailer;
 mod models;
 mod schema;
@@ -31,9 +35,13 @@ use mailer::EmailTemplates;
 use std::str::FromStr;
 
 fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
+    let host = config.host.clone();
+
+    let port = config.port;
+
     let rocket_config = rocket::config::Config::build(rocket::config::Environment::Production)
-        .address(config.host.clone())
-        .port(config.port)
+        .address(host)
+        .port(port)
         .unwrap();
 
     let app = rocket::custom(rocket_config);
@@ -46,9 +54,10 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
             handlers::health_check::health,
             handlers::users::signup::signup,
             handlers::users::confirm::confirm,
+            handlers::users::token::token,
         ],
     )
-    .manage(config)
+    .manage(config.clone())
     .manage(connection_pool)
     .manage(email_templates)
     .launch();
@@ -57,7 +66,11 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
 fn main() {
     let config = Config::new();
 
-    let manager = ConnectionManager::<PgConnection>::new(config.database_url.clone());
+    let database_url = config.database_url.clone();
+
+    let log_level = config.log_level.clone();
+
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
 
     let pool = Pool::new(manager).unwrap();
 
@@ -67,11 +80,12 @@ fn main() {
 
     let matches = cli.get_matches();
 
-    simple_logger::init_with_level(Level::from_str(&config.log_level).unwrap()).unwrap();
+    simple_logger::init_with_level(Level::from_str(&log_level).unwrap()).unwrap();
 
     match matches.subcommand() {
-        ("run", _sub_m) => run(pool, Config::new()),
-        ("users", sub_m) => cmd::users(sub_m, pool, Config::new()),
+        ("run", _sub_m) => run(pool, config.clone()),
+        ("users", sub_m) => cmd::users(sub_m, pool, config.clone()),
+        ("operator", sub_m) => cmd::operator(sub_m, config.clone()),
         ("migrate", _sub_m) => cmd::migrations(pool),
         ("version", _sub_m) => cmd::version(),
         _ => {}
