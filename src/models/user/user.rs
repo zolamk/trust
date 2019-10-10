@@ -7,7 +7,7 @@ use chrono::NaiveDateTime;
 
 use bcrypt::{hash, verify, DEFAULT_COST};
 
-use diesel::{delete, insert_into, update};
+use diesel::{delete, update};
 
 use diesel::PgConnection;
 
@@ -15,19 +15,20 @@ use crate::schema::users;
 
 use crate::schema::users::dsl::*;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use diesel::ExpressionMethods;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 
-#[derive(Queryable, AsChangeset, Serialize)]
+#[derive(Queryable, AsChangeset, Serialize, Identifiable)]
 pub struct User {
     pub id: i64,
     pub name: Option<String>,
     pub email: String,
     pub avatar: Option<String>,
     pub aud: String,
+    #[serde(skip_serializing)]
     pub role: Option<String>,
     #[serde(skip_serializing)]
     pub password: Option<String>,
@@ -37,6 +38,7 @@ pub struct User {
     #[serde(skip_serializing)]
     pub confirmation_token: Option<String>,
     pub confirmation_sent_at: Option<NaiveDateTime>,
+    #[serde(skip_serializing)]
     pub recovery_token: Option<String>,
     #[serde(skip_serializing)]
     pub recovery_sent_at: Option<NaiveDateTime>,
@@ -51,21 +53,6 @@ pub struct User {
     pub is_super_admin: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
-}
-
-#[derive(Default, Insertable, Deserialize, Serialize)]
-#[table_name = "users"]
-pub struct NewUser {
-    pub name: Option<String>,
-    pub email: String,
-    pub avatar: Option<String>,
-    pub aud: String,
-    pub role: Option<String>,
-    pub password: Option<String>,
-    pub is_super_admin: bool,
-    pub confirmed: bool,
-    pub confirmation_token: Option<String>,
-    pub confirmation_sent_at: Option<NaiveDateTime>,
 }
 
 impl User {
@@ -84,7 +71,7 @@ impl User {
         }
     }
 
-    pub fn verify_password(&mut self, pass: String) -> bool {
+    pub fn verify_password(self, pass: String) -> bool {
         match &self.password {
             Some(v) => verify(pass, v).unwrap(),
             None => false,
@@ -96,17 +83,8 @@ impl User {
             .set((confirmed.eq(true), confirmation_token.eq("")))
             .execute(connection);
     }
-}
 
-impl NewUser {
-    pub fn hash_password(&mut self) {
-        match &self.password {
-            Some(v) => self.password = Some(hash(v, DEFAULT_COST).unwrap()),
-            None => self.password = None,
-        }
-    }
-
-    pub fn save(&self, connection: &PgConnection) -> diesel::QueryResult<User> {
-        return insert_into(users).values(self).get_result(connection);
+    pub fn save(self, connection: &PgConnection) -> diesel::QueryResult<User> {
+        return update(users).set(&self).get_result(connection);
     }
 }

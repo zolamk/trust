@@ -2,7 +2,7 @@ extern crate frank_jwt;
 extern crate serde_json;
 
 use crate::config::Config;
-use frank_jwt::{decode, encode, Algorithm};
+use frank_jwt::{encode, Algorithm};
 use serde_json::json;
 use serde_json::Value;
 
@@ -23,11 +23,11 @@ impl JWT {
         config: Config,
     ) -> JWT {
         return JWT {
-            user_id: user_id,
-            email: email,
-            app_metadata: app_metadata,
-            user_metadata: user_metadata,
-            config: config,
+            user_id,
+            email,
+            app_metadata,
+            user_metadata,
+            config,
         };
     }
 

@@ -1,5 +1,5 @@
-mod error;
-mod hook;
+mod event;
+mod webhook;
 
-pub use error::Error;
-pub use hook::{HookEvent, Webhook};
+pub use event::HookEvent;
+pub use webhook::Webhook;

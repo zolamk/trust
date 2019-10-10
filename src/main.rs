@@ -1,10 +1,9 @@
+#![allow(clippy::needless_return, clippy::module_inception)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #![feature(type_ascription)]
 
 #[macro_use]
 extern crate rocket;
-#[macro_use]
-extern crate serde_json;
 #[macro_use]
 extern crate clap;
 #[macro_use]
@@ -12,7 +11,7 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 #[macro_use]
-extern crate rocket_contrib;
+extern crate serde_json;
 extern crate lettre;
 extern crate simple_logger;
 

@@ -32,10 +32,11 @@ fn new_user(
         None => None,
     };
 
-    user.role = match matches.is_present("admin") {
-        true => Some("admin".to_string()),
-        false => None,
-    };
+    if matches.is_present("admin") {
+        user.role = Some("admin".to_string());
+    } else {
+        user.role = None;
+    }
 
     user.is_super_admin = matches.is_present("super_admin");
 

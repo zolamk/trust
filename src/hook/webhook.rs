@@ -5,22 +5,14 @@ extern crate rocket;
 extern crate serde;
 
 use crate::config::Config;
-use crate::hook::Error;
+use crate::error::Error;
+use crate::hook::HookEvent;
 use crate::models::operator_signature::OperatorSignature;
 use chrono::Utc;
 use frank_jwt::{encode, Algorithm};
 use log::error;
 use reqwest::header::AUTHORIZATION;
-use rocket::http::Status;
-use serde::Serialize;
 use serde_json::{json, Value};
-
-#[derive(PartialEq, Serialize, Copy, Clone)]
-#[serde(untagged)]
-pub enum HookEvent {
-    Login,
-    Signup,
-}
 
 pub struct Webhook {
     config: Config,
@@ -37,10 +29,10 @@ impl Webhook {
         operator_signature: OperatorSignature,
     ) -> Webhook {
         return Webhook {
-            config: config,
-            payload: payload,
-            event: event,
-            operator_signature: operator_signature,
+            config,
+            payload,
+            event,
+            operator_signature,
         };
     }
 
@@ -56,8 +48,6 @@ impl Webhook {
     }
 
     pub fn trigger(self) -> Result<Option<Value>, Error> {
-        let client = reqwest::Client::new();
-
         let event = self.event;
 
         let operator_signature = self.operator_signature.clone();
@@ -81,12 +71,15 @@ impl Webhook {
 
             error!("{}", err);
 
-            let status = Status::from_code(500).unwrap();
-
-            return Err(Error::new(status, json!({})));
+            return Err(Error::new(
+                500,
+                json!({
+                    "code": "hook_signature_error"
+                }),
+            ));
         }
 
-        let unprocessable = Status::from_code(422).unwrap();
+        let client = reqwest::Client::new();
 
         let res = client
             .post(url)
@@ -96,8 +89,15 @@ impl Webhook {
 
         if res.is_err() {
             let err = res.err().unwrap();
+
             error!("{}", err);
-            return Err(Error::new(unprocessable, json!({})));
+
+            return Err(Error::new(
+                422,
+                json!({
+                    "code": "hook_error"
+                }),
+            ));
         }
 
         let mut res = res.unwrap();
@@ -109,24 +109,28 @@ impl Webhook {
                 Ok(res) => return Ok(res),
                 Err(err) => {
                     error!("{}", err);
-                    return Err(Error::new(unprocessable, json!({})));
+                    return Err(Error::new(
+                        422,
+                        json!({
+                            "code": "hook_success_response_parsing_error"
+                        }),
+                    ));
                 }
             };
         }
 
-        let status = Status::from_code(status.as_u16()).unwrap();
-
-        if status.code >= 500 {
-            return Err(Error::new(status, json!({})));
-        }
-
         match res.json() {
             Ok(body) => {
-                return Err(Error::new(status, body));
+                return Err(Error::new(status.as_u16(), body));
             }
             Err(err) => {
                 error!("{}", err);
-                return Err(Error::new(unprocessable, json!({})));
+                return Err(Error::new(
+                    422,
+                    json!({
+                        "code": "hook_error_response_parsing_error"
+                    }),
+                ));
             }
         };
     }

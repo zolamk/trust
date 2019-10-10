@@ -10,10 +10,9 @@ use serde_json::{Map, Value};
 pub fn operator(matches: Option<&ArgMatches>, config: Config) {
     let matches = matches.unwrap();
 
-    match matches.subcommand() {
-        ("create-signature", sub_m) => new_signuature(sub_m, config),
-        _ => {}
-    };
+    if let ("create-signature", sub_m) = matches.subcommand() {
+        new_signuature(sub_m, config);
+    }
 }
 
 fn new_signuature(matches: Option<&ArgMatches>, config: Config) {
@@ -32,21 +31,15 @@ fn new_signuature(matches: Option<&ArgMatches>, config: Config) {
 
     let signup_hook = matches.value_of("signup_hook");
 
-    if login_hook.is_some() {
-        let login_hook = login_hook.unwrap();
+    if let Some(login_hook) = login_hook {
         function_hooks.insert("login".to_string(), Value::String(login_hook.to_string()));
     }
 
-    if signup_hook.is_some() {
-        let signup_hook = signup_hook.unwrap();
+    if let Some(signup_hook) = signup_hook {
         function_hooks.insert("signup".to_string(), Value::String(signup_hook.to_string()));
     }
 
-    let operator_signature = OperatorSignature {
-        site_url: site_url,
-        redirect_url: redirect_url,
-        function_hooks: function_hooks,
-    };
+    let operator_signature = OperatorSignature::new(site_url, redirect_url, function_hooks);
 
     let operator_signature = operator_signature.encode(config.operator_token.as_ref());
 

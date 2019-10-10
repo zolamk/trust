@@ -59,5 +59,5 @@ pub fn confirm(
         return internal_error_redirect;
     }
 
-    return success_redirect;
+    success_redirect
 }

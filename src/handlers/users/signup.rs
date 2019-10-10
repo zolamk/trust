@@ -50,8 +50,15 @@ pub fn signup(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     email_templates: State<EmailTemplates>,
     signup_form: Json<SignUpForm>,
-    operator_signature: OperatorSignature,
-) -> status::Custom<JsonValue> {
+    operator_signature: Result<OperatorSignature, Error>,
+) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+        return Err(err);
+    }
+
+    let operator_signature = operator_signature.unwrap();
+
     let mut user = NewUser::default();
 
     user.avatar = signup_form.avatar.clone();
@@ -68,25 +75,25 @@ pub fn signup(
 
     user.hash_password();
 
-    let internal_error = status::Custom(
-        Status::InternalServerError,
-        json!({
+    let internal_error = Error {
+        code: 500,
+        body: json!({
             "code": "internal_error"
         }),
-    );
+    };
 
-    let conflict_error = status::Custom(
-        Status::Conflict,
-        json!({
+    let conflict_error = Error {
+        code: 409,
+        body: json!({
             "code": "email_registered",
             "message": "a user with this email has already been registered",
         }),
-    );
+    };
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
         Err(_err) => {
-            return internal_error;
+            return Err(internal_error);
         }
     };
 
@@ -94,7 +101,7 @@ pub fn signup(
     match crate::models::user::get_by_email(user.email.clone(), &connection) {
         Ok(u) => {
             if u.confirmed {
-                return conflict_error;
+                return Err(conflict_error);
             }
 
             // if user is not confirmed delete the unconfirmed user
@@ -102,14 +109,14 @@ pub fn signup(
 
             if result.is_err() {
                 error!("{}", result.err().unwrap());
-                return internal_error;
+                return Err(internal_error);
             }
         }
         Err(err) => match err {
             NotFound => {}
             _ => {
                 error!("{}", err);
-                return internal_error;
+                return Err(internal_error);
             }
         },
     }
@@ -123,10 +130,32 @@ pub fn signup(
         let user = user.save(&connection);
 
         if user.is_err() {
-            return Err(Error::DieselError(user.err().unwrap()));
+            let err = user.err().unwrap();
+
+            match err {
+                DatabaseError(kind, _info) => match kind {
+                    DatabaseErrorKind::UniqueViolation => {
+                        let err = Error {
+                            code: 409,
+                            body: json!({
+                                "code": "email_already_registered"
+                            }),
+                        };
+                        return Err(err);
+                    }
+                    _ => {
+                        println!("{:?}", kind);
+                        return Err(internal_error);
+                    }
+                },
+                _ => {
+                    println!("{}", err);
+                    return Err(internal_error);
+                }
+            }
         }
 
-        let user = user.unwrap();
+        let mut user = user.unwrap();
 
         use serde_json::json;
 
@@ -145,7 +174,47 @@ pub fn signup(
         let hook = hook.trigger();
 
         if hook.is_err() {
-            return Err(Error::HookError(hook.err().unwrap()));
+            return Err(hook.err().unwrap());
+        }
+
+        let hook_response = hook.unwrap();
+
+        if let Some(hook_response) = hook_response {
+            if hook_response.is_object() {
+                let hook_response = hook_response.as_object().unwrap();
+
+                let mut update = false;
+
+                if hook_response.contains_key("app_metadata") {
+                    let app_metdata = hook_response.get("app_metadata").unwrap().clone();
+
+                    user.app_metadata = Some(app_metdata);
+
+                    update = true;
+                }
+
+                if hook_response.contains_key("user_metadata") {
+                    let user_metadata = hook_response.get("user_metadata").unwrap().clone();
+
+                    user.user_metadata = Some(user_metadata);
+
+                    update = true;
+                }
+
+                if update {
+                    let res = user.save(&connection);
+
+                    if res.is_err() {
+                        let err = res.err().unwrap();
+
+                        error!("{}", err);
+
+                        return Err(internal_error);
+                    }
+
+                    user = res.unwrap();
+                }
+            }
         }
 
         if !config.auto_confirm {
@@ -168,56 +237,17 @@ pub fn signup(
     });
 
     if transaction.is_ok() {
-        return status::Custom(
-            Status::Ok,
-            json!({
-                "code": "success",
-                "message": "user has been successfully signed up"
-            }),
-        );
+        let body = json!({
+            "code": "success",
+            "message": "user has been successfully signed up"
+        });
+
+        return Ok(status::Custom(Status::Ok, JsonValue(body)));
     }
 
     let err = transaction.err().unwrap();
 
-    match err {
-        Error::DieselError(err) => match err {
-            DatabaseError(kind, _info) => match kind {
-                DatabaseErrorKind::UniqueViolation => {
-                    return status::Custom(
-                        Status::Conflict,
-                        json!({
-                            "code": "email_registered",
-                            "message": "a user with this email has already been registered",
-                        }),
-                    )
-                }
-                _ => {
-                    println!("{:?}", kind);
-                    return internal_error;
-                }
-            },
-            _ => {
-                println!("{}", err);
-                return internal_error;
-            }
-        },
-
-        Error::HookError(err) => {
-            if err.status.code >= 500 {
-                return status::Custom(
-                    Status::UnprocessableEntity,
-                    json!({
-                        "code": "hook_error",
-                        "message": "error handling webhook"
-                    }),
-                );
-            } else {
-                return status::Custom(err.status, JsonValue(err.body));
-            }
-        }
-
-        _ => return internal_error,
-    }
+    return Err(err);
 }
 
 fn send_confirmation_email(
@@ -257,7 +287,15 @@ fn send_confirmation_email(
 
     if confirmation_email.is_err() {
         let err = confirmation_email.err().unwrap();
-        return Err(Error::TemplateError(err));
+
+        error!("{}", err);
+
+        return Err(Error {
+            code: 500,
+            body: json!({
+                "code": "confirmation_email_template_render_error"
+            }),
+        });
     }
 
     let email = Email::builder()
@@ -269,7 +307,12 @@ fn send_confirmation_email(
     if email.is_err() {
         let err = email.err().unwrap();
         error!("{}", err);
-        return Err(Error::EmailError(err));
+        return Err(Error {
+            code: 500,
+            body: json!({
+                "code": "confirmation_email_build_error"
+            }),
+        });
     }
 
     let email = mailer.send(email.unwrap().into());
@@ -277,7 +320,12 @@ fn send_confirmation_email(
     if email.is_err() {
         let err = email.err().unwrap();
         error!("{}", err);
-        return Err(Error::SMTPError(err));
+        return Err(Error {
+            code: 500,
+            body: json!({
+                "code": "confirmation_email_send_error"
+            }),
+        });
     }
 
     return Ok(());

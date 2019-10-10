@@ -2,7 +2,6 @@ extern crate dotenv;
 extern crate envy;
 extern crate serde;
 
-use crate::hook::HookEvent;
 use dotenv::dotenv;
 use log::error;
 use serde::Deserialize;

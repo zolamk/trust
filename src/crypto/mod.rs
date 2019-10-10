@@ -1,4 +1,4 @@
-mod crypto;
 pub mod jwt;
+mod random;
 
-pub use crypto::secure_token;
+pub use random::secure_token;

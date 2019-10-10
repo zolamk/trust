@@ -16,21 +16,11 @@ use rocket::http::Status;
 
 use crate::config::Config;
 use crate::crypto::jwt::JWT;
-use crate::crypto::secure_token;
-use crate::mailer::EmailTemplates;
-use crate::models::user::NewUser;
-use chrono::Utc;
-use diesel::result::Error;
-use handlebars::Handlebars;
-use lettre::smtp::authentication::{Credentials, Mechanism};
-use lettre::smtp::{ConnectionReuseParameters, SmtpClient};
-use lettre::{ClientSecurity, ClientTlsParameters, Transport};
-use lettre_email::Email;
+use crate::error::Error;
 use log::error;
-use native_tls::TlsConnector;
 use rocket::response::status;
 use rocket::State;
-use rocket_contrib::json::{Json, JsonValue};
+use rocket_contrib::json::JsonValue;
 
 use serde::{Deserialize, Serialize};
 
@@ -50,16 +40,18 @@ pub fn token(
     password: String,
     grant_type: String,
     refresh_token: Option<String>,
-) -> status::Custom<JsonValue> {
+) -> Result<status::Custom<JsonValue>, Error> {
     if grant_type == "password" {
         return password_grant(username, password, config, connection_pool);
     } else {
-        return status::Custom(
-            Status::UnprocessableEntity,
-            json!({
-                "code": "invalid_grant_type"
+        let err = Error {
+            code: 429,
+            body: json!({
+                "code": "invalid_grant_type",
             }),
-        );
+        };
+
+        return Err(err);
     }
 }
 
@@ -68,55 +60,55 @@ fn password_grant(
     password: String,
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-) -> status::Custom<JsonValue> {
-    let internal_error = status::Custom(
-        Status::InternalServerError,
-        json!({
+) -> Result<status::Custom<JsonValue>, Error> {
+    let internal_error = Error {
+        code: 500,
+        body: json!({
             "code": "internal_error",
         }),
-    );
+    };
 
-    let user_not_confirmed = status::Custom(
-        Status::PreconditionFailed,
-        json!({
-            "code": "user_not_confirmed"
+    let user_not_confirmed = Error {
+        code: 412,
+        body: json!({
+            "code": "user_not_confirmed",
         }),
-    );
+    };
 
-    let invalid_email_or_password = status::Custom(
-        Status::Unauthorized,
-        json!({
-            "code": "invalid_email_or_password"
+    let invalid_email_or_password = Error {
+        code: 401,
+        body: json!({
+            "code": "invalid_email_or_password",
         }),
-    );
+    };
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
         Err(err) => {
             error!("{}", err);
-            return internal_error;
+            return Err(internal_error);
         }
     };
 
     match crate::models::user::get_by_email(username, &connection) {
-        Ok(mut u) => {
+        Ok(u) => {
             if !u.confirmed {
-                return user_not_confirmed;
+                return Err(user_not_confirmed);
             }
 
-            // if u.verify_password(password) {
-            //     let jwt = JWT::new(u.id, u.email, app_metadata: Option<Value>, user_metadata: Option<Value>, config: Config)
-            // }
+            if u.verify_password(password) {
+                // let jwt = JWT::new(u.id, u.email, app_metadata: Option<Value>, user_metadata: Option<Value>, config: Config)
+            }
 
-            return invalid_email_or_password;
+            return Err(invalid_email_or_password);
         }
         Err(err) => match err {
             NotFound => {
-                return invalid_email_or_password;
+                return Err(invalid_email_or_password);
             }
             _ => {
                 error!("{}", err);
-                return internal_error;
+                return Err(internal_error);
             }
         },
     }

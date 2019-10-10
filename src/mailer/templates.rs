@@ -16,9 +16,11 @@ pub struct EmailTemplates {
 
 impl EmailTemplates {
     pub fn new(config: Config) -> EmailTemplates {
+        let confirmation_email = DEFAULT_CONFIRMATION_EMAIL.to_string();
+
         let mut email_templates = EmailTemplates {
-            config: config,
-            confirmation_email: DEFAULT_CONFIRMATION_EMAIL.to_string(),
+            config,
+            confirmation_email,
         };
 
         if email_templates
