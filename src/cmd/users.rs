@@ -32,13 +32,7 @@ fn new_user(
         None => None,
     };
 
-    if matches.is_present("admin") {
-        user.role = Some("admin".to_string());
-    } else {
-        user.role = None;
-    }
-
-    user.is_super_admin = matches.is_present("super_admin");
+    user.is_admin = matches.is_present("admin");
 
     user.confirmed = config.auto_confirm || matches.is_present("confirm");
 

@@ -29,12 +29,12 @@ pub struct User {
     pub avatar: Option<String>,
     pub aud: String,
     #[serde(skip_serializing)]
-    pub role: Option<String>,
+    pub is_admin: bool,
     #[serde(skip_serializing)]
     pub password: Option<String>,
     #[serde(skip_serializing)]
     pub confirmed: bool,
-    pub invited_at: Option<NaiveDateTime>,
+    pub invitation_sent_at: Option<NaiveDateTime>,
     #[serde(skip_serializing)]
     pub confirmation_token: Option<String>,
     pub confirmation_sent_at: Option<NaiveDateTime>,
@@ -49,8 +49,6 @@ pub struct User {
     pub last_signin_at: Option<NaiveDateTime>,
     pub app_metadata: Option<serde_json::Value>,
     pub user_metadata: Option<serde_json::Value>,
-    #[serde(skip_serializing)]
-    pub is_super_admin: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -71,7 +69,7 @@ impl User {
         }
     }
 
-    pub fn verify_password(self, pass: String) -> bool {
+    pub fn verify_password(&self, pass: String) -> bool {
         match &self.password {
             Some(v) => verify(pass, v).unwrap(),
             None => false,

@@ -16,6 +16,8 @@ pub struct Config {
     pub confirmed_redirect: String,
     pub database_url: String,
     pub db_driver: String,
+    #[serde(default = "default_disable_signup")]
+    pub disable_signup: bool,
     pub facebook_client_id: Option<String>,
     pub facebook_client_secret: Option<String>,
     pub facebook_enabled: bool,
@@ -25,6 +27,8 @@ pub struct Config {
     pub host: String,
     pub instance_url: String,
     pub jwt_algorithm: String,
+    #[serde(default = "default_jwt_exp")]
+    pub jwt_exp: i64,
     pub jwt_private_key_path: Option<String>,
     pub jwt_public_key_path: Option<String>,
     pub jwt_secret: String,
@@ -120,4 +124,12 @@ impl Config {
         }
         return self.jwt_secret;
     }
+}
+
+fn default_disable_signup() -> bool {
+    false
+}
+
+fn default_jwt_exp() -> i64 {
+    3600
 }

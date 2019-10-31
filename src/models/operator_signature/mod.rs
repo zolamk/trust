@@ -93,7 +93,7 @@ impl OperatorSignature {
         if decoded_token.is_err() {
             let err = decoded_token.err().unwrap();
 
-            error!("{}", err);
+            error!("{:?}", err);
 
             let err = Error {
                 code: 400,
@@ -112,7 +112,7 @@ impl OperatorSignature {
         if operator_signature.is_err() {
             let err = operator_signature.err().unwrap();
 
-            error!("{}", err);
+            error!("{:?}", err);
 
             let err = Error {
                 code: 400,
@@ -157,13 +157,6 @@ impl<'a, 'r> FromRequest<'a, 'r> for OperatorSignature {
             }),
         };
 
-        let invalid_operator_signature = Error {
-            code: 400,
-            body: json!({
-                "code": "invalid_operator_signature",
-            }),
-        };
-
         if operator_signature.is_none() {
             return Outcome::Failure((Status::BadRequest, signature_missing));
         }
@@ -182,7 +175,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for OperatorSignature {
             OperatorSignature::decode(operator_signature, config.operator_token.as_ref());
 
         if operator_signature.is_err() {
-            return Outcome::Failure((Status::BadRequest, invalid_operator_signature));
+            return Outcome::Failure((Status::BadRequest, operator_signature.err().unwrap()));
         }
 
         let operator_signature = operator_signature.unwrap();

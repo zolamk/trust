@@ -108,7 +108,7 @@ impl Webhook {
             match res.json() {
                 Ok(res) => return Ok(res),
                 Err(err) => {
-                    error!("{}", err);
+                    error!("{:?}", err);
                     return Err(Error::new(
                         422,
                         json!({

@@ -28,12 +28,12 @@ pub struct NewUser {
     pub email: String,
     pub avatar: Option<String>,
     pub aud: String,
-    pub role: Option<String>,
+    pub is_admin: bool,
     pub password: Option<String>,
-    pub is_super_admin: bool,
     pub confirmed: bool,
     pub confirmation_token: Option<String>,
     pub confirmation_sent_at: Option<NaiveDateTime>,
+    pub invitation_sent_at: Option<NaiveDateTime>,
 }
 
 impl NewUser {

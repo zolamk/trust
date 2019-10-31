@@ -51,10 +51,6 @@ subcommands:
                     short: a
                     long: admin
                     help: user is admin
-                - super_admin:
-                    short: s
-                    long: super_admin
-                    help: user is super admin
                 - confirm:
                     short: c
                     long: confirm

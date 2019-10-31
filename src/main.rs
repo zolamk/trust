@@ -1,6 +1,7 @@
 #![allow(clippy::needless_return, clippy::module_inception)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #![feature(type_ascription)]
+#![feature(let_chains)]
 
 #[macro_use]
 extern crate rocket;
@@ -54,9 +55,10 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
             handlers::users::signup::signup,
             handlers::users::confirm::confirm,
             handlers::users::token::token,
+            handlers::users::invite::invite
         ],
     )
-    .manage(config.clone())
+    .manage(config)
     .manage(connection_pool)
     .manage(email_templates)
     .launch();
@@ -82,9 +84,9 @@ fn main() {
     simple_logger::init_with_level(Level::from_str(&log_level).unwrap()).unwrap();
 
     match matches.subcommand() {
-        ("run", _sub_m) => run(pool, config.clone()),
-        ("users", sub_m) => cmd::users(sub_m, pool, config.clone()),
-        ("operator", sub_m) => cmd::operator(sub_m, config.clone()),
+        ("run", _sub_m) => run(pool, config),
+        ("users", sub_m) => cmd::users(sub_m, pool, config),
+        ("operator", sub_m) => cmd::operator(sub_m, config),
         ("migrate", _sub_m) => cmd::migrations(pool),
         ("version", _sub_m) => cmd::version(),
         _ => {}

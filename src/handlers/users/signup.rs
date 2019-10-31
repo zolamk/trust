@@ -52,6 +52,17 @@ pub fn signup(
     signup_form: Json<SignUpForm>,
     operator_signature: Result<OperatorSignature, Error>,
 ) -> Result<status::Custom<JsonValue>, Error> {
+    if config.disable_signup {
+        let err = Error {
+            code: 422,
+            body: json!({
+                "code": "signup_disabled",
+                "message": "trust instance has signup disabled"
+            }),
+        };
+        return Err(err);
+    }
+
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
         return Err(err);

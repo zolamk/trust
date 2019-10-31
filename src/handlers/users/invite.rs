@@ -15,17 +15,18 @@ use diesel::result::Error::{DatabaseError, NotFound};
 use rocket::http::Status;
 
 use crate::config::Config;
+use crate::crypto::jwt::JWT;
 use crate::crypto::secure_token;
+use crate::error::Error;
 use crate::mailer::EmailTemplates;
-use crate::models::user::NewUser;
+use crate::models::user::{NewUser, User};
 use chrono::Utc;
-use diesel::result::Error;
 use handlebars::Handlebars;
 use lettre::smtp::authentication::{Credentials, Mechanism};
 use lettre::smtp::{ConnectionReuseParameters, SmtpClient};
 use lettre::{ClientSecurity, ClientTlsParameters, Transport};
 use lettre_email::Email;
-use log::error;
+use log::{error, info};
 use native_tls::TlsConnector;
 use rocket::response::status;
 use rocket::State;
@@ -45,50 +46,61 @@ pub fn invite(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     email_templates: State<EmailTemplates>,
     invite_form: Json<InviteForm>,
-) -> status::Custom<JsonValue> {
-    let mut user = NewUser::default();
+    token: Result<JWT, Error>,
+) -> Result<status::Custom<JsonValue>, Error> {
+    if token.is_err() {
+        let err = token.err().unwrap();
+        return Err(err);
+    }
 
-    user.avatar = signup_form.avatar.clone();
+    let token = token.unwrap();
 
-    user.confirmed = config.auto_confirm;
-
-    user.name = signup_form.name.clone();
-
-    user.email = signup_form.email.clone();
-
-    user.password = Some(signup_form.password.clone());
-
-    user.aud = config.aud.clone();
-
-    user.hash_password();
-
-    let internal_error = status::Custom(
-        Status::InternalServerError,
-        json!({
+    let internal_error = Error {
+        code: 500,
+        body: json!({
             "code": "internal_error"
         }),
-    );
-
-    let conflict_error = status::Custom(
-        Status::Conflict,
-        json!({
-            "code": "email_registered",
-            "message": "a user with this email has already been registered",
-        }),
-    );
+    };
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
         Err(_err) => {
-            return internal_error;
+            return Err(internal_error);
         }
     };
 
+    if !token.is_admin(&connection) {
+        return Err(Error {
+            code: 403,
+            body: json!({
+                "code": "only_admin_can_invite"
+            }),
+        });
+    }
+
+    let mut user = NewUser::default();
+
+    user.confirmed = config.auto_confirm;
+
+    user.name = invite_form.name.clone();
+
+    user.email = invite_form.email.clone();
+
+    user.aud = config.aud.clone();
+
+    let conflict_error = Error {
+        code: 409,
+        body: json!({
+            "code": "email_registered",
+            "message": "a user with this email has already been registered",
+        }),
+    };
+
     // check if user already exists
-    match crate::models::get_user_by_email(user.email.clone(), &connection) {
+    match crate::models::user::get_by_email(user.email.clone(), &connection) {
         Ok(u) => {
             if u.confirmed {
-                return conflict_error;
+                return Err(conflict_error);
             }
 
             // if user is not confirmed delete the unconfirmed user
@@ -96,95 +108,108 @@ pub fn invite(
 
             if result.is_err() {
                 error!("{}", result.err().unwrap());
-                return internal_error;
+                return Err(internal_error);
             }
         }
         Err(err) => match err {
             NotFound => {}
             _ => {
                 error!("{}", err);
-                return internal_error;
+                return Err(internal_error);
             }
         },
     }
 
-    if !config.auto_confirm {
-        user.confirmation_token = Some(secure_token(100));
-        user.confirmation_sent_at = Some(Utc::now().naive_utc());
-    }
+    let token = secure_token(100);
+
+    let sent_at = Utc::now().naive_utc();
+
+    user.confirmation_token = Some(token);
+
+    user.confirmation_sent_at = Some(sent_at);
+
+    user.invitation_sent_at = Some(sent_at);
 
     let transaction = connection.transaction::<_, Error, _>(|| {
-        let result = user.save(&connection);
+        let user = user.save(&connection);
 
-        if result.is_err() {
-            return Err(result.err().unwrap());
+        if user.is_err() {
+            let err = user.err().unwrap();
+
+            match err {
+                DatabaseError(kind, _info) => match kind {
+                    DatabaseErrorKind::UniqueViolation => {
+                        let err = Error {
+                            code: 409,
+                            body: json!({
+                                "code": "email_already_registered"
+                            }),
+                        };
+                        return Err(err);
+                    }
+                    _ => {
+                        println!("{:?}", kind);
+                        return Err(internal_error);
+                    }
+                },
+                _ => {
+                    println!("{}", err);
+                    return Err(internal_error);
+                }
+            }
         }
 
-        if !config.auto_confirm {
-            let confirmation_url = format!(
-                "{}/confirmation_token={}",
-                config.site_url,
-                user.confirmation_token.clone().unwrap(),
-            );
+        let user = user.unwrap();
 
-            let template = email_templates.clone().confirmation_email_template();
+        let invitation_url = format!(
+            "{}/invitation_token={}",
+            config.site_url,
+            user.confirmation_token.clone().unwrap(),
+        );
 
-            let email = send_confirmation_email(template, confirmation_url, user, config);
+        let template = email_templates.clone().invitation_email_template();
 
-            if email.is_err() {
-                return Err(email.err().unwrap());
-            }
+        let email = send_invitation_email(template, invitation_url, user, config);
+
+        if email.is_err() {
+            let err = email.err().unwrap();
+
+            error!("{:?}", err);
+
+            return Err(err);
         }
 
         return Ok(());
     });
 
     if transaction.is_ok() {
-        return status::Custom(
-            Status::Ok,
-            json!({
-                "code": "success",
-                "message": "user has been successfully signed up"
-            }),
-        );
+        let body = json!({
+            "code": "success",
+            "message": "user has been successfully invited"
+        });
+
+        return Ok(status::Custom(Status::Ok, JsonValue(body)));
     }
 
     let err = transaction.err().unwrap();
 
-    match err {
-        DatabaseError(kind, _info) => match kind {
-            DatabaseErrorKind::UniqueViolation => {
-                return status::Custom(
-                    Status::Conflict,
-                    json!({
-                        "code": "email_registered",
-                        "message": "a user with this email has already been registered",
-                    }),
-                )
-            }
-            _ => {
-                println!("{:?}", kind);
-                return internal_error;
-            }
-        },
-        _ => {
-            println!("{}", err);
-            return internal_error;
-        }
-    }
+    return Err(err);
 }
 
-fn send_confirmation_email(
+fn send_invitation_email(
     template: String,
-    confirmation_url: String,
-    user: NewUser,
+    invitation_url: String,
+    user: User,
     config: State<Config>,
 ) -> Result<(), Error> {
     let tls_connector = TlsConnector::builder().build().unwrap();
 
-    let tls_parameters = ClientTlsParameters::new(config.smtp_host.clone(), tls_connector);
+    let tls_parameters = ClientTlsParameters::new(config.smtp_host.to_string(), tls_connector);
 
-    let credentials = Credentials::new(config.smtp_username.clone(), config.smtp_password.clone());
+    let credentials = Credentials::new(
+        config.smtp_username.to_string(),
+        config.smtp_password.to_string(),
+    );
 
     let mut mailer = SmtpClient::new(
         (&config.smtp_host[..], config.smtp_port),
@@ -197,35 +222,56 @@ fn send_confirmation_email(
     .connection_reuse(ConnectionReuseParameters::ReuseUnlimited)
     .transport();
 
-    let confirmation_email = Handlebars::new().render_template(
+    let invitation_email = Handlebars::new().render_template(
         &template,
         &json!({
             "email": user.email.clone(),
             "site_url": config.site_url.clone(),
-            "confirmation_url": confirmation_url,
+            "invitation_url": invitation_url,
         }),
     );
 
-    if confirmation_email.is_err() {
-        return Err(Error::RollbackTransaction);
+    if invitation_email.is_err() {
+        let err = invitation_email.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error {
+            code: 500,
+            body: json!({
+                "code": "invitation_email_template_render_error"
+            }),
+        });
     }
 
     let email = Email::builder()
         .from(config.smtp_admin_email.clone())
         .to(user.email)
-        .html(confirmation_email.unwrap())
+        .html(invitation_email.unwrap())
         .build();
 
     if email.is_err() {
-        error!("{}", email.err().unwrap());
-        return Err(Error::RollbackTransaction);
+        let err = email.err().unwrap();
+        error!("{:?}", err);
+        return Err(Error {
+            code: 500,
+            body: json!({
+                "code": "invitation_email_build_error"
+            }),
+        });
     }
 
     let email = mailer.send(email.unwrap().into());
 
     if email.is_err() {
-        error!("{}", email.err().unwrap());
-        return Err(Error::RollbackTransaction);
+        let err = email.err().unwrap();
+        error!("{:?}", err);
+        return Err(Error {
+            code: 500,
+            body: json!({
+                "code": "invitation_email_send_error"
+            }),
+        });
     }
 
     return Ok(());
