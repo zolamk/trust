@@ -33,14 +33,13 @@ pub struct SignUpForm {
     pub password: String,
 }
 
-#[post("/token?<username>&<password>&<grant_type>&<refresh_token>")]
+#[post("/token?<username>&<password>&<grant_type>")]
 pub fn token(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     username: String,
     password: String,
     grant_type: String,
-    refresh_token: Option<String>,
     operator_signature: Result<OperatorSignature, Error>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
@@ -160,23 +159,21 @@ fn password_grant(
         if hook_response.is_object() {
             let hook_response = hook_response.as_object().unwrap();
 
-            let mut update = false;
-
-            if hook_response.contains_key("app_metadata") {
+            let update = if hook_response.contains_key("app_metadata") {
                 let app_metdata = hook_response.get("app_metadata").unwrap().clone();
 
                 user.app_metadata = Some(app_metdata);
 
-                update = true;
-            }
-
-            if hook_response.contains_key("user_metadata") {
+                true
+            } else if hook_response.contains_key("user_metadata") {
                 let user_metadata = hook_response.get("user_metadata").unwrap().clone();
 
                 user.user_metadata = Some(user_metadata);
 
-                update = true;
-            }
+                true
+            } else {
+                false
+            };
 
             if update {
                 let res = user.save(&connection);
@@ -219,10 +216,3 @@ fn password_grant(
         })),
     ));
 }
-
-// fn refresh_token_grant(
-//     refresh_token: Option<String>,
-//     config: State<Config>,
-//     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-// ) -> status::Custom<JsonValue> {
-// }

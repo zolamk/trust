@@ -1,7 +1,6 @@
 #![allow(clippy::needless_return, clippy::module_inception)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #![feature(type_ascription)]
-#![feature(let_chains)]
 
 #[macro_use]
 extern crate rocket;

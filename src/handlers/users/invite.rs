@@ -26,7 +26,7 @@ use lettre::smtp::authentication::{Credentials, Mechanism};
 use lettre::smtp::{ConnectionReuseParameters, SmtpClient};
 use lettre::{ClientSecurity, ClientTlsParameters, Transport};
 use lettre_email::Email;
-use log::{error, info};
+use log::error;
 use native_tls::TlsConnector;
 use rocket::response::status;
 use rocket::State;
