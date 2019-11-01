@@ -18,6 +18,7 @@ use crate::crypto::jwt::JWT;
 use crate::error::Error;
 use crate::hook::{HookEvent, Webhook};
 use crate::models::operator_signature::OperatorSignature;
+use crate::models::refresh_token::NewRefreshToken;
 use log::error;
 use rocket::response::status;
 use rocket::State;
@@ -209,10 +210,29 @@ fn password_grant(
 
     let jwt = jwt.unwrap();
 
+    let refresh_token = NewRefreshToken::new(user.id);
+
+    let refresh_token = refresh_token.save(&connection);
+
+    if refresh_token.is_err() {
+        let err = refresh_token.err();
+        error!("{:?}", err);
+        return Err(Error {
+            code: 500,
+            body: json!({
+                "code": "unable_to_create_refresh_token",
+            }),
+        });
+    }
+
+    let refresh_token = refresh_token.unwrap().token;
+
     return Ok(status::Custom(
         Status::Ok,
         JsonValue(json!({
             "access_token": jwt,
+            "refresh_token": refresh_token,
+            "type": "bearer"
         })),
     ));
 }

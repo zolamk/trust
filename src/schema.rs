@@ -1,4 +1,14 @@
 table! {
+    refresh_tokens (id) {
+        id -> Int8,
+        token -> Varchar,
+        user_id -> Int8,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+table! {
     users (id) {
         id -> Int8,
         name -> Nullable<Varchar>,
@@ -23,3 +33,10 @@ table! {
         updated_at -> Timestamp,
     }
 }
+
+joinable!(refresh_tokens -> users (user_id));
+
+allow_tables_to_appear_in_same_query!(
+    refresh_tokens,
+    users,
+);
