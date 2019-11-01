@@ -4,7 +4,7 @@ create table refresh_tokens (
     user_id bigint not null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null,
-    constraint fk_refresh_token_user_id foreign key(user_id) references users(id)
+    constraint fk_refresh_token_user_id foreign key(user_id) references users(id) on delete cascade on update cascade
 );
 
 create or replace function update_refresh_token_updated_at()

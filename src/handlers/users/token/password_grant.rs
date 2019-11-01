@@ -24,53 +24,7 @@ use rocket::response::status;
 use rocket::State;
 use rocket_contrib::json::JsonValue;
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize)]
-pub struct SignUpForm {
-    pub name: Option<String>,
-    pub email: String,
-    pub avatar: Option<String>,
-    pub password: String,
-}
-
-#[post("/token?<username>&<password>&<grant_type>")]
-pub fn token(
-    config: State<Config>,
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    username: String,
-    password: String,
-    grant_type: String,
-    operator_signature: Result<OperatorSignature, Error>,
-) -> Result<status::Custom<JsonValue>, Error> {
-    if operator_signature.is_err() {
-        let err = operator_signature.err().unwrap();
-        return Err(err);
-    }
-
-    let operator_signature = operator_signature.unwrap();
-
-    if grant_type == "password" {
-        return password_grant(
-            username,
-            password,
-            config,
-            connection_pool,
-            operator_signature,
-        );
-    } else {
-        let err = Error {
-            code: 429,
-            body: json!({
-                "code": "invalid_grant_type",
-            }),
-        };
-
-        return Err(err);
-    }
-}
-
-fn password_grant(
+pub fn password_grant(
     username: String,
     password: String,
     config: State<Config>,
@@ -192,11 +146,12 @@ fn password_grant(
         }
     }
 
-    let app_metadata = user.app_metadata;
-
-    let user_metadata = user.user_metadata.clone();
-
-    let jwt = JWT::new(user.id, user.email.clone(), app_metadata, user_metadata);
+    let jwt = JWT::new(
+        user.id,
+        user.email.clone(),
+        user.app_metadata,
+        user.user_metadata,
+    );
 
     let jwt = jwt.sign(config.inner().clone());
 
