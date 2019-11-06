@@ -24,9 +24,7 @@ use diesel::RunQueryDsl;
 #[derive(Queryable, AsChangeset, Serialize, Identifiable)]
 pub struct User {
     pub id: i64,
-    pub name: Option<String>,
     pub email: String,
-    pub avatar: Option<String>,
     pub aud: String,
     #[serde(skip_serializing)]
     pub is_admin: bool,

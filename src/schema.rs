@@ -11,9 +11,7 @@ table! {
 table! {
     users (id) {
         id -> Int8,
-        name -> Nullable<Varchar>,
         email -> Varchar,
-        avatar -> Nullable<Text>,
         aud -> Varchar,
         is_admin -> Bool,
         password -> Nullable<Varchar>,
@@ -36,7 +34,4 @@ table! {
 
 joinable!(refresh_tokens -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(
-    refresh_tokens,
-    users,
-);
+allow_tables_to_appear_in_same_query!(refresh_tokens, users,);

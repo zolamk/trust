@@ -27,10 +27,10 @@ fn new_user(
 
     user.aud = matches.value_of("aud").unwrap().to_string();
 
-    user.name = match matches.value_of("name") {
-        Some(n) => Some(n.to_string()),
-        None => None,
-    };
+    // user.name = match matches.value_of("name") {
+    //     Some(n) => Some(n.to_string()),
+    //     None => None,
+    // };
 
     user.is_admin = matches.is_present("admin");
 

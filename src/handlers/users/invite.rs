@@ -36,7 +36,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct InviteForm {
-    pub name: Option<String>,
     pub email: String,
 }
 
@@ -81,8 +80,6 @@ pub fn invite(
     let mut user = NewUser::default();
 
     user.confirmed = config.auto_confirm;
-
-    user.name = invite_form.name.clone();
 
     user.email = invite_form.email.clone();
 

@@ -72,11 +72,11 @@ pub fn signup(
 
     let mut user = NewUser::default();
 
-    user.avatar = signup_form.avatar.clone();
+    // user.avatar = signup_form.avatar.clone();
 
     user.confirmed = config.auto_confirm;
 
-    user.name = signup_form.name.clone();
+    // user.name = signup_form.name.clone();
 
     user.email = signup_form.email.clone();
 

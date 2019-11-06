@@ -77,8 +77,8 @@ impl JWT {
             let exp = now.timestamp();
 
             json!({
-                "aud":aud,
-                "sub":self.user_id,
+                "aud": aud,
+                "sub": self.user_id,
                 "email": self.email,
                 "app_metadata": self.app_metadata,
                 "user_metadata": self.user_metadata,
@@ -86,8 +86,8 @@ impl JWT {
             })
         } else {
             json!({
-                "aud":aud,
-                "sub":self.user_id,
+                "aud": aud,
+                "sub": self.user_id,
                 "email": self.email,
                 "app_metadata": self.app_metadata,
                 "user_metadata": self.user_metadata,
@@ -102,7 +102,7 @@ impl JWT {
         );
     }
 
-    pub fn decode(encoded_token: String, config: Config) -> Result<Self, Error> {
+    pub fn decode(encoded_token: String, config: Config) -> Result<JWT, Error> {
         let algorithm = config.jwt_algorithm.clone();
 
         let decoded_token = decode(

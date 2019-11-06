@@ -58,44 +58,72 @@ impl Config {
         dotenv().ok();
 
         match envy::from_env::<Config>() {
-            Ok(mut config) => match config.jwt_algorithm.as_ref() {
-                "RS256" | "RS384" | "RS512" | "ES256" | "ES384" | "ES512" => {
-                    assert_eq!(config.jwt_private_key_path.is_some(), true, "expected JWT_PRIVATE_KEY_PATH to be set for all supported assymetric algorithms");
+            Ok(mut config) => {
+                match config.jwt_algorithm.as_ref() {
+                    "RS256" | "RS384" | "RS512" | "ES256" | "ES384" | "ES512" => {
+                        assert_eq!(config.jwt_private_key_path.is_some(), true, "expected JWT_PRIVATE_KEY_PATH to be set for all supported assymetric algorithms");
 
-                    assert_eq!(config.jwt_public_key_path.is_some(), true, "expected JWT_PUBLIC_KEY_PATH to be set for all supported assymetric algorithms");
+                        assert_eq!(config.jwt_public_key_path.is_some(), true, "expected JWT_PUBLIC_KEY_PATH to be set for all supported assymetric algorithms");
 
-                    config.private_key = match fs::read_to_string(Path::new(
-                        &config.jwt_private_key_path.clone().unwrap(),
-                    )) {
-                        Ok(key) => Some(key),
-                        Err(err) => {
-                            panic!("unable to read private key file: {}", err);
-                        }
-                    };
+                        config.private_key = match fs::read_to_string(Path::new(
+                            &config.jwt_private_key_path.clone().unwrap(),
+                        )) {
+                            Ok(key) => Some(key),
+                            Err(err) => {
+                                panic!("unable to read private key file: {}", err);
+                            }
+                        };
 
-                    config.public_key = match fs::read_to_string(Path::new(
-                        &config.jwt_public_key_path.clone().unwrap(),
-                    )) {
-                        Ok(key) => Some(key),
-                        Err(err) => {
-                            panic!("unable to read public key file: {}", err);
-                        }
-                    };
+                        config.public_key = match fs::read_to_string(Path::new(
+                            &config.jwt_public_key_path.clone().unwrap(),
+                        )) {
+                            Ok(key) => Some(key),
+                            Err(err) => {
+                                panic!("unable to read public key file: {}", err);
+                            }
+                        };
 
-                    config.jwt_type = String::from("assymetric");
-
-                    return config;
+                        config.jwt_type = String::from("assymetric");
+                    }
+                    "HS256" | "HS384" | "HS512" => {
+                        config.jwt_type = String::from("symmetric");
+                    }
+                    other => {
+                        error!("unsupported algorithm {}", other);
+                        std::process::exit(1);
+                    }
                 }
-                "HS256" | "HS384" | "HS512" => {
-                    config.jwt_type = String::from("symmetric");
 
-                    return config;
+                if config.google_enabled {
+                    assert_eq!(
+                        config.google_client_id.is_some(),
+                        true,
+                        "expected GOOGLE_CLIENT_ID to be set if google provider is enabled"
+                    );
+
+                    assert_eq!(
+                        config.google_client_secret.is_some(),
+                        true,
+                        "expected GOOGLE_CLIENT_SECRET to be set if google provider is enabled"
+                    )
                 }
-                other => {
-                    error!("unsupported algorithm {}", other);
-                    std::process::exit(1);
+
+                if config.facebook_enabled {
+                    assert_eq!(
+                        config.facebook_client_id.is_some(),
+                        true,
+                        "expected FACEBOOK_CLIENT_ID to be set if facebook provider is enabled"
+                    );
+
+                    assert_eq!(
+                        config.facebook_client_secret.is_some(),
+                        true,
+                        "expected FACEBOOK_CLIENT_SECRET to be set if google provider is enabled"
+                    )
                 }
-            },
+
+                return config;
+            }
             Err(e) => {
                 println!("{}", e);
                 exit(1);

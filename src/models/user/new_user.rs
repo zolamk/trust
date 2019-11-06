@@ -24,9 +24,7 @@ use crate::models::user::User;
 #[derive(Default, Insertable, Deserialize, Serialize)]
 #[table_name = "users"]
 pub struct NewUser {
-    pub name: Option<String>,
     pub email: String,
-    pub avatar: Option<String>,
     pub aud: String,
     pub is_admin: bool,
     pub password: Option<String>,
