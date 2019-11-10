@@ -167,7 +167,7 @@ impl From<CryptoError> for Error {
 }
 
 impl From<diesel::result::Error> for Error {
-    fn from(e: diesel::result::Error) -> Self {
+    fn from(_: diesel::result::Error) -> Self {
         return Error {
             code: 500,
             body: json!({

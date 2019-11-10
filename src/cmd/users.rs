@@ -4,6 +4,9 @@ use crate::models::Error;
 use clap::ArgMatches;
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::result::DatabaseErrorKind;
+use diesel::result::Error::DatabaseError;
+use log::error;
 
 fn new_user(
     matches: Option<&ArgMatches>,
@@ -26,14 +29,24 @@ fn new_user(
 
     user.hash_password();
 
-    let connection = connection_pool
-        .get()
-        .expect("unable to get connection to database");
+    let connection = connection_pool.get();
 
-    match user.save(&*connection) {
+    if connection.is_err() {
+        error!(
+            "unable to get database connection: {:?}",
+            connection.err().unwrap()
+        );
+        std::process::exit(1);
+    }
+
+    let connection = connection.unwrap();
+
+    match user.save(&connection) {
         Ok(_val) => println!("{} created successfully", user.email),
         Err(err) => match err {
-            Error::DatabaseError(_) => println!("{} already exists!", user.email),
+            Error::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) => {
+                println!("{} already exists!", user.email)
+            }
             _ => println!("{:?}", err),
         },
     }
