@@ -1,0 +1,7 @@
+blank_lines_lower_bound = 0
+blank_lines_upper_bound = 1
+brace_style = "PreferSameLine"
+max_width = 200
+fn_args_layout = "compressed"
+imports_layout = "Horizontal"
+merge_imports = true

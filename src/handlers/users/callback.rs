@@ -1,39 +1,26 @@
-use crate::config::Config;
-use crate::crypto::jwt::JWT;
-use crate::crypto::secure_token;
-use crate::handlers::trigger_hook;
-use crate::handlers::users::provider::{FacebookProvider, Provider, ProviderState};
-use crate::hook::HookEvent;
-use crate::mailer::send_confirmation_email;
-use crate::mailer::EmailTemplates;
-use crate::models::refresh_token::NewRefreshToken;
-use crate::models::user::{get_by_email, NewUser};
-use crate::models::Error as ModelError;
-use crate::operator_signature::{Error as OperatorSignatureError, OperatorSignature};
-use chrono::Utc;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::result::DatabaseErrorKind;
-use diesel::result::Error::{DatabaseError, NotFound};
-use diesel::Connection;
-use log::error;
-use oauth2::basic::BasicClient;
-use oauth2::reqwest::http_client;
-use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, RedirectUrl, TokenResponse, TokenUrl,
+use crate::{
+    config::Config, crypto::{jwt::JWT, secure_token}, handlers::{
+        trigger_hook, users::provider::{FacebookProvider, GoogleProvider, Provider, ProviderState}
+    }, hook::HookEvent, mailer::{send_confirmation_email, EmailTemplates}, models::{
+        refresh_token::NewRefreshToken, user::{get_by_email, NewUser, User}, Error as ModelError
+    }, operator_signature::{Error as OperatorSignatureError, OperatorSignature}
 };
-use rocket::response::Redirect;
-use rocket::State;
+use chrono::Utc;
+use diesel::{
+    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::{
+        DatabaseErrorKind, Error::{DatabaseError, NotFound}
+    }, Connection
+};
+use log::error;
+use oauth2::{basic::BasicClient, reqwest::http_client, AuthUrl, AuthorizationCode, ClientId, ClientSecret, RedirectUrl, TokenResponse, TokenUrl};
+use rocket::{response::Redirect, State};
 use url::Url;
 
 #[get("/authorize/callback?<code>&<state>")]
+
 pub fn callback(
-    config: State<Config>,
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-    email_templates: State<EmailTemplates>,
-    code: String,
-    state: String,
+    config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, operator_signature: Result<OperatorSignature, OperatorSignatureError>,
+    email_templates: State<EmailTemplates>, code: String, state: String,
 ) -> Redirect {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
@@ -61,15 +48,9 @@ pub fn callback(
 
     let state = state.unwrap();
 
-    let provider_disabled = Redirect::to(format!(
-        "{}?error=provider_disabled",
-        operator_signature.site_url
-    ));
+    let provider_disabled = Redirect::to(format!("{}?error=provider_disabled", operator_signature.site_url));
 
-    let internal_error = Redirect::to(format!(
-        "{}?error=internal_error",
-        operator_signature.site_url
-    ));
+    let internal_error = Redirect::to(format!("{}?error=internal_error", operator_signature.site_url));
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -78,29 +59,37 @@ pub fn callback(
         }
     };
 
-    let oauth_provider = match state.provider.as_str() {
+    let oauth_provider: Box<dyn Provider> = match state.provider.as_str() {
         "facebook" => {
             if !config.facebook_enabled {
                 return provider_disabled;
             }
+
             Box::new(FacebookProvider::new(config.inner().clone()))
         }
+        "google" => {
+            if !config.google_enabled {
+                return provider_disabled;
+            }
+
+            Box::new(GoogleProvider::new(config.inner().clone()))
+        }
         _ => {
-            let redirect_url = format!("{}?error=invalid_provider", config.site_url);
+            let redirect_url = format!("{}?error=invalid_provider", operator_signature.site_url);
 
             return Redirect::to(redirect_url);
         }
     };
 
-    let client_id = oauth_provider.clone().client_id();
+    let client_id = oauth_provider.client_id();
 
     let client_id = ClientId::new(client_id);
 
-    let client_secret = Some(ClientSecret::new(
-        config.facebook_client_secret.clone().unwrap(),
-    ));
+    let client_secret = oauth_provider.client_secret();
 
-    let auth_url = oauth_provider.clone().auth_url();
+    let client_secret = Some(ClientSecret::new(client_secret));
+
+    let auth_url = oauth_provider.auth_url();
 
     let auth_url = Url::parse(auth_url.as_str());
 
@@ -114,7 +103,7 @@ pub fn callback(
 
     let auth_url = AuthUrl::new(auth_url.unwrap());
 
-    let token_url = oauth_provider.clone().token_url();
+    let token_url = oauth_provider.token_url();
 
     let token_url = Url::parse(token_url.as_str());
 
@@ -142,19 +131,16 @@ pub fn callback(
 
     let redirect_url = RedirectUrl::new(redirect_url.unwrap());
 
-    let client = BasicClient::new(client_id, client_secret, auth_url, token_url)
-        .set_redirect_url(redirect_url);
+    let client = BasicClient::new(client_id, client_secret, auth_url, token_url).set_redirect_url(redirect_url);
 
-    let access_token = client
-        .exchange_code(AuthorizationCode::new(code))
-        .request(http_client);
+    let access_token = client.exchange_code(AuthorizationCode::new(code)).request(http_client);
 
     if access_token.is_err() {
         let err = access_token.err().unwrap();
 
         error!("{:?}", err);
 
-        let redirect_url = format!("{}?error=error_exchanging_code", config.site_url);
+        let redirect_url = format!("{}?error=error_exchanging_code", operator_signature.site_url);
 
         return Redirect::to(redirect_url);
     }
@@ -170,7 +156,7 @@ pub fn callback(
 
         error!("{:?}", err);
 
-        let redirect_url = format!("{}?error=error_getting_user_data", config.site_url);
+        let redirect_url = format!("{}?error=error_getting_user_data", operator_signature.site_url);
 
         return Redirect::to(redirect_url);
     }
@@ -178,180 +164,124 @@ pub fn callback(
     let user_data = user_data.unwrap();
 
     if user_data.email.is_none() {
-        let redirect_url = format!(
-            "{}?error=unable_to_find_email_with_provider",
-            config.site_url
-        );
+        let redirect_url = format!("{}?error=unable_to_find_email_with_provider", operator_signature.site_url);
 
         return Redirect::to(redirect_url);
     }
 
     let email = user_data.email.clone().unwrap();
 
+    let u = get_by_email(email.clone(), &connection);
+
     let transaction = connection.transaction::<Redirect, CallbackError, _>(|| {
-        let mut user = get_by_email(email.clone(), &connection);
+        let mut user;
 
-        let internal_error = CallbackError::new(format!(
-            "{}?error=internal_error",
-            operator_signature.site_url
-        ));
+        let internal_error_redirect_url = format!("{}?error=internal_error", operator_signature.site_url);
 
-        // if there was error getting use by email
-        if user.is_err() {
-            let err = user.err().unwrap();
+        if u.is_err() {
+            let err = u.err().unwrap();
 
-            // if the user doesn't exist create the user
-            // and trigger signup hook
-            match err {
-                ModelError::DatabaseError(NotFound) => {
-                    if config.disable_signup {
-                        let redirect_url = format!("{}?error=signup_disabled", config.site_url);
+            if let ModelError::DatabaseError(NotFound) = err {
+                if config.disable_signup {
+                    let redirect_url = format!("{}?error=signup_disabled", operator_signature.site_url);
 
-                        return Err(CallbackError::new(redirect_url));
-                    }
-
-                    let new_user = NewUser {
-                        email,
-                        aud: config.aud.clone(),
-                        confirmed: true,
-                        user_metadata: user_data.metadata,
-                        confirmation_sent_at: None,
-                        confirmation_token: None,
-                        invitation_sent_at: None,
-                        is_admin: false,
-                        password: None,
-                    };
-
-                    user = new_user.save(&connection);
-
-                    if user.is_err() {
-                        let err = user.err().unwrap();
-
-                        match err {
-                            ModelError::DatabaseError(DatabaseError(
-                                DatabaseErrorKind::UniqueViolation,
-                                _info,
-                            )) => {
-                                let redirect_url = format!(
-                                    "{}?error=email_already_registered",
-                                    operator_signature.site_url
-                                );
-                                return Err(CallbackError::new(redirect_url));
-                            }
-                            err => {
-                                error!("{:?}", err);
-
-                                return Err(internal_error);
-                            }
-                        }
-                    }
-
-                    let user = trigger_hook(
-                        HookEvent::Signup,
-                        user.unwrap(),
-                        config.inner(),
-                        &connection,
-                        operator_signature,
-                        state.provider,
-                    );
-
-                    if user.is_err() {}
-
-                    let user = user.unwrap();
-
-                    let jwt = JWT::new(&user, config.aud.clone());
-
-                    let jwt = jwt.sign(config.inner());
-
-                    if jwt.is_err() {
-                        let err = jwt.err().unwrap();
-
-                        error!("{:?}", err);
-
-                        let redirect_url =
-                            format!("{}?error=unable_to_create_access_token", config.site_url);
-
-                        return Err(CallbackError::new(redirect_url));
-                    }
-
-                    let jwt = jwt.unwrap();
-
-                    let refresh_token = NewRefreshToken::new(user.id);
-
-                    let refresh_token = refresh_token.save(&connection);
-
-                    if refresh_token.is_err() {
-                        let err = refresh_token.err();
-
-                        error!("{:?}", err);
-
-                        let redirect_url =
-                            format!("{}?error=unable_to_create_refresh_token", config.site_url);
-
-                        return Err(CallbackError::new(redirect_url));
-                    }
-
-                    let refresh_token = refresh_token.unwrap().token;
-
-                    let redirect_url = format!(
-                        "{}?access_token={}&type={}&refresh_token={}",
-                        config.site_url, jwt, "bearer", refresh_token
-                    );
-
-                    return Ok(Redirect::to(redirect_url));
+                    return Err(CallbackError::new(redirect_url));
                 }
 
-                err => {
+                let new_user = NewUser {
+                    email,
+                    aud: config.aud.clone(),
+                    confirmed: user_data.verified || config.auto_confirm,
+                    user_metadata: user_data.metadata,
+                    confirmation_sent_at: None,
+                    confirmation_token: None,
+                    invitation_sent_at: None,
+                    is_admin: false,
+                    password: None,
+                };
+
+                let u = new_user.save(&connection);
+
+                if u.is_err() {
+                    let err = u.err().unwrap();
+
+                    if let ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) = err {
+                        let redirect_url = format!("{}?error=email_already_registered", operator_signature.site_url);
+
+                        return Err(CallbackError::new(redirect_url));
+                    }
+
                     error!("{:?}", err);
 
-                    return Err(internal_error);
+                    return Err(CallbackError::new(internal_error_redirect_url));
                 }
-            };
-        }
 
-        let mut user = user.unwrap();
+                let u = trigger_hook(HookEvent::Signup, u.unwrap(), config.inner(), &connection, operator_signature.clone(), state.provider);
 
-        if !user.confirmed && !user_data.verified && !config.auto_confirm {
-            user.confirmation_token = Some(secure_token(100));
+                if u.is_err() {
+                    let redirect_url = format!("{}?error=signup_hook_error", operator_signature.site_url);
 
-            user.confirmation_sent_at = Some(Utc::now().naive_utc());
+                    return Err(CallbackError::new(redirect_url));
+                }
 
-            let user = user.save(&connection);
-
-            if user.is_err() {
-                let err = user.err().unwrap();
-
+                user = u.unwrap();
+            } else {
                 error!("{:?}", err);
 
-                return Err(internal_error);
+                return Err(CallbackError::new(internal_error_redirect_url));
             }
+        } else {
+            let u = trigger_hook(HookEvent::Login, u.unwrap(), config.inner(), &connection, operator_signature.clone(), state.provider);
 
-            let user = user.unwrap();
-
-            let confirmation_url = format!(
-                "{}/confirm?confirmation_token={}",
-                config.instance_url,
-                user.confirmation_token.clone().unwrap(),
-            );
-
-            let template = email_templates.clone().confirmation_email_template();
-
-            let email = send_confirmation_email(template, confirmation_url, &user, &config);
-
-            if email.is_err() {
-                let redirect_url = format!(
-                    "{}?error=unable_to_send_confirmation_email",
-                    config.site_url
-                );
-
-                error!("{:?}", email.err().unwrap());
+            if u.is_err() {
+                let redirect_url = format!("{}?error=login_hook_error", operator_signature.site_url);
 
                 return Err(CallbackError::new(redirect_url));
             }
 
-            let redirect_url = format!("{}?error=email_confirmation_required", config.site_url);
+            user = u.unwrap();
+        }
 
-            return Ok(Redirect::to(redirect_url));
+        if !user.confirmed {
+            if !user_data.verified && !config.auto_confirm {
+                user.confirmation_token = Some(secure_token(100));
+
+                user.confirmation_sent_at = Some(Utc::now().naive_utc());
+
+                let user = user.save(&connection);
+
+                if user.is_err() {
+                    let err = user.err().unwrap();
+
+                    error!("{:?}", err);
+
+                    return Err(CallbackError::new(internal_error_redirect_url));
+                }
+
+                let user = user.unwrap();
+
+                let confirmation_url = format!("{}/confirm?confirmation_token={}", config.instance_url, user.confirmation_token.clone().unwrap(),);
+
+                let template = email_templates.clone().confirmation_email_template();
+
+                let email = send_confirmation_email(template, confirmation_url, &user, &config);
+
+                if email.is_err() {
+                    let redirect_url = format!("{}?error=unable_to_send_confirmation_email", operator_signature.site_url);
+
+                    error!("{:#?}", email.err().unwrap());
+
+                    return Err(CallbackError::new(redirect_url));
+                }
+
+                let redirect_url = format!("{}?error=email_confirmation_required", operator_signature.site_url);
+
+                return Ok(Redirect::to(redirect_url));
+            }
+
+            if user.confirm(&connection).is_err() {
+                return Ok(Redirect::to(internal_error_redirect_url));
+            }
         }
 
         let jwt = JWT::new(&user, config.aud.clone());
@@ -361,9 +291,9 @@ pub fn callback(
         if jwt.is_err() {
             let err = jwt.err().unwrap();
 
-            error!("{:?}", err);
+            error!("{:#?}", err);
 
-            let redirect_url = format!("{}?error=unable_to_create_access_token", config.site_url);
+            let redirect_url = format!("{}?error=unable_to_create_access_token", operator_signature.site_url);
 
             return Err(CallbackError::new(redirect_url));
         }
@@ -377,19 +307,16 @@ pub fn callback(
         if refresh_token.is_err() {
             let err = refresh_token.err();
 
-            error!("{:?}", err);
+            error!("{:#?}", err);
 
-            let redirect_url = format!("{}?error=unable_to_create_refresh_token", config.site_url);
+            let redirect_url = format!("{}?error=unable_to_create_refresh_token", operator_signature.site_url);
 
             return Err(CallbackError::new(redirect_url));
         }
 
         let refresh_token = refresh_token.unwrap().token;
 
-        let redirect_url = format!(
-            "{}?access_token={}&type={}&refresh_token={}",
-            config.site_url, jwt, "bearer", refresh_token
-        );
+        let redirect_url = format!("{}?access_token={}&type={}&refresh_token={}", operator_signature.site_url, jwt, "bearer", refresh_token);
 
         return Ok(Redirect::to(redirect_url));
     });
@@ -404,6 +331,7 @@ pub fn callback(
 }
 
 #[derive(Debug)]
+
 struct CallbackError {
     pub redirect_url: String,
 }

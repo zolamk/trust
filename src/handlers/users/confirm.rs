@@ -1,23 +1,15 @@
-use crate::config::Config;
-use crate::models::Error as ModelError;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::result::Error::NotFound;
+use crate::{config::Config, models::Error as ModelError};
+use diesel::{
+    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::Error::NotFound
+};
 use log::error;
-use rocket::response::Redirect;
-use rocket::State;
+use rocket::{response::Redirect, State};
 
 #[get("/confirm?<confirmation_token>")]
-pub fn confirm(
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    config: State<Config>,
-    confirmation_token: String,
-) -> Redirect {
-    let internal_error_redirect =
-        Redirect::to(format!("{}?code=internal_error", config.confirmed_redirect));
+pub fn confirm(connection_pool: State<Pool<ConnectionManager<PgConnection>>>, config: State<Config>, confirmation_token: String) -> Redirect {
+    let internal_error_redirect = Redirect::to(format!("{}?code=internal_error", config.confirmed_redirect));
 
-    let user_not_found_redirect =
-        Redirect::to(format!("{}?code=user_not_found", config.confirmed_redirect));
+    let user_not_found_redirect = Redirect::to(format!("{}?code=user_not_found", config.confirmed_redirect));
 
     let success_redirect = Redirect::to(format!("{}?code=success", config.confirmed_redirect));
 

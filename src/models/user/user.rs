@@ -1,13 +1,9 @@
-use crate::models::Error;
-use crate::schema::users;
-use crate::schema::users::dsl::*;
+use crate::{
+    models::Error, schema::{users, users::dsl::*}
+};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::NaiveDateTime;
-use diesel::ExpressionMethods;
-use diesel::PgConnection;
-use diesel::QueryDsl;
-use diesel::RunQueryDsl;
-use diesel::{delete, update};
+use diesel::{delete, update, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 use serde::Serialize;
 
 #[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug)]
@@ -77,20 +73,14 @@ impl User {
     }
 
     pub fn confirm(&mut self, connection: &PgConnection) -> Result<usize, Error> {
-        match update(users.filter(id.eq(self.id)))
-            .set((confirmed.eq(true), confirmation_token.eq("")))
-            .execute(connection)
-        {
+        match update(users.filter(id.eq(self.id))).set((confirmed.eq(true), confirmation_token.eq(""))).execute(connection) {
             Ok(affected_rows) => Ok(affected_rows),
             Err(err) => Err(Error::from(err)),
         }
     }
 
     pub fn save(self, connection: &PgConnection) -> Result<User, Error> {
-        match update(users.filter(id.eq(self.id)))
-            .set(&self)
-            .get_result(connection)
-        {
+        match update(users.filter(id.eq(self.id))).set(&self).get_result(connection) {
             Ok(user) => Ok(user),
             Err(err) => Err(Error::from(err)),
         }

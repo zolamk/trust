@@ -1,22 +1,14 @@
-use crate::config::Config;
-use crate::crypto::jwt::JWT;
-use crate::crypto::secure_token;
-use crate::crypto::Error as CryptoError;
-use crate::diesel::Connection;
-use crate::handlers::Error;
-use crate::mailer::send_invitation_email;
-use crate::mailer::EmailTemplates;
-use crate::models::user::NewUser;
-use crate::models::Error as ModelError;
+use crate::{
+    config::Config, crypto::{jwt::JWT, secure_token, Error as CryptoError}, diesel::Connection, handlers::Error, mailer::{send_invitation_email, EmailTemplates}, models::{user::NewUser, Error as ModelError}
+};
 use chrono::Utc;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::result::DatabaseErrorKind;
-use diesel::result::Error::{DatabaseError, NotFound};
+use diesel::{
+    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::{
+        DatabaseErrorKind, Error::{DatabaseError, NotFound}
+    }
+};
 use log::error;
-use rocket::http::Status;
-use rocket::response::status;
-use rocket::State;
+use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::{Json, JsonValue};
 
 use serde::{Deserialize, Serialize};
@@ -28,11 +20,7 @@ pub struct InviteForm {
 
 #[post("/invite", data = "<invite_form>")]
 pub fn invite(
-    config: State<Config>,
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    email_templates: State<EmailTemplates>,
-    invite_form: Json<InviteForm>,
-    token: Result<JWT, CryptoError>,
+    config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, email_templates: State<EmailTemplates>, invite_form: Json<InviteForm>, token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if token.is_err() {
         let err = token.err().unwrap();
@@ -124,11 +112,7 @@ pub fn invite(
         if user.is_err() {
             let err = user.err().unwrap();
 
-            if let ModelError::DatabaseError(DatabaseError(
-                DatabaseErrorKind::UniqueViolation,
-                _info,
-            )) = err
-            {
+            if let ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) = err {
                 let err = Error {
                     code: 409,
                     body: json!({
@@ -145,11 +129,7 @@ pub fn invite(
 
         let user = user.unwrap();
 
-        let invitation_url = format!(
-            "{}/invitation_token={}",
-            config.site_url,
-            user.confirmation_token.clone().unwrap(),
-        );
+        let invitation_url = format!("{}/invitation_token={}", config.site_url, user.confirmation_token.clone().unwrap(),);
 
         let template = email_templates.clone().invitation_email_template();
 

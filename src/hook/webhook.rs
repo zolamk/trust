@@ -1,6 +1,6 @@
-use crate::config::Config;
-use crate::hook::{Error, HookError, HookEvent};
-use crate::operator_signature::OperatorSignature;
+use crate::{
+    config::Config, hook::{Error, HookError, HookEvent}, operator_signature::OperatorSignature
+};
 use chrono::Utc;
 use frank_jwt::{encode, Algorithm};
 use reqwest::header::AUTHORIZATION;
@@ -14,12 +14,7 @@ pub struct Webhook {
 }
 
 impl Webhook {
-    pub fn new(
-        event: HookEvent,
-        payload: Value,
-        config: Config,
-        operator_signature: OperatorSignature,
-    ) -> Webhook {
+    pub fn new(event: HookEvent, payload: Value, config: Config, operator_signature: OperatorSignature) -> Webhook {
         return Webhook {
             config,
             payload,
@@ -69,11 +64,7 @@ impl Webhook {
 
         let client = reqwest::Client::new();
 
-        let res = client
-            .post(url)
-            .header(AUTHORIZATION, signature)
-            .json(&payload)
-            .send();
+        let res = client.post(url).header(AUTHORIZATION, signature).json(&payload).send();
 
         if res.is_err() {
             return Err(Error::from(res.err().unwrap()));
@@ -91,12 +82,7 @@ impl Webhook {
         }
 
         match res.json() {
-            Ok(body) => {
-                return Err(Error::from(HookError {
-                    code: status.as_u16(),
-                    body,
-                }))
-            }
+            Ok(body) => return Err(Error::from(HookError { code: status.as_u16(), body })),
             Err(err) => return Err(Error::from(err)),
         };
     }

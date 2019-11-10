@@ -1,11 +1,7 @@
-use crate::crypto::Error as CryptoError;
-use crate::hook::Error as HookError;
-use crate::mailer::Error as MailerError;
-use crate::models::Error as ModelError;
-use crate::operator_signature::Error as OperatorSignatureError;
-use rocket::http::{ContentType, Status};
-use rocket::response::{self, Responder};
-use rocket::{Request, Response};
+use crate::{crypto::Error as CryptoError, hook::Error as HookError, mailer::Error as MailerError, models::Error as ModelError, operator_signature::Error as OperatorSignatureError};
+use rocket::{
+    http::{ContentType, Status}, response::{self, Responder}, Request, Response
+};
 use serde::Serialize;
 use std::io::Cursor;
 
@@ -27,11 +23,7 @@ impl<'r> Responder<'r> for Error {
 
         let status = Status::from_code(self.code).unwrap();
 
-        return Response::build()
-            .sized_body(Cursor::new(body))
-            .header(ContentType::JSON)
-            .status(status)
-            .ok();
+        return Response::build().sized_body(Cursor::new(body)).header(ContentType::JSON).status(status).ok();
     }
 }
 

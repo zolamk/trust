@@ -11,8 +11,7 @@ pub enum HookEvent {
 impl Serialize for HookEvent {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
-    {
+        S: Serializer, {
         if *self == HookEvent::Login {
             return serializer.serialize_str("login");
         }

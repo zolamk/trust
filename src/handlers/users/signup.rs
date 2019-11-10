@@ -1,23 +1,12 @@
-use crate::config::Config;
-use crate::crypto::secure_token;
-use crate::diesel::{Connection, NotFound};
-use crate::handlers::trigger_hook;
-use crate::handlers::Error;
-use crate::hook::HookEvent;
-use crate::mailer::send_confirmation_email;
-use crate::mailer::EmailTemplates;
-use crate::models::user::NewUser;
-use crate::models::Error as ModelError;
-use crate::operator_signature::{Error as OperatorSignatureError, OperatorSignature};
+use crate::{
+    config::Config, crypto::secure_token, diesel::{Connection, NotFound}, handlers::{trigger_hook, Error}, hook::HookEvent, mailer::{send_confirmation_email, EmailTemplates}, models::{user::NewUser, Error as ModelError}, operator_signature::{Error as OperatorSignatureError, OperatorSignature}
+};
 use chrono::Utc;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::result::DatabaseErrorKind;
-use diesel::result::Error::DatabaseError;
+use diesel::{
+    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::{DatabaseErrorKind, Error::DatabaseError}
+};
 use log::error;
-use rocket::http::Status;
-use rocket::response::status;
-use rocket::State;
+use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::{Json, JsonValue};
 use serde::{Deserialize, Serialize};
 
@@ -31,10 +20,7 @@ pub struct SignUpForm {
 
 #[post("/signup", data = "<signup_form>")]
 pub fn signup(
-    config: State<Config>,
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    email_templates: State<EmailTemplates>,
-    signup_form: Json<SignUpForm>,
+    config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, email_templates: State<EmailTemplates>, signup_form: Json<SignUpForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if config.disable_signup {
@@ -68,17 +54,9 @@ pub fn signup(
 
     user.confirmed = config.auto_confirm;
 
-    user.confirmation_token = if config.auto_confirm {
-        None
-    } else {
-        Some(secure_token(100))
-    };
+    user.confirmation_token = if config.auto_confirm { None } else { Some(secure_token(100)) };
 
-    user.confirmation_sent_at = if config.auto_confirm {
-        None
-    } else {
-        Some(Utc::now().naive_utc())
-    };
+    user.confirmation_sent_at = if config.auto_confirm { None } else { Some(Utc::now().naive_utc()) };
 
     user.hash_password();
 
@@ -139,11 +117,7 @@ pub fn signup(
         if user.is_err() {
             let err = user.err().unwrap();
 
-            if let ModelError::DatabaseError(DatabaseError(
-                DatabaseErrorKind::UniqueViolation,
-                _info,
-            )) = err
-            {
+            if let ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) = err {
                 let err = Error {
                     code: 409,
                     body: json!({
@@ -160,14 +134,7 @@ pub fn signup(
 
         let user = user.unwrap();
 
-        let user = trigger_hook(
-            HookEvent::Signup,
-            user,
-            config.inner(),
-            &connection,
-            operator_signature,
-            "email".to_string(),
-        );
+        let user = trigger_hook(HookEvent::Signup, user, config.inner(), &connection, operator_signature, "email".to_string());
 
         if user.is_err() {
             let err = user.err().unwrap();
@@ -180,11 +147,7 @@ pub fn signup(
         let user = user.unwrap();
 
         if !config.auto_confirm {
-            let confirmation_url = format!(
-                "{}/confirm?confirmation_token={}",
-                config.instance_url,
-                user.confirmation_token.clone().unwrap(),
-            );
+            let confirmation_url = format!("{}/confirm?confirmation_token={}", config.instance_url, user.confirmation_token.clone().unwrap(),);
 
             let template = email_templates.clone().confirmation_email_template();
 

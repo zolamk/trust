@@ -8,26 +8,19 @@ extern crate rocket_contrib;
 extern crate serde;
 extern crate serde_json;
 
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::{
+    pg::PgConnection, r2d2::{ConnectionManager, Pool}
+};
 use rocket::http::Status;
 
-use crate::config::Config;
-use crate::crypto;
-use crate::crypto::jwt::JWT;
-use crate::handlers::Error;
-use crate::models::refresh_token::get_refresh_token_by_token;
-use crate::models::user;
+use crate::{
+    config::Config, crypto, crypto::jwt::JWT, handlers::Error, models::{refresh_token::get_refresh_token_by_token, user}
+};
 use log::error;
-use rocket::response::status;
-use rocket::State;
+use rocket::{response::status, State};
 use rocket_contrib::json::JsonValue;
 
-pub fn refresh_token_grant(
-    refresh_token: Option<String>,
-    config: State<Config>,
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-) -> Result<status::Custom<JsonValue>, Error> {
+pub fn refresh_token_grant(refresh_token: Option<String>, config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>) -> Result<status::Custom<JsonValue>, Error> {
     if refresh_token.is_none() {
         return Err(Error {
             code: 400,

@@ -1,18 +1,15 @@
-use crate::config::Config;
-use crate::models::user::{NewUser, User};
-use crate::models::Error;
+use crate::{
+    config::Config, models::{
+        user::{NewUser, User}, Error
+    }
+};
 use clap::ArgMatches;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::result::DatabaseErrorKind;
-use diesel::result::Error::DatabaseError;
+use diesel::{
+    pg::PgConnection, r2d2::{ConnectionManager, Pool}
+};
 use log::error;
 
-fn new_user(
-    matches: Option<&ArgMatches>,
-    connection_pool: Pool<ConnectionManager<PgConnection>>,
-    config: Config,
-) {
+fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
     let matches = matches.unwrap();
 
     let mut user = NewUser::default();
@@ -29,36 +26,25 @@ fn new_user(
 
     user.hash_password();
 
-    let connection = connection_pool.get();
-
-    if connection.is_err() {
-        error!(
-            "unable to get database connection: {:?}",
-            connection.err().unwrap()
-        );
-        std::process::exit(1);
-    }
-
-    let connection = connection.unwrap();
+    let connection = match connection_pool.get() {
+        Ok(connection) => connection,
+        Err(err) => {
+            error!("unable to connect to database: {:?}", err);
+            std::process::exit(1);
+        }
+    };
 
     match user.save(&connection) {
         Ok(_val) => println!("{} created successfully", user.email),
         Err(err) => match err {
-            Error::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) => {
-                println!("{} already exists!", user.email)
-            }
+            Error::DatabaseError(_) => println!("{} already exists!", user.email),
             _ => println!("{:?}", err),
         },
     }
 }
 
-fn remove_user(
-    matches: Option<&ArgMatches>,
-    connection_pool: Pool<ConnectionManager<PgConnection>>,
-) {
-    let connection = connection_pool
-        .get()
-        .expect("unable to get connection to database");
+fn remove_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>) {
+    let connection = connection_pool.get().expect("unable to get connection to database");
 
     let matches = matches.unwrap();
 
@@ -66,15 +52,11 @@ fn remove_user(
 
     match User::delete_by_email(email, &connection) {
         Ok(_val) => println!("user deleted successfully"),
-        Err(err) => println!("{:?}", err),
+        Err(err) => println!("unable to delte user: {:?}", err),
     }
 }
 
-pub fn users(
-    matches: Option<&ArgMatches>,
-    connection_pool: Pool<ConnectionManager<PgConnection>>,
-    config: Config,
-) {
+pub fn users(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
     let matches = matches.unwrap();
 
     match matches.subcommand() {

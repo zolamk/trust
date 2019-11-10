@@ -1,5 +1,4 @@
-use crate::config::Config;
-use crate::handlers::Error;
+use crate::{config::Config, handlers::Error};
 use chrono::{Duration, Utc};
 use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
 use log::error;
@@ -32,12 +31,7 @@ impl ProviderState {
     }
 
     pub fn verify(state: String, config: &Config) -> Result<ProviderState, Error> {
-        let state = decode(
-            state.as_str(),
-            &config.jwt_secret,
-            Algorithm::HS512,
-            &ValidationOptions::default(),
-        );
+        let state = decode(state.as_str(), &config.jwt_secret, Algorithm::HS512, &ValidationOptions::default());
 
         if state.is_err() {
             let err = state.err().unwrap();

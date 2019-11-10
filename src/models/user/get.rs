@@ -1,11 +1,7 @@
-use crate::models::user::User;
-use crate::models::Error;
-use crate::schema::users::dsl::{is_admin as admin, *};
-use diesel::result::QueryResult;
-use diesel::ExpressionMethods;
-use diesel::PgConnection;
-use diesel::QueryDsl;
-use diesel::RunQueryDsl;
+use crate::{
+    models::{user::User, Error}, schema::users::dsl::{is_admin as admin, *}
+};
+use diesel::{result::QueryResult, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 
 pub fn get_by_email(e: String, connection: &PgConnection) -> Result<User, Error> {
     match users.filter(email.eq(e)).first(connection) {

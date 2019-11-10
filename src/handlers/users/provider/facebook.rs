@@ -1,6 +1,6 @@
-use crate::config::Config;
-use crate::handlers::users::provider::Provider;
-use crate::handlers::users::provider::UserProvidedData;
+use crate::{
+    config::Config, handlers::users::provider::{Provider, UserProvidedData}
+};
 use reqwest::{Client, Error};
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -35,31 +35,31 @@ impl FacebookProvider {
 }
 
 impl Provider for FacebookProvider {
-    fn enabled(self) -> bool {
+    fn enabled(&self) -> bool {
         return self.config.facebook_enabled;
     }
 
-    fn auth_url(self) -> String {
+    fn auth_url(&self) -> String {
         return String::from("https://www.facebook.com/v5.0/dialog/oauth");
     }
 
-    fn token_url(self) -> String {
+    fn token_url(&self) -> String {
         return String::from("https://graph.facebook.com/v5.0/oauth/access_token");
     }
 
-    fn client_id(self) -> String {
-        return self.config.facebook_client_id.unwrap();
+    fn client_id(&self) -> String {
+        return self.config.facebook_client_id.clone().unwrap();
     }
 
-    fn client_secret(self) -> String {
-        return self.config.facebook_client_secret.unwrap();
+    fn client_secret(&self) -> String {
+        return self.config.facebook_client_secret.clone().unwrap();
     }
 
-    fn scopes(self) -> Vec<String> {
+    fn scopes(&self) -> Vec<String> {
         return vec![String::from("email")];
     }
 
-    fn get_user_data(self, access_token: String) -> Result<UserProvidedData, Error> {
+    fn get_user_data(&self, access_token: String) -> Result<UserProvidedData, Error> {
         let client = Client::new();
 
         let mut response = client

@@ -19,8 +19,6 @@ pub fn health() -> Json<HealthCheck> {
     return Json(HealthCheck {
         version: env!("CARGO_PKG_VERSION").to_string(),
         name: String::from("trust"),
-        description: String::from(
-            "trust is a user authentication and authorization microservice written in rust",
-        ),
+        description: String::from("trust is a user authentication and authorization microservice written in rust"),
     });
 }

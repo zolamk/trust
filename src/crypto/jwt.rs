@@ -1,15 +1,12 @@
-use crate::config::Config;
-use crate::crypto::Error;
-use crate::models::user;
+use crate::{config::Config, crypto::Error, models::user};
 use chrono::{Duration, Utc};
 use diesel::PgConnection;
 use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
-use rocket::http::Status;
-use rocket::request::{self, FromRequest, Request};
-use rocket::{Outcome, State};
+use rocket::{
+    http::Status, request::{self, FromRequest, Request}, Outcome, State
+};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct JWT {
@@ -80,12 +77,7 @@ impl JWT {
 
         let payload = payload.unwrap();
 
-        let res = encode(
-            header,
-            &signing_key,
-            &payload,
-            JWT::get_algorithm(&jwt_algorithm),
-        );
+        let res = encode(header, &signing_key, &payload, JWT::get_algorithm(&jwt_algorithm));
 
         if res.is_err() {
             return Err(Error::from(res.err().unwrap()));
@@ -97,12 +89,7 @@ impl JWT {
     pub fn decode(encoded_token: String, config: Config) -> Result<JWT, Error> {
         let algorithm = config.jwt_algorithm.clone();
 
-        let decoded_token = decode(
-            &encoded_token,
-            &config.get_decoding_key(),
-            JWT::get_algorithm(&algorithm),
-            &ValidationOptions::default(),
-        );
+        let decoded_token = decode(&encoded_token, &config.get_decoding_key(), JWT::get_algorithm(&algorithm), &ValidationOptions::default());
 
         if decoded_token.is_err() {
             return Err(Error::from(decoded_token.err().unwrap()));

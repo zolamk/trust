@@ -1,14 +1,13 @@
-use crate::config::Config;
-use crate::hook::HookEvent;
-use crate::operator_signature::Error;
+use crate::{config::Config, hook::HookEvent, operator_signature::Error};
 use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
-use rocket::http::Status;
-use rocket::request::{self, FromRequest, Request};
-use rocket::{Outcome, State};
+use rocket::{
+    http::Status, request::{self, FromRequest, Request}, Outcome, State
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 
 #[derive(Deserialize, Serialize, Clone)]
+
 pub struct OperatorSignature {
     pub site_url: String,
     pub redirect_url: String,
@@ -16,11 +15,7 @@ pub struct OperatorSignature {
 }
 
 impl OperatorSignature {
-    pub fn new(
-        site_url: String,
-        redirect_url: String,
-        function_hooks: Map<String, Value>,
-    ) -> OperatorSignature {
+    pub fn new(site_url: String, redirect_url: String, function_hooks: Map<String, Value>) -> OperatorSignature {
         return OperatorSignature {
             site_url,
             redirect_url,
@@ -39,27 +34,14 @@ impl OperatorSignature {
 
         let payload = payload.unwrap();
 
-        match encode(
-            header,
-            &operator_token.to_string(),
-            &payload,
-            Algorithm::HS256,
-        ) {
+        match encode(header, &operator_token.to_string(), &payload, Algorithm::HS256) {
             Ok(token) => Ok(token),
             Err(err) => Err(Error::from(err)),
         }
     }
 
-    pub fn decode(
-        operator_signature: &str,
-        operator_token: &str,
-    ) -> Result<OperatorSignature, Error> {
-        let decoded_token = decode(
-            operator_signature,
-            &operator_token.to_string(),
-            Algorithm::HS256,
-            &ValidationOptions::dangerous(),
-        );
+    pub fn decode(operator_signature: &str, operator_token: &str) -> Result<OperatorSignature, Error> {
+        let decoded_token = decode(operator_signature, &operator_token.to_string(), Algorithm::HS256, &ValidationOptions::dangerous());
 
         if decoded_token.is_err() {
             return Err(Error::from(decoded_token.err().unwrap()));
@@ -113,8 +95,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for OperatorSignature {
 
         let operator_signature = operator_signature.unwrap();
 
-        let operator_signature =
-            OperatorSignature::decode(operator_signature, config.operator_token.as_ref());
+        let operator_signature = OperatorSignature::decode(operator_signature, config.operator_token.as_ref());
 
         if operator_signature.is_err() {
             return Outcome::Failure((Status::BadRequest, operator_signature.err().unwrap()));

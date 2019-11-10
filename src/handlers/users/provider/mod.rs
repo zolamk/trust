@@ -1,16 +1,14 @@
-extern crate rocket;
-
-mod state;
-
 mod facebook;
+mod google;
 mod provider;
+mod state;
 mod user_data;
 
 use crate::handlers::Error;
 pub use facebook::FacebookProvider;
+pub use google::GoogleProvider;
 pub use provider::Provider;
-use rocket::response::status;
-use rocket::response::Redirect;
+use rocket::response::{status, Redirect};
 use rocket_contrib::json::JsonValue;
 pub use state::ProviderState;
 pub use user_data::UserProvidedData;

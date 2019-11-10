@@ -1,12 +1,9 @@
-use crate::models::user::User;
-use crate::models::Error;
-use crate::schema::users;
-use crate::schema::users::dsl::*;
+use crate::{
+    models::{user::User, Error}, schema::{users, users::dsl::*}
+};
 use bcrypt::{hash, DEFAULT_COST};
 use chrono::NaiveDateTime;
-use diesel::insert_into;
-use diesel::PgConnection;
-use diesel::RunQueryDsl;
+use diesel::{insert_into, PgConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Insertable, Deserialize, Serialize)]

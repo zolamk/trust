@@ -1,26 +1,15 @@
-use crate::config::Config;
-use crate::crypto::jwt::JWT;
-use crate::handlers::trigger_hook;
-use crate::handlers::Error;
-use crate::hook::HookEvent;
-use crate::models::refresh_token::NewRefreshToken;
-use crate::models::Error as ModelError;
-use crate::operator_signature::OperatorSignature;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::result::Error::NotFound;
+use crate::{
+    config::Config, crypto::jwt::JWT, handlers::{trigger_hook, Error}, hook::HookEvent, models::{refresh_token::NewRefreshToken, Error as ModelError}, operator_signature::OperatorSignature
+};
+use diesel::{
+    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::Error::NotFound
+};
 use log::error;
-use rocket::http::Status;
-use rocket::response::status;
-use rocket::State;
+use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::JsonValue;
 
 pub fn password_grant(
-    username: String,
-    password: String,
-    config: State<Config>,
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    operator_signature: OperatorSignature,
+    username: String, password: String, config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, operator_signature: OperatorSignature,
 ) -> Result<status::Custom<JsonValue>, Error> {
     let internal_error = Error {
         code: 500,
@@ -77,14 +66,7 @@ pub fn password_grant(
         return Err(invalid_email_or_password);
     }
 
-    let user = trigger_hook(
-        HookEvent::Signup,
-        user,
-        config.inner(),
-        &connection,
-        operator_signature,
-        "email".to_string(),
-    );
+    let user = trigger_hook(HookEvent::Signup, user, config.inner(), &connection, operator_signature, "email".to_string());
 
     if user.is_err() {
         let err = user.err().unwrap();

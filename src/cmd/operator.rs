@@ -1,5 +1,4 @@
-use crate::config::Config;
-use crate::operator_signature::OperatorSignature;
+use crate::{config::Config, operator_signature::OperatorSignature};
 use clap::ArgMatches;
 use serde_json::{Map, Value};
 
@@ -16,10 +15,7 @@ fn new_signuature(matches: Option<&ArgMatches>, config: Config) {
 
     let site_url = matches.value_of("site_url").unwrap().to_string();
 
-    let redirect_url = matches
-        .value_of("confirmed_redirect_url")
-        .unwrap()
-        .to_string();
+    let redirect_url = matches.value_of("confirmed_redirect_url").unwrap().to_string();
 
     let mut function_hooks = Map::with_capacity(2);
 

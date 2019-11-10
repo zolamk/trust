@@ -1,14 +1,11 @@
-use crate::config::Config;
-use crate::handlers::users::provider::FacebookProvider;
-use crate::handlers::users::provider::Provider;
-use crate::handlers::users::provider::ProviderResponse;
-use crate::handlers::users::provider::ProviderState;
-use crate::handlers::Error;
+use crate::{
+    config::Config, handlers::{
+        users::provider::{FacebookProvider, GoogleProvider, Provider, ProviderResponse, ProviderState}, Error
+    }
+};
 use log::error;
-use oauth2::basic::BasicClient;
-use oauth2::{AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl};
-use rocket::response::Redirect;
-use rocket::State;
+use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl};
+use rocket::{response::Redirect, State};
 use url::Url;
 
 #[get("/authorize?<provider>")]
@@ -27,12 +24,18 @@ pub fn authorize(config: State<Config>, provider: String) -> ProviderResponse {
         }),
     });
 
-    let oauth_provider = match provider.as_str() {
+    let oauth_provider: Box<dyn Provider> = match provider.as_str() {
         "facebook" => {
             if !config.facebook_enabled {
                 return ProviderResponse::Other(provider_disabled);
             }
             Box::new(FacebookProvider::new(config.inner().clone()))
+        }
+        "google" => {
+            if !config.google_enabled {
+                return ProviderResponse::Other(provider_disabled);
+            }
+            Box::new(GoogleProvider::new(config.inner().clone()))
         }
         _ => {
             return ProviderResponse::Other(Err(Error {
@@ -44,15 +47,15 @@ pub fn authorize(config: State<Config>, provider: String) -> ProviderResponse {
         }
     };
 
-    let client_id = oauth_provider.clone().client_id();
+    let client_id = oauth_provider.client_id();
 
     let client_id = ClientId::new(client_id);
 
-    let client_secret = Some(ClientSecret::new(
-        config.facebook_client_secret.clone().unwrap(),
-    ));
+    let client_secret = oauth_provider.client_secret();
 
-    let auth_url = oauth_provider.clone().auth_url();
+    let client_secret = Some(ClientSecret::new(client_secret));
+
+    let auth_url = oauth_provider.auth_url();
 
     let auth_url = Url::parse(auth_url.as_str());
 
@@ -66,7 +69,7 @@ pub fn authorize(config: State<Config>, provider: String) -> ProviderResponse {
 
     let auth_url = AuthUrl::new(auth_url.unwrap());
 
-    let token_url = oauth_provider.clone().token_url();
+    let token_url = oauth_provider.token_url();
 
     let token_url = Url::parse(token_url.as_str());
 
@@ -94,8 +97,7 @@ pub fn authorize(config: State<Config>, provider: String) -> ProviderResponse {
 
     let redirect_url = RedirectUrl::new(redirect_url.unwrap());
 
-    let client = BasicClient::new(client_id, client_secret, auth_url, token_url)
-        .set_redirect_url(redirect_url);
+    let client = BasicClient::new(client_id, client_secret, auth_url, token_url).set_redirect_url(redirect_url);
 
     let state = ProviderState::new(provider);
 

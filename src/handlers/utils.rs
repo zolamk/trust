@@ -1,30 +1,16 @@
-use crate::config::Config;
-use crate::handlers::Error;
-use crate::hook::{HookEvent, Webhook};
-use crate::models::user::User;
-use crate::operator_signature::OperatorSignature;
+use crate::{
+    config::Config, handlers::Error, hook::{HookEvent, Webhook}, models::user::User, operator_signature::OperatorSignature
+};
 use diesel::PgConnection;
 
-pub fn trigger_hook(
-    event: HookEvent,
-    mut user: User,
-    config: &Config,
-    connection: &PgConnection,
-    operator_signature: OperatorSignature,
-    provider: String,
-) -> Result<User, Error> {
+pub fn trigger_hook(event: HookEvent, mut user: User, config: &Config, connection: &PgConnection, operator_signature: OperatorSignature, provider: String) -> Result<User, Error> {
     let payload = json!({
         "event": event,
         "provider": provider,
         "user": user,
     });
 
-    let hook = Webhook::new(
-        HookEvent::Signup,
-        payload,
-        config.clone(),
-        operator_signature,
-    );
+    let hook = Webhook::new(HookEvent::Signup, payload, config.clone(), operator_signature);
 
     let hook_response = hook.trigger();
 

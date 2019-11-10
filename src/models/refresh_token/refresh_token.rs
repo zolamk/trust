@@ -1,10 +1,8 @@
-use crate::models::user::User;
-use crate::models::Error;
-use crate::schema::refresh_tokens;
-use crate::schema::refresh_tokens::dsl::*;
+use crate::{
+    models::{user::User, Error}, schema::{refresh_tokens, refresh_tokens::dsl::*}
+};
 use chrono::{DateTime, Utc};
-use diesel::RunQueryDsl;
-use diesel::{update, PgConnection};
+use diesel::{update, PgConnection, RunQueryDsl};
 use serde::Serialize;
 
 #[derive(Queryable, AsChangeset, Serialize, Identifiable, Associations)]

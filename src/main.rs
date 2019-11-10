@@ -27,8 +27,9 @@ mod schema;
 
 use clap::App;
 use config::Config;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::PgConnection;
+use diesel::{
+    r2d2::{ConnectionManager, Pool}, PgConnection
+};
 use log::Level;
 use mailer::EmailTemplates;
 use std::str::FromStr;
@@ -38,10 +39,7 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
 
     let port = config.port;
 
-    let rocket_config = rocket::config::Config::build(rocket::config::Environment::Production)
-        .address(host)
-        .port(port)
-        .unwrap();
+    let rocket_config = rocket::config::Config::build(rocket::config::Environment::Production).address(host).port(port).unwrap();
 
     let app = rocket::custom(rocket_config);
 

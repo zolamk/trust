@@ -1,15 +1,15 @@
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::{
+    pg::PgConnection, r2d2::{ConnectionManager, Pool}
+};
 mod password_grant;
 mod refresh_token_grant;
-use crate::config::Config;
-use crate::handlers::Error;
-use crate::operator_signature::{Error as OperatorSignatureError, OperatorSignature};
+use crate::{
+    config::Config, handlers::Error, operator_signature::{Error as OperatorSignatureError, OperatorSignature}
+};
 use log::error;
 use password_grant::password_grant;
 use refresh_token_grant::refresh_token_grant;
-use rocket::response::status;
-use rocket::State;
+use rocket::{response::status, State};
 use rocket_contrib::json::JsonValue;
 use serde::{Deserialize, Serialize};
 
@@ -23,12 +23,7 @@ pub struct SignUpForm {
 
 #[post("/token?<username>&<password>&<grant_type>&<refresh_token>")]
 pub fn token(
-    config: State<Config>,
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    username: Option<String>,
-    password: Option<String>,
-    grant_type: String,
-    refresh_token: Option<String>,
+    config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, username: Option<String>, password: Option<String>, grant_type: String, refresh_token: Option<String>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
@@ -55,13 +50,7 @@ pub fn token(
 
         let password = password.unwrap();
 
-        return password_grant(
-            username,
-            password,
-            config,
-            connection_pool,
-            operator_signature,
-        );
+        return password_grant(username, password, config, connection_pool, operator_signature);
     } else if grant_type == "refresh_token" {
         return refresh_token_grant(refresh_token, config, connection_pool);
     } else {
