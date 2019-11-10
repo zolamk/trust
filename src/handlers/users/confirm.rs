@@ -1,17 +1,8 @@
-extern crate diesel;
-extern crate handlebars;
-extern crate lettre;
-extern crate lettre_email;
-extern crate native_tls;
-extern crate rocket;
-extern crate rocket_contrib;
-extern crate serde;
-
+use crate::config::Config;
+use crate::models::Error as ModelError;
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::Error::NotFound;
-
-use crate::config::Config;
 use log::error;
 use rocket::response::Redirect;
 use rocket::State;
@@ -42,9 +33,11 @@ pub fn confirm(
 
     if user.is_err() {
         match user.err().unwrap() {
-            NotFound => return user_not_found_redirect,
+            ModelError::DatabaseError(NotFound) => return user_not_found_redirect,
+
             err => {
-                error!("{}", err);
+                error!("{:?}", err);
+
                 return internal_error_redirect;
             }
         }
@@ -55,7 +48,8 @@ pub fn confirm(
     let user = user.confirm(&connection);
 
     if user.is_err() {
-        error!("{}", user.err().unwrap());
+        error!("{:?}", user.err().unwrap());
+
         return internal_error_redirect;
     }
 

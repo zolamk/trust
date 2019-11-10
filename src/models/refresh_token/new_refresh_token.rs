@@ -1,10 +1,6 @@
-extern crate bcrypt;
-extern crate chrono;
-extern crate serde;
-extern crate serde_json;
-
 use crate::crypto::secure_token;
 use crate::models::refresh_token::RefreshToken;
+use crate::models::Error;
 use crate::schema::refresh_tokens;
 use crate::schema::refresh_tokens::dsl::*;
 use diesel::insert_into;
@@ -27,9 +23,13 @@ impl NewRefreshToken {
         };
     }
 
-    pub fn save(self, connection: &PgConnection) -> diesel::QueryResult<RefreshToken> {
-        return insert_into(refresh_tokens)
+    pub fn save(self, connection: &PgConnection) -> Result<RefreshToken, Error> {
+        match insert_into(refresh_tokens)
             .values(self)
-            .get_result(connection);
+            .get_result(connection)
+        {
+            Ok(refresh_token) => Ok(refresh_token),
+            Err(err) => Err(Error::from(err)),
+        }
     }
 }

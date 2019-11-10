@@ -1,25 +1,13 @@
-extern crate bcrypt;
-extern crate chrono;
-extern crate serde;
-extern crate serde_json;
-
-use chrono::NaiveDateTime;
-
-use bcrypt::{hash, DEFAULT_COST};
-
-use diesel::insert_into;
-
-use diesel::PgConnection;
-
-use crate::schema::users;
-
-use crate::schema::users::dsl::*;
-
-use serde::{Deserialize, Serialize};
-
-use diesel::RunQueryDsl;
-
 use crate::models::user::User;
+use crate::models::Error;
+use crate::schema::users;
+use crate::schema::users::dsl::*;
+use bcrypt::{hash, DEFAULT_COST};
+use chrono::NaiveDateTime;
+use diesel::insert_into;
+use diesel::PgConnection;
+use diesel::RunQueryDsl;
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Insertable, Deserialize, Serialize)]
 #[table_name = "users"]
@@ -32,6 +20,7 @@ pub struct NewUser {
     pub confirmation_token: Option<String>,
     pub confirmation_sent_at: Option<NaiveDateTime>,
     pub invitation_sent_at: Option<NaiveDateTime>,
+    pub user_metadata: Option<serde_json::Value>,
 }
 
 impl NewUser {
@@ -42,7 +31,10 @@ impl NewUser {
         }
     }
 
-    pub fn save(&self, connection: &PgConnection) -> diesel::QueryResult<User> {
-        return insert_into(users).values(self).get_result(connection);
+    pub fn save(&self, connection: &PgConnection) -> Result<User, Error> {
+        match insert_into(users).values(self).get_result(connection) {
+            Ok(user) => Ok(user),
+            Err(err) => Err(Error::from(err)),
+        }
     }
 }

@@ -1,25 +1,16 @@
-extern crate diesel;
-extern crate handlebars;
-extern crate lettre;
-extern crate lettre_email;
-extern crate native_tls;
-extern crate rocket;
-extern crate rocket_contrib;
-extern crate serde;
-extern crate serde_json;
-
+use crate::config::Config;
+use crate::crypto::jwt::JWT;
+use crate::handlers::trigger_hook;
+use crate::handlers::Error;
+use crate::hook::HookEvent;
+use crate::models::refresh_token::NewRefreshToken;
+use crate::models::Error as ModelError;
+use crate::operator_signature::OperatorSignature;
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::result::Error::NotFound;
-use rocket::http::Status;
-
-use crate::config::Config;
-use crate::crypto::jwt::JWT;
-use crate::error::Error;
-use crate::hook::{HookEvent, Webhook};
-use crate::models::operator_signature::OperatorSignature;
-use crate::models::refresh_token::NewRefreshToken;
 use log::error;
+use rocket::http::Status;
 use rocket::response::status;
 use rocket::State;
 use rocket_contrib::json::JsonValue;
@@ -66,7 +57,7 @@ pub fn password_grant(
         let err = user.err().unwrap();
 
         match err {
-            NotFound => {
+            ModelError::DatabaseError(NotFound) => {
                 return Err(invalid_email_or_password);
             }
             _ => {
@@ -76,7 +67,7 @@ pub fn password_grant(
         }
     }
 
-    let mut user = user.unwrap();
+    let user = user.unwrap();
 
     if !user.confirmed {
         return Err(user_not_confirmed);
@@ -86,74 +77,28 @@ pub fn password_grant(
         return Err(invalid_email_or_password);
     }
 
-    let payload = json!({
-        "event": HookEvent::Signup,
-        "user": user,
-    });
-
-    let hook = Webhook::new(
-        HookEvent::Login,
-        payload,
-        config.inner().clone(),
+    let user = trigger_hook(
+        HookEvent::Signup,
+        user,
+        config.inner(),
+        &connection,
         operator_signature,
+        "email".to_string(),
     );
 
-    let hook = hook.trigger();
-
-    if hook.is_err() {
-        let err = hook.err().unwrap();
+    if user.is_err() {
+        let err = user.err().unwrap();
 
         error!("{:?}", err);
 
         return Err(err);
     }
 
-    let hook_response = hook.unwrap();
+    let user = user.unwrap();
 
-    if let Some(hook_response) = hook_response {
-        if hook_response.is_object() {
-            let hook_response = hook_response.as_object().unwrap();
+    let jwt = JWT::new(&user, config.aud.clone());
 
-            let update = if hook_response.contains_key("app_metadata") {
-                let app_metdata = hook_response.get("app_metadata").unwrap().clone();
-
-                user.app_metadata = Some(app_metdata);
-
-                true
-            } else if hook_response.contains_key("user_metadata") {
-                let user_metadata = hook_response.get("user_metadata").unwrap().clone();
-
-                user.user_metadata = Some(user_metadata);
-
-                true
-            } else {
-                false
-            };
-
-            if update {
-                let res = user.save(&connection);
-
-                if res.is_err() {
-                    let err = res.err().unwrap();
-
-                    error!("{:?}", err);
-
-                    return Err(internal_error);
-                }
-
-                user = res.unwrap();
-            }
-        }
-    }
-
-    let jwt = JWT::new(
-        user.id,
-        user.email.clone(),
-        user.app_metadata,
-        user.user_metadata,
-    );
-
-    let jwt = jwt.sign(config.inner().clone());
+    let jwt = jwt.sign(config.inner());
 
     if jwt.is_err() {
         let err = jwt.err().unwrap();
@@ -170,8 +115,8 @@ pub fn password_grant(
     let refresh_token = refresh_token.save(&connection);
 
     if refresh_token.is_err() {
-        let err = refresh_token.err();
-        error!("{:?}", err);
+        error!("{:?}", refresh_token.err().unwrap());
+
         return Err(Error {
             code: 500,
             body: json!({

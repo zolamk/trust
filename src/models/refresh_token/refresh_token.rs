@@ -1,17 +1,11 @@
-extern crate frank_jwt;
-extern crate rocket;
-extern crate serde;
-extern crate serde_json;
-use diesel;
-
 use crate::models::user::User;
+use crate::models::Error;
 use crate::schema::refresh_tokens;
 use crate::schema::refresh_tokens::dsl::*;
 use chrono::{DateTime, Utc};
 use diesel::RunQueryDsl;
+use diesel::{update, PgConnection};
 use serde::Serialize;
-
-use diesel::{update, PgConnection, QueryResult};
 
 #[derive(Queryable, AsChangeset, Serialize, Identifiable, Associations)]
 #[belongs_to(User)]
@@ -24,7 +18,10 @@ pub struct RefreshToken {
 }
 
 impl RefreshToken {
-    pub fn save(self, connection: &PgConnection) -> QueryResult<RefreshToken> {
-        return update(refresh_tokens).set(&self).get_result(connection);
+    pub fn save(self, connection: &PgConnection) -> Result<RefreshToken, Error> {
+        match update(refresh_tokens).set(&self).get_result(connection) {
+            Ok(refresh_token) => Ok(refresh_token),
+            Err(err) => Err(Error::from(err)),
+        }
     }
 }

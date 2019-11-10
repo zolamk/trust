@@ -1,17 +1,13 @@
-extern crate chrono;
-extern crate frank_jwt;
-extern crate serde;
-
 use crate::config::Config;
-use crate::error::Error;
+use crate::handlers::Error;
 use chrono::{Duration, Utc};
-use frank_jwt::{decode, encode, Algorithm};
+use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
 use log::error;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct ProviderState {
-    provider: String,
+    pub provider: String,
 }
 
 impl ProviderState {
@@ -36,7 +32,12 @@ impl ProviderState {
     }
 
     pub fn verify(state: String, config: &Config) -> Result<ProviderState, Error> {
-        let state = decode(state.as_str(), &config.jwt_secret, Algorithm::HS512);
+        let state = decode(
+            state.as_str(),
+            &config.jwt_secret,
+            Algorithm::HS512,
+            &ValidationOptions::default(),
+        );
 
         if state.is_err() {
             let err = state.err().unwrap();

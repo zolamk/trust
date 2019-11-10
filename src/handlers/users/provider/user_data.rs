@@ -1,7 +1,9 @@
-use serde_json;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
+#[derive(Deserialize, Serialize)]
 pub struct UserProvidedData {
-    pub email: String,
+    pub email: Option<String>,
     pub verified: bool,
-    pub metadata: Option<serde_json::Value>,
+    pub metadata: Option<Value>,
 }

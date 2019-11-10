@@ -1,43 +1,38 @@
-extern crate chrono;
-extern crate frank_jwt;
-extern crate serde;
-extern crate serde_json;
-
 use crate::config::Config;
-use crate::error::Error;
+use crate::crypto::Error;
 use crate::models::user;
 use chrono::{Duration, Utc};
 use diesel::PgConnection;
-use frank_jwt::{decode, encode, Algorithm};
-use log::error;
+use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest, Request};
 use rocket::{Outcome, State};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_json::Value;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct JWT {
-    #[serde(skip_deserializing)]
-    user_id: i64,
+    sub: i64,
     pub email: String,
+    pub aud: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exp: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub app_metadata: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user_metadata: Option<Value>,
 }
 
 impl JWT {
-    pub fn new(
-        user_id: i64,
-        email: String,
-        app_metadata: Option<Value>,
-        user_metadata: Option<Value>,
-    ) -> JWT {
+    pub fn new(user: &user::User, aud: String) -> JWT {
         return JWT {
-            user_id,
-            email,
-            app_metadata,
-            user_metadata,
+            sub: user.id,
+            exp: None,
+            aud,
+            email: user.email.clone(),
+            app_metadata: user.app_metadata.clone(),
+            user_metadata: user.user_metadata.clone(),
         };
     }
 
@@ -57,49 +52,46 @@ impl JWT {
     }
 
     pub fn is_admin(&self, connection: &PgConnection) -> bool {
-        return user::is_admin(self.user_id, connection);
+        return user::is_admin(self.sub, connection);
     }
 
-    pub fn sign(self, config: Config) -> Result<String, frank_jwt::Error> {
-        let aud = config.aud.clone();
-
+    pub fn sign(mut self, config: &Config) -> Result<String, Error> {
         let exp = config.jwt_exp;
 
         let jwt_algorithm = config.jwt_algorithm.clone();
 
-        let signing_key = config.get_signing_key();
+        let signing_key = config.clone().get_signing_key();
 
         let header = json!({});
 
-        let payload = if exp > 0 {
+        if exp > 0 {
             let now = Utc::now() + Duration::seconds(exp);
 
             let exp = now.timestamp();
 
-            json!({
-                "aud": aud,
-                "sub": self.user_id,
-                "email": self.email,
-                "app_metadata": self.app_metadata,
-                "user_metadata": self.user_metadata,
-                "exp": exp,
-            })
-        } else {
-            json!({
-                "aud": aud,
-                "sub": self.user_id,
-                "email": self.email,
-                "app_metadata": self.app_metadata,
-                "user_metadata": self.user_metadata,
-            })
-        };
+            self.exp = Some(exp);
+        }
 
-        return encode(
+        let payload = serde_json::to_value(self);
+
+        if payload.is_err() {
+            return Err(Error::JSONError(payload.err().unwrap()));
+        }
+
+        let payload = payload.unwrap();
+
+        let res = encode(
             header,
             &signing_key,
             &payload,
             JWT::get_algorithm(&jwt_algorithm),
         );
+
+        if res.is_err() {
+            return Err(Error::from(res.err().unwrap()));
+        }
+
+        return Ok(res.unwrap());
     }
 
     pub fn decode(encoded_token: String, config: Config) -> Result<JWT, Error> {
@@ -109,47 +101,22 @@ impl JWT {
             &encoded_token,
             &config.get_decoding_key(),
             JWT::get_algorithm(&algorithm),
+            &ValidationOptions::default(),
         );
 
         if decoded_token.is_err() {
-            let err = decoded_token.err().unwrap();
-
-            error!("{:?}", err);
-
-            let err = Error {
-                code: 400,
-                body: json!({
-                    "code": "bearer_token_decoding_error",
-                }),
-            };
-
-            return Err(err);
+            return Err(Error::from(decoded_token.err().unwrap()));
         }
 
-        let (header, payload) = decoded_token.unwrap();
+        let (_, payload) = decoded_token.unwrap();
 
         let decoded_token = serde_json::from_value(payload);
 
         if decoded_token.is_err() {
-            let err = decoded_token.err().unwrap();
-
-            error!("{:?}", err);
-
-            let err = Error {
-                code: 400,
-                body: json!({
-                    "code": "bearer_token_deserializing_error",
-                }),
-            };
-
-            return Err(err);
+            return Err(Error::from(decoded_token.err().unwrap()));
         }
 
-        let mut decoded_token: JWT = decoded_token.unwrap();
-
-        let user_id = header.get("sub").unwrap().as_i64().unwrap();
-
-        decoded_token.user_id = user_id;
+        let decoded_token: JWT = decoded_token.unwrap();
 
         return Ok(decoded_token);
     }
@@ -161,21 +128,14 @@ impl<'a, 'r> FromRequest<'a, 'r> for JWT {
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
         let encoded_token = request.headers().get_one("authorization");
 
-        let token_missing = Error {
-            code: 400,
-            body: json!({
-                "code": "bearer_token_missing",
-            }),
-        };
-
         if encoded_token.is_none() {
-            return Outcome::Failure((Status::BadRequest, token_missing));
+            return Outcome::Failure((Status::BadRequest, Error::TokenMissing));
         }
 
         let config = request.guard::<State<Config>>();
 
         if config.is_failure() {
-            return Outcome::Failure((Status::BadRequest, token_missing));
+            return Outcome::Failure((Status::BadRequest, Error::TokenMissing));
         }
 
         let config = config.unwrap();

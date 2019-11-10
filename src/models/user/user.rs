@@ -1,27 +1,16 @@
-extern crate bcrypt;
-extern crate chrono;
-extern crate serde;
-extern crate serde_json;
-
-use chrono::NaiveDateTime;
-
-use bcrypt::{hash, verify, DEFAULT_COST};
-
-use diesel::{delete, update};
-
-use diesel::PgConnection;
-
+use crate::models::Error;
 use crate::schema::users;
-
 use crate::schema::users::dsl::*;
-
-use serde::Serialize;
-
+use bcrypt::{hash, verify, DEFAULT_COST};
+use chrono::NaiveDateTime;
 use diesel::ExpressionMethods;
+use diesel::PgConnection;
 use diesel::QueryDsl;
 use diesel::RunQueryDsl;
+use diesel::{delete, update};
+use serde::Serialize;
 
-#[derive(Queryable, AsChangeset, Serialize, Identifiable)]
+#[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug)]
 pub struct User {
     pub id: i64,
     pub email: String,
@@ -32,9 +21,11 @@ pub struct User {
     pub password: Option<String>,
     #[serde(skip_serializing)]
     pub confirmed: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub invitation_sent_at: Option<NaiveDateTime>,
     #[serde(skip_serializing)]
     pub confirmation_token: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub confirmation_sent_at: Option<NaiveDateTime>,
     #[serde(skip_serializing)]
     pub recovery_token: Option<String>,
@@ -42,22 +33,33 @@ pub struct User {
     pub recovery_sent_at: Option<NaiveDateTime>,
     #[serde(skip_serializing)]
     pub email_change_token: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email_change: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email_change_sent_at: Option<NaiveDateTime>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_signin_at: Option<NaiveDateTime>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub app_metadata: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user_metadata: Option<serde_json::Value>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
 
 impl User {
-    pub fn delete_by_email(e: String, connection: &PgConnection) -> diesel::QueryResult<usize> {
-        return delete(users.filter(email.eq(e))).execute(connection);
+    pub fn delete_by_email(e: String, connection: &PgConnection) -> Result<usize, Error> {
+        match delete(users.filter(email.eq(e))).execute(connection) {
+            Ok(affected_rows) => Ok(affected_rows),
+            Err(err) => Err(Error::from(err)),
+        }
     }
 
-    pub fn delete(&self, connection: &PgConnection) -> diesel::QueryResult<usize> {
-        return delete(users.filter(id.eq(self.id))).execute(connection);
+    pub fn delete(&self, connection: &PgConnection) -> Result<usize, Error> {
+        match delete(users.filter(id.eq(self.id))).execute(connection) {
+            Ok(affected_rows) => Ok(affected_rows),
+            Err(err) => Err(Error::from(err)),
+        }
     }
 
     pub fn hash_password(&mut self) {
@@ -74,13 +76,23 @@ impl User {
         }
     }
 
-    pub fn confirm(&mut self, connection: &PgConnection) -> diesel::QueryResult<usize> {
-        return update(users.filter(id.eq(self.id)))
+    pub fn confirm(&mut self, connection: &PgConnection) -> Result<usize, Error> {
+        match update(users.filter(id.eq(self.id)))
             .set((confirmed.eq(true), confirmation_token.eq("")))
-            .execute(connection);
+            .execute(connection)
+        {
+            Ok(affected_rows) => Ok(affected_rows),
+            Err(err) => Err(Error::from(err)),
+        }
     }
 
-    pub fn save(self, connection: &PgConnection) -> diesel::QueryResult<User> {
-        return update(users).set(&self).get_result(connection);
+    pub fn save(self, connection: &PgConnection) -> Result<User, Error> {
+        match update(users.filter(id.eq(self.id)))
+            .set(&self)
+            .get_result(connection)
+        {
+            Ok(user) => Ok(user),
+            Err(err) => Err(Error::from(err)),
+        }
     }
 }

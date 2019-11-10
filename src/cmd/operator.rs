@@ -1,10 +1,6 @@
-extern crate clap;
-extern crate serde_json;
-
-use clap::ArgMatches;
-
 use crate::config::Config;
-use crate::models::operator_signature::OperatorSignature;
+use crate::operator_signature::OperatorSignature;
+use clap::ArgMatches;
 use serde_json::{Map, Value};
 
 pub fn operator(matches: Option<&ArgMatches>, config: Config) {

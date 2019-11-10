@@ -1,16 +1,8 @@
-extern crate chrono;
-extern crate frank_jwt;
-extern crate reqwest;
-extern crate rocket;
-extern crate serde;
-
 use crate::config::Config;
-use crate::error::Error;
-use crate::hook::HookEvent;
-use crate::models::operator_signature::OperatorSignature;
+use crate::hook::{Error, HookError, HookEvent};
+use crate::operator_signature::OperatorSignature;
 use chrono::Utc;
 use frank_jwt::{encode, Algorithm};
-use log::error;
 use reqwest::header::AUTHORIZATION;
 use serde_json::{json, Value};
 
@@ -36,7 +28,7 @@ impl Webhook {
         };
     }
 
-    fn generate_signature(self) -> Result<String, frank_jwt::Error> {
+    fn generate_signature(self) -> Result<String, Error> {
         let header = json!({
             "iat": Utc::now().timestamp(),
             "issuer": "trust"
@@ -44,7 +36,10 @@ impl Webhook {
 
         let payload = json!({});
 
-        return encode(header, &self.config.jwt_secret, &payload, Algorithm::HS256);
+        match encode(header, &self.config.jwt_secret, &payload, Algorithm::HS256) {
+            Ok(signature) => Ok(signature),
+            Err(err) => Err(Error::from(err)),
+        }
     }
 
     pub fn trigger(self) -> Result<Option<Value>, Error> {
@@ -67,37 +62,21 @@ impl Webhook {
         let signature = self.generate_signature();
 
         if signature.is_err() {
-            let err = signature.err().unwrap();
-
-            error!("{}", err);
-
-            return Err(Error::new(
-                500,
-                json!({
-                    "code": "hook_signature_error"
-                }),
-            ));
+            return Err(signature.err().unwrap());
         }
+
+        let signature = signature.unwrap();
 
         let client = reqwest::Client::new();
 
         let res = client
             .post(url)
-            .header(AUTHORIZATION, signature.unwrap())
+            .header(AUTHORIZATION, signature)
             .json(&payload)
             .send();
 
         if res.is_err() {
-            let err = res.err().unwrap();
-
-            error!("{}", err);
-
-            return Err(Error::new(
-                422,
-                json!({
-                    "code": "hook_error"
-                }),
-            ));
+            return Err(Error::from(res.err().unwrap()));
         }
 
         let mut res = res.unwrap();
@@ -107,31 +86,18 @@ impl Webhook {
         if status.is_success() {
             match res.json() {
                 Ok(res) => return Ok(res),
-                Err(err) => {
-                    error!("{:?}", err);
-                    return Err(Error::new(
-                        422,
-                        json!({
-                            "code": "hook_success_response_parsing_error"
-                        }),
-                    ));
-                }
+                Err(err) => return Err(Error::from(err)),
             };
         }
 
         match res.json() {
             Ok(body) => {
-                return Err(Error::new(status.as_u16(), body));
+                return Err(Error::from(HookError {
+                    code: status.as_u16(),
+                    body,
+                }))
             }
-            Err(err) => {
-                error!("{}", err);
-                return Err(Error::new(
-                    422,
-                    json!({
-                        "code": "hook_error_response_parsing_error"
-                    }),
-                ));
-            }
+            Err(err) => return Err(Error::from(err)),
         };
     }
 }

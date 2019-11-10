@@ -1,20 +1,12 @@
-extern crate oauth2;
-extern crate reqwest;
-extern crate rocket;
-
 use crate::config::Config;
-use crate::error::Error;
 use crate::handlers::users::provider::FacebookProvider;
 use crate::handlers::users::provider::Provider;
 use crate::handlers::users::provider::ProviderResponse;
 use crate::handlers::users::provider::ProviderState;
+use crate::handlers::Error;
 use log::error;
 use oauth2::basic::BasicClient;
-use oauth2::reqwest::http_client;
-use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope,
-    TokenResponse, TokenUrl,
-};
+use oauth2::{AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl};
 use rocket::response::Redirect;
 use rocket::State;
 use url::Url;

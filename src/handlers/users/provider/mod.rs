@@ -6,7 +6,7 @@ mod facebook;
 mod provider;
 mod user_data;
 
-use crate::error::Error;
+use crate::handlers::Error;
 pub use facebook::FacebookProvider;
 pub use provider::Provider;
 use rocket::response::status;

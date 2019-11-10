@@ -1,16 +1,9 @@
-extern crate chrono;
-extern crate clap;
-extern crate diesel;
-
+use crate::config::Config;
+use crate::models::user::{NewUser, User};
+use crate::models::Error;
 use clap::ArgMatches;
-
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::result::Error::DatabaseError;
-
-use crate::config::Config;
-
-use crate::models::user::{NewUser, User};
 
 fn new_user(
     matches: Option<&ArgMatches>,
@@ -27,11 +20,6 @@ fn new_user(
 
     user.aud = matches.value_of("aud").unwrap().to_string();
 
-    // user.name = match matches.value_of("name") {
-    //     Some(n) => Some(n.to_string()),
-    //     None => None,
-    // };
-
     user.is_admin = matches.is_present("admin");
 
     user.confirmed = config.auto_confirm || matches.is_present("confirm");
@@ -45,8 +33,8 @@ fn new_user(
     match user.save(&*connection) {
         Ok(_val) => println!("{} created successfully", user.email),
         Err(err) => match err {
-            DatabaseError(_kind, _info) => println!("{} already exists!", user.email),
-            _ => println!("{}", err),
+            Error::DatabaseError(_) => println!("{} already exists!", user.email),
+            _ => println!("{:?}", err),
         },
     }
 }
@@ -65,7 +53,7 @@ fn remove_user(
 
     match User::delete_by_email(email, &connection) {
         Ok(_val) => println!("user deleted successfully"),
-        Err(err) => println!("{}", err),
+        Err(err) => println!("{:?}", err),
     }
 }
 

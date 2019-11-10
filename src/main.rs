@@ -18,11 +18,11 @@ extern crate simple_logger;
 mod cmd;
 mod config;
 mod crypto;
-mod error;
 mod handlers;
 mod hook;
 mod mailer;
 mod models;
+mod operator_signature;
 mod schema;
 
 use clap::App;
@@ -56,6 +56,7 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
             handlers::users::token::token,
             handlers::users::invite::invite,
             handlers::users::authorize::authorize,
+            handlers::users::callback::callback,
         ],
     )
     .manage(config)

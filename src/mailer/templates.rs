@@ -1,7 +1,3 @@
-extern crate handlebars;
-extern crate lettre;
-extern crate lettre_email;
-
 use crate::config::Config;
 use std::fs::read_to_string;
 use std::path::Path;

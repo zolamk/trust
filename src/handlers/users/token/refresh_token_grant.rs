@@ -15,7 +15,7 @@ use rocket::http::Status;
 use crate::config::Config;
 use crate::crypto;
 use crate::crypto::jwt::JWT;
-use crate::error::Error;
+use crate::handlers::Error;
 use crate::models::refresh_token::get_refresh_token_by_token;
 use crate::models::user;
 use log::error;
@@ -101,14 +101,9 @@ pub fn refresh_token_grant(
 
     let user = user.unwrap();
 
-    let jwt = JWT::new(
-        user.id,
-        user.email.clone(),
-        user.app_metadata,
-        user.user_metadata,
-    );
+    let jwt = JWT::new(&user, config.aud.clone());
 
-    let jwt = jwt.sign(config.inner().clone());
+    let jwt = jwt.sign(config.inner());
 
     if jwt.is_err() {
         let err = jwt.err().unwrap();
