@@ -1,7 +1,6 @@
 use crate::{
     config::Config,
     crypto::secure_token,
-    diesel::{Connection, NotFound},
     handlers::{trigger_hook, Error},
     hook::HookEvent,
     mailer::{send_confirmation_email, EmailTemplates},
@@ -13,6 +12,7 @@ use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
     result::{DatabaseErrorKind, Error::DatabaseError},
+    Connection, NotFound,
 };
 use log::error;
 use rocket::{http::Status, response::status, State};

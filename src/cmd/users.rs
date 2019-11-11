@@ -2,13 +2,14 @@ use crate::{
     config::Config,
     models::{
         user::{NewUser, User},
-        Error,
+        Error as ModelError,
     },
 };
 use clap::ArgMatches;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
+    result::{DatabaseErrorKind, Error::DatabaseError},
 };
 use log::error;
 
@@ -40,8 +41,8 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
     match user.save(&connection) {
         Ok(_val) => println!("{} created successfully", user.email),
         Err(err) => match err {
-            Error::DatabaseError(_) => println!("{} already exists!", user.email),
-            _ => println!("{:?}", err),
+            ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) => panic!("{} already exists!", user.email),
+            _ => panic!("{:?}", err),
         },
     }
 }
