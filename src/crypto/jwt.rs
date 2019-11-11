@@ -3,7 +3,9 @@ use chrono::{Duration, Utc};
 use diesel::PgConnection;
 use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
 use rocket::{
-    http::Status, request::{self, FromRequest, Request}, Outcome, State
+    http::Status,
+    request::{self, FromRequest, Request},
+    Outcome, State,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};

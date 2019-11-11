@@ -2,8 +2,10 @@ use crate::{config::Config, mailer::Error, models::user::User};
 use handlebars::Handlebars;
 use lettre::{
     smtp::{
-        authentication::{Credentials, Mechanism}, ConnectionReuseParameters, SmtpClient
-    }, ClientSecurity, ClientTlsParameters, Transport
+        authentication::{Credentials, Mechanism},
+        ConnectionReuseParameters, SmtpClient,
+    },
+    ClientSecurity, ClientTlsParameters, Transport,
 };
 use lettre_email::Email;
 use native_tls::TlsConnector;

@@ -1,5 +1,6 @@
 use crate::{
-    models::{refresh_token::RefreshToken, Error}, schema::refresh_tokens::dsl::*
+    models::{refresh_token::RefreshToken, Error},
+    schema::refresh_tokens::dsl::*,
 };
 use diesel::{ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 

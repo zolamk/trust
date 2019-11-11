@@ -1,5 +1,7 @@
 use crate::{
-    crypto::secure_token, models::{refresh_token::RefreshToken, Error}, schema::{refresh_tokens, refresh_tokens::dsl::*}
+    crypto::secure_token,
+    models::{refresh_token::RefreshToken, Error},
+    schema::{refresh_tokens, refresh_tokens::dsl::*},
 };
 use diesel::{insert_into, PgConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};

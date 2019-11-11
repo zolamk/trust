@@ -1,11 +1,19 @@
 use crate::{
-    config::Config, crypto::{jwt::JWT, secure_token, Error as CryptoError}, diesel::Connection, handlers::Error, mailer::{send_invitation_email, EmailTemplates}, models::{user::NewUser, Error as ModelError}
+    config::Config,
+    crypto::{jwt::JWT, secure_token, Error as CryptoError},
+    diesel::Connection,
+    handlers::Error,
+    mailer::{send_invitation_email, EmailTemplates},
+    models::{user::NewUser, Error as ModelError},
 };
 use chrono::Utc;
 use diesel::{
-    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::{
-        DatabaseErrorKind, Error::{DatabaseError, NotFound}
-    }
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+    result::{
+        DatabaseErrorKind,
+        Error::{DatabaseError, NotFound},
+    },
 };
 use log::error;
 use rocket::{http::Status, response::status, State};
@@ -20,7 +28,11 @@ pub struct InviteForm {
 
 #[post("/invite", data = "<invite_form>")]
 pub fn invite(
-    config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, email_templates: State<EmailTemplates>, invite_form: Json<InviteForm>, token: Result<JWT, CryptoError>,
+    config: State<Config>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    email_templates: State<EmailTemplates>,
+    invite_form: Json<InviteForm>,
+    token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if token.is_err() {
         let err = token.err().unwrap();

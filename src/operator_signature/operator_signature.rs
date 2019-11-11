@@ -1,7 +1,9 @@
 use crate::{config::Config, hook::HookEvent, operator_signature::Error};
 use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
 use rocket::{
-    http::Status, request::{self, FromRequest, Request}, Outcome, State
+    http::Status,
+    request::{self, FromRequest, Request},
+    Outcome, State,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};

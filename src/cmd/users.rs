@@ -1,11 +1,14 @@
 use crate::{
-    config::Config, models::{
-        user::{NewUser, User}, Error
-    }
+    config::Config,
+    models::{
+        user::{NewUser, User},
+        Error,
+    },
 };
 use clap::ArgMatches;
 use diesel::{
-    pg::PgConnection, r2d2::{ConnectionManager, Pool}
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
 };
 use log::error;
 

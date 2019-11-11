@@ -1,5 +1,6 @@
 use diesel::{
-    pg::PgConnection, r2d2::{ConnectionManager, Pool}
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
 };
 
 embed_migrations!("./migrations");

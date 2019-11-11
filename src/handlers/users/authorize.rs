@@ -1,7 +1,9 @@
 use crate::{
-    config::Config, handlers::{
-        users::provider::{FacebookProvider, GoogleProvider, Provider, ProviderResponse, ProviderState}, Error
-    }
+    config::Config,
+    handlers::{
+        users::provider::{FacebookProvider, GoogleProvider, Provider, ProviderResponse, ProviderState},
+        Error,
+    },
 };
 use log::error;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl};

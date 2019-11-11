@@ -1,15 +1,28 @@
 use crate::{
-    config::Config, crypto::{jwt::JWT, secure_token}, handlers::{
-        trigger_hook, users::provider::{FacebookProvider, GoogleProvider, Provider, ProviderState}
-    }, hook::HookEvent, mailer::{send_confirmation_email, EmailTemplates}, models::{
-        refresh_token::NewRefreshToken, user::{get_by_email, NewUser, User}, Error as ModelError
-    }, operator_signature::{Error as OperatorSignatureError, OperatorSignature}
+    config::Config,
+    crypto::{jwt::JWT, secure_token},
+    handlers::{
+        trigger_hook,
+        users::provider::{FacebookProvider, GoogleProvider, Provider, ProviderState},
+    },
+    hook::HookEvent,
+    mailer::{send_confirmation_email, EmailTemplates},
+    models::{
+        refresh_token::NewRefreshToken,
+        user::{get_by_email, NewUser},
+        Error as ModelError,
+    },
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use chrono::Utc;
 use diesel::{
-    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::{
-        DatabaseErrorKind, Error::{DatabaseError, NotFound}
-    }, Connection
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+    result::{
+        DatabaseErrorKind,
+        Error::{DatabaseError, NotFound},
+    },
+    Connection,
 };
 use log::error;
 use oauth2::{basic::BasicClient, reqwest::http_client, AuthUrl, AuthorizationCode, ClientId, ClientSecret, RedirectUrl, TokenResponse, TokenUrl};
@@ -17,10 +30,13 @@ use rocket::{response::Redirect, State};
 use url::Url;
 
 #[get("/authorize/callback?<code>&<state>")]
-
 pub fn callback(
-    config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-    email_templates: State<EmailTemplates>, code: String, state: String,
+    config: State<Config>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
+    email_templates: State<EmailTemplates>,
+    code: String,
+    state: String,
 ) -> Redirect {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();

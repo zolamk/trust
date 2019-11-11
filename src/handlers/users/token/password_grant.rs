@@ -1,15 +1,26 @@
 use crate::{
-    config::Config, crypto::jwt::JWT, handlers::{trigger_hook, Error}, hook::HookEvent, models::{refresh_token::NewRefreshToken, Error as ModelError}, operator_signature::OperatorSignature
+    config::Config,
+    crypto::jwt::JWT,
+    handlers::{trigger_hook, Error},
+    hook::HookEvent,
+    models::{refresh_token::NewRefreshToken, Error as ModelError},
+    operator_signature::OperatorSignature,
 };
 use diesel::{
-    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::Error::NotFound
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+    result::Error::NotFound,
 };
 use log::error;
 use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::JsonValue;
 
 pub fn password_grant(
-    username: String, password: String, config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, operator_signature: OperatorSignature,
+    username: String,
+    password: String,
+    config: State<Config>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    operator_signature: OperatorSignature,
 ) -> Result<status::Custom<JsonValue>, Error> {
     let internal_error = Error {
         code: 500,

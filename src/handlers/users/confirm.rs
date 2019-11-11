@@ -1,6 +1,8 @@
 use crate::{config::Config, models::Error as ModelError};
 use diesel::{
-    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::Error::NotFound
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+    result::Error::NotFound,
 };
 use log::error;
 use rocket::{response::Redirect, State};

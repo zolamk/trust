@@ -1,5 +1,6 @@
 use crate::{
-    models::{user::User, Error}, schema::{refresh_tokens, refresh_tokens::dsl::*}
+    models::{user::User, Error},
+    schema::{refresh_tokens, refresh_tokens::dsl::*},
 };
 use chrono::{DateTime, Utc};
 use diesel::{update, PgConnection, RunQueryDsl};

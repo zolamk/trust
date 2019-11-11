@@ -28,7 +28,8 @@ mod schema;
 use clap::App;
 use config::Config;
 use diesel::{
-    r2d2::{ConnectionManager, Pool}, PgConnection
+    r2d2::{ConnectionManager, Pool},
+    PgConnection,
 };
 use log::Level;
 use mailer::EmailTemplates;

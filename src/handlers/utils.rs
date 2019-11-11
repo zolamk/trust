@@ -1,5 +1,9 @@
 use crate::{
-    config::Config, handlers::Error, hook::{HookEvent, Webhook}, models::user::User, operator_signature::OperatorSignature
+    config::Config,
+    handlers::Error,
+    hook::{HookEvent, Webhook},
+    models::user::User,
+    operator_signature::OperatorSignature,
 };
 use diesel::PgConnection;
 

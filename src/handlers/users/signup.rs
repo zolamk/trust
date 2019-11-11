@@ -1,9 +1,18 @@
 use crate::{
-    config::Config, crypto::secure_token, diesel::{Connection, NotFound}, handlers::{trigger_hook, Error}, hook::HookEvent, mailer::{send_confirmation_email, EmailTemplates}, models::{user::NewUser, Error as ModelError}, operator_signature::{Error as OperatorSignatureError, OperatorSignature}
+    config::Config,
+    crypto::secure_token,
+    diesel::{Connection, NotFound},
+    handlers::{trigger_hook, Error},
+    hook::HookEvent,
+    mailer::{send_confirmation_email, EmailTemplates},
+    models::{user::NewUser, Error as ModelError},
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use chrono::Utc;
 use diesel::{
-    pg::PgConnection, r2d2::{ConnectionManager, Pool}, result::{DatabaseErrorKind, Error::DatabaseError}
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
+    result::{DatabaseErrorKind, Error::DatabaseError},
 };
 use log::error;
 use rocket::{http::Status, response::status, State};
@@ -20,7 +29,10 @@ pub struct SignUpForm {
 
 #[post("/signup", data = "<signup_form>")]
 pub fn signup(
-    config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, email_templates: State<EmailTemplates>, signup_form: Json<SignUpForm>,
+    config: State<Config>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    email_templates: State<EmailTemplates>,
+    signup_form: Json<SignUpForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if config.disable_signup {

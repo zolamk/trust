@@ -1,5 +1,6 @@
 use crate::{
-    models::{user::User, Error}, schema::users::dsl::{is_admin as admin, *}
+    models::{user::User, Error},
+    schema::users::dsl::{is_admin as admin, *},
 };
 use diesel::{result::QueryResult, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 

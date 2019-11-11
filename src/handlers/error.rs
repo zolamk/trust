@@ -1,6 +1,8 @@
 use crate::{crypto::Error as CryptoError, hook::Error as HookError, mailer::Error as MailerError, models::Error as ModelError, operator_signature::Error as OperatorSignatureError};
 use rocket::{
-    http::{ContentType, Status}, response::{self, Responder}, Request, Response
+    http::{ContentType, Status},
+    response::{self, Responder},
+    Request, Response,
 };
 use serde::Serialize;
 use std::io::Cursor;

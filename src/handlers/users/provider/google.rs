@@ -1,5 +1,6 @@
 use crate::{
-    config::Config, handlers::users::provider::{Provider, UserProvidedData}
+    config::Config,
+    handlers::users::provider::{Provider, UserProvidedData},
 };
 use reqwest::{Client, Error};
 use serde::Deserialize;

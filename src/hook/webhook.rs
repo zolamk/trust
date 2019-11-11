@@ -1,5 +1,7 @@
 use crate::{
-    config::Config, hook::{Error, HookError, HookEvent}, operator_signature::OperatorSignature
+    config::Config,
+    hook::{Error, HookError, HookEvent},
+    operator_signature::OperatorSignature,
 };
 use chrono::Utc;
 use frank_jwt::{encode, Algorithm};

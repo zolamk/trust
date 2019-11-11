@@ -1,5 +1,6 @@
 use crate::{
-    models::Error, schema::{users, users::dsl::*}
+    models::Error,
+    schema::{users, users::dsl::*},
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::NaiveDateTime;

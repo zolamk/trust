@@ -9,12 +9,17 @@ extern crate serde;
 extern crate serde_json;
 
 use diesel::{
-    pg::PgConnection, r2d2::{ConnectionManager, Pool}
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool},
 };
 use rocket::http::Status;
 
 use crate::{
-    config::Config, crypto, crypto::jwt::JWT, handlers::Error, models::{refresh_token::get_refresh_token_by_token, user}
+    config::Config,
+    crypto,
+    crypto::jwt::JWT,
+    handlers::Error,
+    models::{refresh_token::get_refresh_token_by_token, user},
 };
 use log::error;
 use rocket::{response::status, State};
