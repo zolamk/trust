@@ -105,9 +105,7 @@ pub fn callback(
 
     let client_secret = Some(ClientSecret::new(client_secret));
 
-    let auth_url = oauth_provider.auth_url();
-
-    let auth_url = Url::parse(auth_url.as_str());
+    let auth_url = AuthUrl::new(oauth_provider.auth_url());
 
     if auth_url.is_err() {
         let err = auth_url.err().unwrap();
@@ -117,11 +115,7 @@ pub fn callback(
         return internal_error;
     }
 
-    let auth_url = AuthUrl::new(auth_url.unwrap());
-
-    let token_url = oauth_provider.token_url();
-
-    let token_url = Url::parse(token_url.as_str());
+    let token_url = TokenUrl::new(oauth_provider.token_url());
 
     if token_url.is_err() {
         let err = token_url.err().unwrap();
@@ -131,11 +125,11 @@ pub fn callback(
         return internal_error;
     }
 
-    let token_url = Some(TokenUrl::new(token_url.unwrap()));
+    let token_url = Some(token_url.unwrap());
 
     let redirect_url = format!("{}/authorize/callback", config.instance_url);
 
-    let redirect_url = Url::parse(redirect_url.as_str());
+    let redirect_url = RedirectUrl::new(redirect_url);
 
     if redirect_url.is_err() {
         let err = redirect_url.err().unwrap();
@@ -145,9 +139,7 @@ pub fn callback(
         return internal_error;
     }
 
-    let redirect_url = RedirectUrl::new(redirect_url.unwrap());
-
-    let client = BasicClient::new(client_id, client_secret, auth_url, token_url).set_redirect_url(redirect_url);
+    let client = BasicClient::new(client_id, client_secret, auth_url.unwrap(), token_url).set_redirect_url(redirect_url.unwrap());
 
     let access_token = client.exchange_code(AuthorizationCode::new(code)).request(http_client);
 
