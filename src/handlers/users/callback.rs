@@ -3,7 +3,7 @@ use crate::{
     crypto::{jwt::JWT, secure_token},
     handlers::{
         trigger_hook,
-        users::provider::{FacebookProvider, GoogleProvider, Provider, ProviderState},
+        users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderState},
     },
     hook::HookEvent,
     mailer::{send_confirmation_email, EmailTemplates},
@@ -27,7 +27,6 @@ use diesel::{
 use log::error;
 use oauth2::{basic::BasicClient, reqwest::http_client, AuthUrl, AuthorizationCode, ClientId, ClientSecret, RedirectUrl, TokenResponse, TokenUrl};
 use rocket::{response::Redirect, State};
-use url::Url;
 
 #[get("/authorize/callback?<code>&<state>")]
 pub fn callback(
@@ -89,6 +88,12 @@ pub fn callback(
             }
 
             Box::new(GoogleProvider::new(config.inner().clone()))
+        }
+        "github" => {
+            if !config.github_enabled {
+                return provider_disabled;
+            }
+            Box::new(GithubProvider::new(config.inner().clone()))
         }
         _ => {
             let redirect_url = format!("{}?error=invalid_provider", operator_signature.site_url);
@@ -339,7 +344,6 @@ pub fn callback(
 }
 
 #[derive(Debug)]
-
 struct CallbackError {
     pub redirect_url: String,
 }

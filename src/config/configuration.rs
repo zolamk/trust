@@ -22,6 +22,9 @@ pub struct Config {
     pub google_client_id: Option<String>,
     pub google_client_secret: Option<String>,
     pub google_enabled: bool,
+    pub github_enabled: bool,
+    pub github_client_id: Option<String>,
+    pub github_client_secret: Option<String>,
     pub host: String,
     pub instance_url: String,
     pub jwt_algorithm: String,
@@ -106,6 +109,12 @@ impl Config {
                     assert_eq!(config.facebook_client_id.is_some(), true, "expected FACEBOOK_CLIENT_ID to be set if facebook provider is enabled");
 
                     assert_eq!(config.facebook_client_secret.is_some(), true, "expected FACEBOOK_CLIENT_SECRET to be set if google provider is enabled")
+                }
+
+                if config.github_enabled {
+                    assert_eq!(config.github_client_id.is_some(), true, "expected GITHUB_CLIENT_ID to be set if github provider is enabled");
+
+                    assert_eq!(config.github_client_secret.is_some(), true, "expected GITHUB_CLIENT_SECRET to be set if github provider is enabled")
                 }
 
                 return config;

@@ -1,14 +1,13 @@
 use crate::{
     config::Config,
     handlers::{
-        users::provider::{FacebookProvider, GoogleProvider, Provider, ProviderResponse, ProviderState},
+        users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderResponse, ProviderState},
         Error,
     },
 };
 use log::error;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl};
 use rocket::{response::Redirect, State};
-use url::Url;
 
 #[get("/authorize?<provider>")]
 pub fn authorize(config: State<Config>, provider: String) -> ProviderResponse {
@@ -19,25 +18,31 @@ pub fn authorize(config: State<Config>, provider: String) -> ProviderResponse {
         }),
     });
 
-    let provider_disabled = Err(Error {
+    let provider_disabled = ProviderResponse::Other(Err(Error {
         code: 400,
         body: json!({
             "code": "provider_disabled",
         }),
-    });
+    }));
 
     let oauth_provider: Box<dyn Provider> = match provider.as_str() {
         "facebook" => {
             if !config.facebook_enabled {
-                return ProviderResponse::Other(provider_disabled);
+                return provider_disabled;
             }
             Box::new(FacebookProvider::new(config.inner().clone()))
         }
         "google" => {
             if !config.google_enabled {
-                return ProviderResponse::Other(provider_disabled);
+                return provider_disabled;
             }
             Box::new(GoogleProvider::new(config.inner().clone()))
+        }
+        "github" => {
+            if !config.github_enabled {
+                return provider_disabled;
+            }
+            Box::new(GithubProvider::new(config.inner().clone()))
         }
         _ => {
             return ProviderResponse::Other(Err(Error {
