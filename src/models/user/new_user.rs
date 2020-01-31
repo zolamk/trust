@@ -19,6 +19,7 @@ pub struct NewUser {
     pub confirmation_sent_at: Option<NaiveDateTime>,
     pub invitation_sent_at: Option<NaiveDateTime>,
     pub user_metadata: Option<serde_json::Value>,
+    pub app_metadata: Option<serde_json::Value>,
 }
 
 impl NewUser {

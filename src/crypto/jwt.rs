@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct JWT {
-    sub: i64,
+    pub sub: i64,
     pub email: String,
     pub aud: String,
     #[serde(skip_serializing_if = "Option::is_none")]

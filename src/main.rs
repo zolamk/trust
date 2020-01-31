@@ -56,6 +56,9 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
             handlers::users::invite::invite,
             handlers::users::authorize::authorize,
             handlers::users::callback::callback,
+            handlers::users::users::create::create,
+            handlers::users::users::delete::delete,
+            handlers::users::user::update_password::update_password,
         ],
     )
     .manage(config)

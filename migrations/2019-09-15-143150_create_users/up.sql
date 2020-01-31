@@ -1,6 +1,8 @@
+create extension citext;
+
 create table users (
     id bigserial primary key,
-    email varchar(250) not null constraint uq_email unique,
+    email citext not null constraint uq_email unique,
     aud varchar(250) not null,
     is_admin boolean not null default false,
     password varchar(82) null,
@@ -11,7 +13,7 @@ create table users (
     recovery_token varchar(250),
     recovery_sent_at timestamp,
     email_change_token varchar(250),
-    email_change varchar(250),
+    email_change citext,
     email_change_sent_at timestamp,
     last_signin_at timestamp,
     app_metadata json,

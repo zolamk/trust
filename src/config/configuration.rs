@@ -1,9 +1,6 @@
-extern crate dotenv;
-extern crate envy;
-extern crate serde;
-
 use dotenv::dotenv;
 use log::error;
+use regex::Regex;
 use serde::Deserialize;
 use std::{fs, path::Path, process::exit};
 
@@ -40,6 +37,9 @@ pub struct Config {
     pub mailer_templtate_recovery: Option<String>,
     pub operator_token: String,
     pub port: u16,
+    #[serde(default = "default_password_rule")]
+    #[serde(with = "serde_regex")]
+    pub password_rule: Regex,
     pub site_url: String,
     pub smtp_admin_email: String,
     pub smtp_host: String,
@@ -155,4 +155,8 @@ fn default_disable_signup() -> bool {
 
 fn default_jwt_exp() -> i64 {
     3600
+}
+
+fn default_password_rule() -> Regex {
+    regex::Regex::new(r".{8,1000}").unwrap()
 }

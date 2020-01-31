@@ -5,3 +5,5 @@ pub mod invite;
 pub mod provider;
 pub mod signup;
 pub mod token;
+pub mod user;
+pub mod users;

@@ -211,6 +211,7 @@ pub fn callback(
                     invitation_sent_at: None,
                     is_admin: false,
                     password: None,
+                    app_metadata: None,
                 };
 
                 let u = new_user.save(&connection);
