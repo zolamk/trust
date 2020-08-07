@@ -31,6 +31,7 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
     PgConnection,
 };
+use dotenv::dotenv;
 use log::{info, Level};
 use mailer::EmailTemplates;
 use std::str::FromStr;
@@ -71,6 +72,8 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, e
 }
 
 fn main() {
+    dotenv().ok();
+
     let config = Config::new();
 
     let database_url = config.database_url.clone();

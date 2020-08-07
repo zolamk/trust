@@ -1,4 +1,3 @@
-use dotenv::dotenv;
 use log::error;
 use regex::Regex;
 use serde::Deserialize;
@@ -7,58 +6,94 @@ use std::{fs, path::Path, process::exit};
 #[derive(Deserialize, Clone)]
 pub struct Config {
     pub aud: String,
+
+    #[serde(default = "default_auto_confirm")]
     pub auto_confirm: bool,
-    pub confirmed_redirect: String,
+
     pub database_url: String,
-    pub db_driver: String,
+
     #[serde(default = "default_disable_signup")]
     pub disable_signup: bool,
-    pub facebook_client_id: Option<String>,
-    pub facebook_client_secret: Option<String>,
+
+    #[serde(default = "default_social_enabled")]
     pub facebook_enabled: bool,
-    pub google_client_id: Option<String>,
-    pub google_client_secret: Option<String>,
+
+    #[serde(default = "default_social_enabled")]
     pub google_enabled: bool,
+
+    #[serde(default = "default_social_enabled")]
     pub github_enabled: bool,
+
+    pub facebook_client_id: Option<String>,
+
+    pub facebook_client_secret: Option<String>,
+
+    pub google_client_id: Option<String>,
+
+    pub google_client_secret: Option<String>,
+
     pub github_client_id: Option<String>,
+
     pub github_client_secret: Option<String>,
+
+    #[serde(default = "default_host")]
     pub host: String,
+
     pub instance_url: String,
+
     pub jwt_algorithm: String,
+
     #[serde(default = "default_jwt_exp")]
     pub jwt_exp: i64,
+
     pub jwt_private_key_path: Option<String>,
+
     pub jwt_public_key_path: Option<String>,
+
     pub jwt_secret: String,
+
+    #[serde(default = "default_log_level")]
     pub log_level: String,
+
     pub mailer_template_confirmation: Option<String>,
+
     pub mailer_template_email_change: Option<String>,
+
     pub mailer_template_invitation: Option<String>,
+
     pub mailer_template_recovery: Option<String>,
-    pub mailer_template_revert: Option<String>,
-    pub operator_token: String,
+
+    #[serde(default = "default_port")]
     pub port: u16,
+
     #[serde(default = "default_password_rule")]
     #[serde(with = "serde_regex")]
     pub password_rule: Regex,
+
     pub site_url: String,
+
     pub smtp_admin_email: String,
+
     pub smtp_host: String,
+
     pub smtp_password: String,
+
     pub smtp_port: u16,
+
     pub smtp_username: String,
+
     #[serde(skip_serializing, skip_deserializing)]
     private_key: Option<String>,
+
     #[serde(skip_serializing, skip_deserializing)]
     public_key: Option<String>,
+
     #[serde(skip_serializing, skip_deserializing)]
     jwt_type: String,
 }
 
 impl Config {
     pub fn new() -> Config {
-        dotenv().ok();
-
         match envy::from_env::<Config>() {
             Ok(mut config) => {
                 match config.jwt_algorithm.as_ref() {
@@ -154,10 +189,30 @@ fn default_disable_signup() -> bool {
     false
 }
 
+fn default_auto_confirm() -> bool {
+    false
+}
+
 fn default_jwt_exp() -> i64 {
     3600
 }
 
 fn default_password_rule() -> Regex {
     regex::Regex::new(r".{8,1000}").unwrap()
+}
+
+fn default_host() -> String {
+    "localhost".to_string()
+}
+
+fn default_port() -> u16 {
+    1995
+}
+
+fn default_social_enabled() -> bool {
+    false
+}
+
+fn default_log_level() -> String {
+    "error".to_string()
 }

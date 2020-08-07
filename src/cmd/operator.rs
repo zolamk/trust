@@ -15,8 +15,6 @@ fn new_signuature(matches: Option<&ArgMatches>, config: Config) {
 
     let site_url = matches.value_of("site_url").unwrap().to_string();
 
-    let redirect_url = matches.value_of("confirmed_redirect_url").unwrap().to_string();
-
     let mut function_hooks = Map::with_capacity(2);
 
     let login_hook = matches.value_of("login_hook");
@@ -31,9 +29,9 @@ fn new_signuature(matches: Option<&ArgMatches>, config: Config) {
         function_hooks.insert("signup".to_string(), Value::String(signup_hook.to_string()));
     }
 
-    let operator_signature = OperatorSignature::new(site_url, redirect_url, function_hooks);
+    let operator_signature = OperatorSignature::new(site_url, function_hooks);
 
-    let operator_signature = operator_signature.encode(config.operator_token.as_ref());
+    let operator_signature = operator_signature.encode(config.jwt_secret.as_ref());
 
     if operator_signature.is_err() {
         println!("{:?}", operator_signature.err().unwrap());

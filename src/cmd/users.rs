@@ -50,7 +50,7 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
     match user.save(&connection) {
         Ok(user) => {
             if !user.confirmed {
-                let confirmation_url = format!("{}/confirm?confirmation_token={}", config.instance_url, user.confirmation_token.clone().unwrap());
+                let confirmation_url = format!("{}/confirm?confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap());
 
                 let template = email_templates.confirmation_email_template();
 

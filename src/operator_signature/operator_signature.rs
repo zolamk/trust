@@ -12,17 +12,12 @@ use serde_json::{json, Map, Value};
 
 pub struct OperatorSignature {
     pub site_url: String,
-    pub redirect_url: String,
     pub function_hooks: Map<String, Value>,
 }
 
 impl OperatorSignature {
-    pub fn new(site_url: String, redirect_url: String, function_hooks: Map<String, Value>) -> OperatorSignature {
-        return OperatorSignature {
-            site_url,
-            redirect_url,
-            function_hooks,
-        };
+    pub fn new(site_url: String, function_hooks: Map<String, Value>) -> OperatorSignature {
+        return OperatorSignature { site_url, function_hooks };
     }
 
     pub fn encode(self, operator_token: &str) -> Result<String, Error> {
@@ -97,7 +92,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for OperatorSignature {
 
         let operator_signature = operator_signature.unwrap();
 
-        let operator_signature = OperatorSignature::decode(operator_signature, config.operator_token.as_ref());
+        let operator_signature = OperatorSignature::decode(operator_signature, config.jwt_secret.as_ref());
 
         if operator_signature.is_err() {
             return Outcome::Failure((Status::BadRequest, operator_signature.err().unwrap()));

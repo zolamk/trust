@@ -13,10 +13,10 @@ use log::error;
 use password_grant::password_grant;
 use refresh_token_grant::refresh_token_grant;
 use rocket::{request::Form, response::status, State};
-use rocket_contrib::json::JsonValue;
+use rocket_contrib::json::{Json, JsonValue};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, FromForm)]
+#[derive(Deserialize, Serialize)]
 pub struct LoginForm {
     pub username: String,
     pub password: String,
@@ -28,7 +28,7 @@ pub struct LoginForm {
 pub fn token(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    form: Form<LoginForm>,
+    form: Json<LoginForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {

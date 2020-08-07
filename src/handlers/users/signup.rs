@@ -167,7 +167,7 @@ pub fn signup(
         let user = user.unwrap();
 
         if !config.auto_confirm {
-            let confirmation_url = format!("{}/confirm?confirmation_token={}", config.instance_url, user.confirmation_token.clone().unwrap(),);
+            let confirmation_url = format!("{}/confirm?confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap(),);
 
             let template = email_templates.clone().confirmation_email_template();
 
