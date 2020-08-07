@@ -88,7 +88,7 @@ impl User {
     pub fn confirm_email_change(&mut self, connection: &PgConnection) -> Result<usize, Error> {
         let n: Option<String> = None;
         match update(users.filter(id.eq(self.id)))
-            .set((email_change_token.eq(n), new_email.eq(n), email.eq(self.new_email.as_ref().unwrap())))
+            .set((email_change_token.eq(n.clone()), new_email.eq(n), email.eq(self.new_email.as_ref().unwrap())))
             .execute(connection)
         {
             Ok(affected_rows) => Ok(affected_rows),
