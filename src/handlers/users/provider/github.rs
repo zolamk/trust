@@ -4,7 +4,6 @@ use crate::{
 };
 use reqwest::{Client, Error};
 use serde::Deserialize;
-use serde_json::{Map, Value};
 
 #[derive(Deserialize)]
 struct PictureData {
@@ -74,24 +73,15 @@ impl Provider for GithubProvider {
 
         let user: GithubUser = response.json()?;
 
-        let mut metadata = Map::<String, Value>::new();
-
-        if let Some(name) = user.name {
-            metadata.insert("name".to_string(), Value::String(name));
-        }
-
-        if let Some(avatar_url) = user.avatar_url {
-            metadata.insert("avatar_url".to_string(), Value::String(avatar_url));
-        }
-
         response = client.get("https://api.github.com/user/emails").bearer_auth(access_token).send()?;
 
         let emails: Vec<GithubUserEmail> = response.json()?;
 
         let mut data = UserProvidedData {
-            metadata: Some(Value::Object(metadata)),
             verified: false,
             email: None,
+            name: user.name,
+            avatar: user.avatar_url,
         };
 
         for email in emails {

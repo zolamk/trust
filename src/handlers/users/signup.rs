@@ -76,7 +76,7 @@ pub fn signup(
 
     user.confirmation_token = if config.auto_confirm { None } else { Some(secure_token(100)) };
 
-    user.confirmation_sent_at = if config.auto_confirm { None } else { Some(Utc::now().naive_utc()) };
+    user.confirmation_token_sent_at = if config.auto_confirm { None } else { Some(Utc::now().naive_utc()) };
 
     user.hash_password();
 

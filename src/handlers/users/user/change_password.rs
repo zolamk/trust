@@ -15,16 +15,16 @@ use rocket_contrib::json::{Json, JsonValue};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-pub struct UpdatePasswordForm {
+pub struct ChangePasswordForm {
     pub old_password: String,
     pub new_password: String,
 }
 
-#[patch("/user/password", data = "<update_password_form>")]
-pub fn update_password(
+#[patch("/user/password", data = "<change_password_form>")]
+pub fn change_password(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    update_password_form: Json<UpdatePasswordForm>,
+    change_password_form: Json<ChangePasswordForm>,
     token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if token.is_err() {
@@ -51,7 +51,7 @@ pub fn update_password(
         }
     };
 
-    if !config.password_rule.is_match(update_password_form.new_password.as_ref()) {
+    if !config.password_rule.is_match(change_password_form.new_password.as_ref()) {
         return Err(Error {
             code: 400,
             body: json!({
@@ -63,7 +63,7 @@ pub fn update_password(
 
     match crate::models::user::get_by_id(token.sub, &connection) {
         Ok(mut user) => {
-            if !user.verify_password(update_password_form.old_password.clone()) {
+            if !user.verify_password(change_password_form.old_password.clone()) {
                 return Err(Error {
                     code: 400,
                     body: json!({
@@ -72,7 +72,7 @@ pub fn update_password(
                 });
             }
 
-            user.password = Some(update_password_form.new_password.clone());
+            user.password = Some(change_password_form.new_password.clone());
 
             user.hash_password();
 

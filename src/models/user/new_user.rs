@@ -16,7 +16,7 @@ pub struct NewUser {
     pub password: Option<String>,
     pub confirmed: bool,
     pub confirmation_token: Option<String>,
-    pub confirmation_sent_at: Option<NaiveDateTime>,
+    pub confirmation_token_sent_at: Option<NaiveDateTime>,
     pub invitation_sent_at: Option<NaiveDateTime>,
     pub user_metadata: Option<serde_json::Value>,
     pub app_metadata: Option<serde_json::Value>,

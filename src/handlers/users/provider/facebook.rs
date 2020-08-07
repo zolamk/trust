@@ -4,7 +4,6 @@ use crate::{
 };
 use reqwest::{Client, Error};
 use serde::Deserialize;
-use serde_json::{Map, Value};
 
 #[derive(Deserialize)]
 struct PictureData {
@@ -70,20 +69,17 @@ impl Provider for FacebookProvider {
 
         let data: FacebookUser = response.json()?;
 
-        let mut metadata = Map::<String, Value>::new();
-
-        if !data.picture.data.is_silhouette {
-            metadata.insert("avatar".to_string(), Value::String(data.picture.data.url));
-        }
-
-        if let Some(name) = data.name {
-            metadata.insert("name".to_string(), Value::String(name));
-        }
-
-        return Ok(UserProvidedData {
+        let mut d = UserProvidedData {
             email: data.email,
             verified: true,
-            metadata: Some(Value::Object(metadata)),
-        });
+            name: data.name,
+            avatar: None,
+        };
+
+        if !data.picture.data.is_silhouette {
+            d.avatar = Some(data.picture.data.url)
+        }
+
+        return Ok(d);
     }
 }

@@ -1,5 +1,4 @@
 use crate::{
-    config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::Error,
     models::Error as ModelError,
@@ -14,7 +13,7 @@ use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::JsonValue;
 
 #[get("/user")]
-pub fn get(config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, token: Result<JWT, CryptoError>) -> Result<status::Custom<JsonValue>, Error> {
+pub fn get(connection_pool: State<Pool<ConnectionManager<PgConnection>>>, token: Result<JWT, CryptoError>) -> Result<status::Custom<JsonValue>, Error> {
     if token.is_err() {
         let err = token.err().unwrap();
 

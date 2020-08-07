@@ -34,7 +34,8 @@ pub struct Config {
     pub mailer_template_confirmation: Option<String>,
     pub mailer_template_email_change: Option<String>,
     pub mailer_template_invitation: Option<String>,
-    pub mailer_templtate_recovery: Option<String>,
+    pub mailer_template_recovery: Option<String>,
+    pub mailer_template_revert: Option<String>,
     pub operator_token: String,
     pub port: u16,
     #[serde(default = "default_password_rule")]

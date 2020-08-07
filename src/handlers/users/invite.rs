@@ -114,9 +114,9 @@ pub fn invite(
 
     user.confirmation_token = Some(secure_token(100));
 
-    user.confirmation_sent_at = Some(Utc::now().naive_utc());
+    user.confirmation_token_sent_at = Some(Utc::now().naive_utc());
 
-    user.invitation_sent_at = user.confirmation_sent_at;
+    user.invitation_sent_at = user.confirmation_token_sent_at;
 
     let transaction = connection.transaction::<_, Error, _>(|| {
         let user = user.save(&connection);

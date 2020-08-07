@@ -8,7 +8,7 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 use log::error;
-use rocket::{http::Status, response::status, State};
+use rocket::{response::status, State};
 use rocket_contrib::json::JsonValue;
 use serde::{Deserialize, Serialize};
 

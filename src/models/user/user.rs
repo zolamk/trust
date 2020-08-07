@@ -12,6 +12,10 @@ pub struct User {
     pub id: i64,
     pub email: String,
     pub aud: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar: Option<String>,
     #[serde(skip_serializing)]
     pub is_admin: bool,
     #[serde(skip_serializing)]
@@ -23,17 +27,17 @@ pub struct User {
     #[serde(skip_serializing)]
     pub confirmation_token: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub confirmation_sent_at: Option<NaiveDateTime>,
+    pub confirmation_token_sent_at: Option<NaiveDateTime>,
     #[serde(skip_serializing)]
     pub recovery_token: Option<String>,
     #[serde(skip_serializing)]
-    pub recovery_sent_at: Option<NaiveDateTime>,
+    pub recovery_token_sent_at: Option<NaiveDateTime>,
     #[serde(skip_serializing)]
     pub email_change_token: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_change: Option<String>,
+    pub new_email: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_change_sent_at: Option<NaiveDateTime>,
+    pub email_change_token_sent_at: Option<NaiveDateTime>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_signin_at: Option<NaiveDateTime>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -74,7 +78,19 @@ impl User {
     }
 
     pub fn confirm(&mut self, connection: &PgConnection) -> Result<usize, Error> {
-        match update(users.filter(id.eq(self.id))).set((confirmed.eq(true), confirmation_token.eq(""))).execute(connection) {
+        let n: Option<String> = None;
+        match update(users.filter(id.eq(self.id))).set((confirmed.eq(true), confirmation_token.eq(n))).execute(connection) {
+            Ok(affected_rows) => Ok(affected_rows),
+            Err(err) => Err(Error::from(err)),
+        }
+    }
+
+    pub fn confirm_email_change(&mut self, connection: &PgConnection) -> Result<usize, Error> {
+        let n: Option<String> = None;
+        match update(users.filter(id.eq(self.id)))
+            .set((email_change_token.eq(n), new_email.eq(n), email.eq(self.new_email.as_ref().unwrap())))
+            .execute(connection)
+        {
             Ok(affected_rows) => Ok(affected_rows),
             Err(err) => Err(Error::from(err)),
         }

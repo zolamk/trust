@@ -1,10 +1,13 @@
 use crate::{
     config::Config,
+    crypto::secure_token,
+    mailer::{send_confirmation_email, EmailTemplates},
     models::{
         user::{NewUser, User},
         Error as ModelError,
     },
 };
+use chrono::Utc;
 use clap::ArgMatches;
 use diesel::{
     pg::PgConnection,
@@ -13,7 +16,7 @@ use diesel::{
 };
 use log::error;
 
-fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
+fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, email_templates: EmailTemplates) {
     let matches = matches.unwrap();
 
     let mut user = NewUser::default();
@@ -30,6 +33,12 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
     user.hash_password();
 
+    if !user.confirmed {
+        user.confirmation_token = Some(secure_token(100));
+
+        user.confirmation_token_sent_at = Some(Utc::now().naive_utc())
+    }
+
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
         Err(err) => {
@@ -39,7 +48,24 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
     };
 
     match user.save(&connection) {
-        Ok(_val) => println!("{} created successfully", user.email),
+        Ok(user) => {
+            if !user.confirmed {
+                let confirmation_url = format!("{}/confirm?confirmation_token={}", config.instance_url, user.confirmation_token.clone().unwrap());
+
+                let template = email_templates.confirmation_email_template();
+
+                let email = send_confirmation_email(template, confirmation_url, &user, &config);
+
+                if email.is_err() {
+                    let err = email.err().unwrap();
+
+                    error!("{:?}", err);
+
+                    return;
+                }
+            }
+            println!("{} created successfully", user.email);
+        }
         Err(err) => match err {
             ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) => panic!("{} already exists!", user.email),
             _ => panic!("{:?}", err),
@@ -60,11 +86,11 @@ fn remove_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionMan
     }
 }
 
-pub fn users(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
+pub fn users(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, email_templates: EmailTemplates) {
     let matches = matches.unwrap();
 
     match matches.subcommand() {
-        ("create", sub_m) => new_user(sub_m, connection_pool, config),
+        ("create", sub_m) => new_user(sub_m, connection_pool, config, email_templates),
         ("remove", sub_m) => remove_user(sub_m, connection_pool),
         _ => {}
     }

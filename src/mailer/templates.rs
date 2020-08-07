@@ -1,7 +1,7 @@
 use crate::config::Config;
 use std::{fs::read_to_string, path::Path};
 
-static DEFAULT_CONFIRMATION_EMAIL: &str = "<h2>Confirm your signup</h2><p>Follow this link to confirm your signup</p><p><a href='{{ confirmation_url }}'>Confirm</a></p>";
+static DEFAULT_CONFIRMATION_EMAIL: &str = "<h2>Confirm your email</h2><p>Follow this link to confirm your email</p><p><a href='{{ confirmation_url }}'>Confirm</a></p>";
 
 static DEFAULT_INVITATION_EMAIL: &str = "<h2>You've Been Invited</h2><p>Follow this link to accept your invitation</p><p><a href='{{ invitation_url }}'>Accept Invite</a></p>";
 

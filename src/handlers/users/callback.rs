@@ -205,8 +205,8 @@ pub fn callback(
                     email,
                     aud: config.aud.clone(),
                     confirmed: user_data.verified || config.auto_confirm,
-                    user_metadata: user_data.metadata,
-                    confirmation_sent_at: None,
+                    user_metadata: None,
+                    confirmation_token_sent_at: None,
                     confirmation_token: None,
                     invitation_sent_at: None,
                     is_admin: false,
@@ -260,7 +260,7 @@ pub fn callback(
             if !user_data.verified && !config.auto_confirm {
                 user.confirmation_token = Some(secure_token(100));
 
-                user.confirmation_sent_at = Some(Utc::now().naive_utc());
+                user.confirmation_token_sent_at = Some(Utc::now().naive_utc());
 
                 let user = user.save(&connection);
 

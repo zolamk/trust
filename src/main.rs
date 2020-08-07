@@ -31,20 +31,20 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
     PgConnection,
 };
-use log::Level;
+use log::{info, Level};
 use mailer::EmailTemplates;
 use std::str::FromStr;
 
-fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
+fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, email_templates: EmailTemplates) {
     let host = config.host.clone();
 
     let port = config.port;
 
-    let rocket_config = rocket::config::Config::build(rocket::config::Environment::Production).address(host).port(port).unwrap();
+    let rocket_config = rocket::config::Config::build(rocket::config::Environment::Production).address(host.clone()).port(port).unwrap();
 
     let app = rocket::custom(rocket_config);
 
-    let email_templates = EmailTemplates::new(config.clone());
+    info!("trust running on {:?}:{:?}", host, port);
 
     app.mount(
         "/",
@@ -56,9 +56,12 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
             handlers::users::invite::invite,
             handlers::users::authorize::authorize,
             handlers::users::callback::callback,
+            handlers::users::user::get::get,
             handlers::users::users::create::create,
             handlers::users::users::delete::delete,
-            handlers::users::user::update_password::update_password,
+            handlers::users::user::change_password::change_password,
+            handlers::users::user::change_email::change_email,
+            handlers::users::user::change_email_confirm::change_email_confirm,
         ],
     )
     .manage(config)
@@ -78,6 +81,8 @@ fn main() {
 
     let pool = Pool::new(manager).unwrap();
 
+    let email_templates = EmailTemplates::new(config.clone());
+
     let cli_yaml = load_yaml!("cli.yml");
 
     let cli = App::from_yaml(cli_yaml);
@@ -87,8 +92,8 @@ fn main() {
     simple_logger::init_with_level(Level::from_str(&log_level).unwrap()).unwrap();
 
     match matches.subcommand() {
-        ("run", _sub_m) => run(pool, config),
-        ("users", sub_m) => cmd::users(sub_m, pool, config),
+        ("run", _sub_m) => run(pool, config, email_templates),
+        ("users", sub_m) => cmd::users(sub_m, pool, config, email_templates),
         ("operator", sub_m) => cmd::operator(sub_m, config),
         ("migrate", _sub_m) => cmd::migrations(pool),
         ("version", _sub_m) => cmd::version(),

@@ -4,7 +4,6 @@ use crate::{
 };
 use reqwest::{Client, Error};
 use serde::Deserialize;
-use serde_json::{Map, Value};
 
 #[derive(Deserialize)]
 struct GoogleUser {
@@ -57,20 +56,11 @@ impl Provider for GoogleProvider {
 
         let data: GoogleUser = response.json()?;
 
-        let mut metadata = Map::<String, Value>::new();
-
-        if let Some(avatar_url) = data.picture {
-            metadata.insert("avatar".to_string(), Value::String(avatar_url));
-        }
-
-        if let Some(name) = data.name {
-            metadata.insert("name".to_string(), Value::String(name));
-        }
-
         return Ok(UserProvidedData {
             email: data.email,
             verified: data.verified_email,
-            metadata: Some(Value::Object(metadata)),
+            avatar: data.picture,
+            name: data.name,
         });
     }
 }

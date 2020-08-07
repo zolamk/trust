@@ -132,7 +132,7 @@ pub fn create(
     if !user.confirmed {
         user.confirmation_token = Some(secure_token(100));
 
-        user.confirmation_sent_at = Some(Utc::now().naive_utc());
+        user.confirmation_token_sent_at = Some(Utc::now().naive_utc());
     }
 
     user.user_metadata = create_form.data.clone();
