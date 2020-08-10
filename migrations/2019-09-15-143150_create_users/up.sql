@@ -1,8 +1,11 @@
 create extension citext;
 
+CREATE DOMAIN email AS citext
+  CHECK ( value ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
+
 create table users (
     id bigserial primary key,
-    email citext not null constraint uq_email unique,
+    email email not null constraint uq_email unique,
     aud varchar(250) not null,
     name varchar,
     avatar varchar,
