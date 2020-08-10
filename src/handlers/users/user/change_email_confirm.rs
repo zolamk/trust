@@ -1,7 +1,14 @@
-use crate::{handlers::Error, models::user::get_by_email_change_token};
+use crate::{
+    handlers::Error,
+    models::{user::get_by_email_change_token, Error as ModelError},
+};
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
+    result::{
+        DatabaseErrorKind,
+        Error::{DatabaseError, NotFound},
+    },
 };
 use log::error;
 use rocket::{http::Status, response::status, State};
@@ -34,8 +41,20 @@ pub fn change_email_confirm(connection_pool: State<Pool<ConnectionManager<PgConn
 
     if user.is_err() {
         let err = user.err().unwrap();
-        error!("{:?}", err);
-        return Err(Error::from(err));
+        match err {
+            ModelError::DatabaseError(NotFound) => {
+                return Err(Error {
+                    code: 404,
+                    body: json!({
+                        "code": "user_not_found"
+                    }),
+                })
+            }
+            _ => {
+                error!("{:?}", err);
+                return Err(Error::from(err));
+            }
+        }
     }
 
     let mut user = user.unwrap();
