@@ -3,7 +3,7 @@ use crate::{
     crypto::{jwt::JWT, secure_token, Error as CryptoError},
     diesel::Connection,
     handlers::Error,
-    mailer::{send_invitation_email, EmailTemplates},
+    mailer::{send_email, EmailTemplates},
     models::{user::NewUser, Error as ModelError},
 };
 use chrono::Utc;
@@ -141,11 +141,15 @@ pub fn invite(
 
         let user = user.unwrap();
 
-        let invitation_url = format!("{}/invitation_token={}", config.site_url, user.confirmation_token.clone().unwrap(),);
-
         let template = email_templates.clone().invitation_email_template();
 
-        let email = send_invitation_email(template, invitation_url, &user, &config);
+        let data = json!({
+            "invitation_url": format!("{}/invitation_token={}", config.site_url, user.confirmation_token.clone().unwrap()),
+            "email": user.email,
+            "site_url": config.site_url,
+        });
+
+        let email = send_email(template, data, &user, &config);
 
         if email.is_err() {
             let err = email.err().unwrap();

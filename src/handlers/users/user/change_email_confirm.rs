@@ -5,10 +5,7 @@ use crate::{
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
-    result::{
-        DatabaseErrorKind,
-        Error::{DatabaseError, NotFound},
-    },
+    result::Error::NotFound,
 };
 use log::error;
 use rocket::{http::Status, response::status, State};

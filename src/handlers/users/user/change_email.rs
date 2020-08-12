@@ -2,7 +2,7 @@ use crate::{
     config::Config,
     crypto::{jwt::JWT, secure_token, Error as CryptoError},
     handlers::Error,
-    mailer::{send_email_change_confirmation_email, EmailTemplates},
+    mailer::{send_email, EmailTemplates},
     models::Error as ModelError,
 };
 use chrono::Utc;
@@ -139,8 +139,6 @@ pub fn change_email(
 
     user.email_change_token_sent_at = Some(Utc::now().naive_utc());
 
-    let confirmation_url = format!("{}/email_change_token={}", config.site_url, user.email_change_token.clone().unwrap());
-
     let user = user.save(&connection);
 
     if user.is_err() {
@@ -155,7 +153,13 @@ pub fn change_email(
 
     let template = email_templates.clone().confirmation_email_template();
 
-    let email = send_email_change_confirmation_email(template, confirmation_url, &user, &config);
+    let data = json!({
+        "confirmation_url": format!("{}/email_change_token={}", config.site_url, user.email_change_token.clone().unwrap()),
+        "email": user.email,
+        "site_url": config.site_url
+    });
+
+    let email = send_email(template, data, &user, &config);
 
     if email.is_err() {
         let err = email.err().unwrap();

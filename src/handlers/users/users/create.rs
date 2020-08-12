@@ -3,7 +3,7 @@ use crate::{
     crypto::{jwt::JWT, secure_token, Error as CryptoError},
     diesel::Connection,
     handlers::Error,
-    mailer::{send_confirmation_email, EmailTemplates},
+    mailer::{send_email, EmailTemplates},
     models::{user::NewUser, Error as ModelError},
 };
 use chrono::Utc;
@@ -163,11 +163,15 @@ pub fn create(
         let user = user.unwrap();
 
         if !user.confirmed {
-            let confirmation_url = format!("{}/confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap(),);
-
             let template = email_templates.clone().confirmation_email_template();
 
-            let email = send_confirmation_email(template, confirmation_url, &user, &config);
+            let data = json!({
+                "confirmation_url": format!("{}/confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap()),
+                "email": user.email,
+                "site_url": config.site_url
+            });
+
+            let email = send_email(template, data, &user, &config);
 
             if email.is_err() {
                 let err = email.err().unwrap();

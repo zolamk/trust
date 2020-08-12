@@ -6,7 +6,7 @@ use crate::{
         users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderState},
     },
     hook::HookEvent,
-    mailer::{send_confirmation_email, EmailTemplates},
+    mailer::{send_email, EmailTemplates},
     models::{
         refresh_token::NewRefreshToken,
         user::{get_by_email, NewUser},
@@ -274,11 +274,15 @@ pub fn callback(
 
                 let user = user.unwrap();
 
-                let confirmation_url = format!("{}/confirm?confirmation_token={}", config.instance_url, user.confirmation_token.clone().unwrap(),);
-
                 let template = email_templates.clone().confirmation_email_template();
 
-                let email = send_confirmation_email(template, confirmation_url, &user, &config);
+                let data = json!({
+                    "confirmation_url": format!("{}/confirm?confirmation_token={}", config.instance_url, user.confirmation_token.clone().unwrap()),
+                    "site_url": config.site_url,
+                    "email": user.email
+                });
+
+                let email = send_email(template, data, &user, &config);
 
                 if email.is_err() {
                     let redirect_url = format!("{}?error=unable_to_send_confirmation_email", operator_signature.site_url);

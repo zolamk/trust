@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     crypto::secure_token,
-    mailer::{send_confirmation_email, EmailTemplates},
+    mailer::{send_email, EmailTemplates},
     models::{
         user::{NewUser, User},
         Error as ModelError,
@@ -50,11 +50,15 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
     match user.save(&connection) {
         Ok(user) => {
             if !user.confirmed {
-                let confirmation_url = format!("{}/confirm?confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap());
-
                 let template = email_templates.confirmation_email_template();
 
-                let email = send_confirmation_email(template, confirmation_url, &user, &config);
+                let data = json!({
+                    "confirmation_url": format!("{}/confirm?confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap()),
+                    "site_url": config.site_url,
+                    "email": user.email
+                });
+
+                let email = send_email(template, data, &user, &config);
 
                 if email.is_err() {
                     let err = email.err().unwrap();
@@ -82,7 +86,7 @@ fn remove_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionMan
 
     match User::delete_by_email(email, &connection) {
         Ok(_val) => println!("user deleted successfully"),
-        Err(err) => println!("unable to delte user: {:?}", err),
+        Err(err) => println!("unable to delete user: {:?}", err),
     }
 }
 

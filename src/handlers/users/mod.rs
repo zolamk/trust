@@ -3,6 +3,7 @@ pub mod callback;
 pub mod confirm;
 pub mod invite;
 pub mod provider;
+pub mod reset;
 pub mod signup;
 pub mod token;
 pub mod user;

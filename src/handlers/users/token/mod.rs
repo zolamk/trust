@@ -12,7 +12,7 @@ use crate::{
 use log::error;
 use password_grant::password_grant;
 use refresh_token_grant::refresh_token_grant;
-use rocket::{request::Form, response::status, State};
+use rocket::{response::status, State};
 use rocket_contrib::json::{Json, JsonValue};
 use serde::{Deserialize, Serialize};
 

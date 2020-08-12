@@ -7,7 +7,6 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
     PgConnection,
 };
-use log::info;
 use rocket::{
     http::{Header, Status},
     local::Client,
@@ -83,6 +82,8 @@ fn end_users_test() {
             handlers::users::user::change_password::change_password,
             handlers::users::user::change_email::change_email,
             handlers::users::user::change_email_confirm::change_email_confirm,
+            handlers::users::reset::reset::reset,
+            handlers::users::reset::confirm_reset::confirm_reset,
         ],
     );
 
@@ -251,4 +252,34 @@ fn end_users_test() {
     assert_eq!(res.status(), Status::Ok);
 
     get_by_email("zola@zelalem.me".to_string(), &connection).expect("expected to find user");
+
+    let req = client.post("/reset").body(r#"{ "email": "non@existent.email"}"#);
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Accepted);
+
+    let req = client.post("/reset").body(r#"{ "email": "zola@zelalem.me"}"#);
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Accepted);
+
+    let user = get_by_email("zola@zelalem.me".to_string(), &connection).expect("expected to find user");
+
+    let req = client
+        .post("/reset/confirm")
+        .body(format!("{{\"recovery_token\": \"{}\", \"new_password\": \"newpassword\"}}", "wrongtoken"));
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::NotFound);
+
+    let req = client
+        .post("/reset/confirm")
+        .body(format!("{{\"recovery_token\": \"{}\", \"new_password\": \"newpassword\"}}", user.recovery_token.unwrap()));
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Ok);
 }

@@ -57,6 +57,8 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, e
             handlers::users::invite::invite,
             handlers::users::authorize::authorize,
             handlers::users::callback::callback,
+            handlers::users::reset::reset::reset,
+            handlers::users::reset::confirm_reset::confirm_reset,
             handlers::users::users::create::create,
             handlers::users::users::delete::delete,
             handlers::users::user::get::get,

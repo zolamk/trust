@@ -3,7 +3,7 @@ use crate::{
     crypto::secure_token,
     handlers::{trigger_hook, Error},
     hook::HookEvent,
-    mailer::{send_confirmation_email, EmailTemplates},
+    mailer::{send_email, EmailTemplates},
     models::{user::NewUser, Error as ModelError},
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
@@ -167,11 +167,15 @@ pub fn signup(
         let user = user.unwrap();
 
         if !config.auto_confirm {
-            let confirmation_url = format!("{}/confirm?confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap(),);
-
             let template = email_templates.clone().confirmation_email_template();
 
-            let email = send_confirmation_email(template, confirmation_url, &user, config.inner());
+            let data = json!({
+                "confirmation_url": format!("{}/confirm?confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap()),
+                "email": user.email,
+                "site_url": config.site_url
+            });
+
+            let email = send_email(template, data, &user, config.inner());
 
             if email.is_err() {
                 let err = email.err().unwrap();
