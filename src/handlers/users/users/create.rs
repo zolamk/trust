@@ -24,6 +24,8 @@ use serde::{Deserialize, Serialize};
 pub struct CreateForm {
     pub email: String,
     pub password: String,
+    pub name: Option<String>,
+    pub avatar: Option<String>,
     pub confirm: bool,
     pub data: Option<serde_json::Value>,
     pub app_metadata: Option<serde_json::Value>,
@@ -123,11 +125,13 @@ pub fn create(
 
     user.email = create_form.email.clone();
 
+    user.name = create_form.name.clone();
+
+    user.avatar = create_form.avatar.clone();
+
     user.password = Some(create_form.password.clone());
 
     user.hash_password();
-
-    user.aud = config.aud.clone();
 
     if !user.confirmed {
         user.confirmation_token = Some(secure_token(100));

@@ -44,9 +44,6 @@ subcommands:
                 - password:
                     help: user password
                     required: true
-                - aud:
-                    help: user audience
-                    required: true
                 - admin:
                     short: a
                     long: admin

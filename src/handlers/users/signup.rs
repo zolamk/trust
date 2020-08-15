@@ -21,6 +21,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct SignUpForm {
+    pub name: Option<String>,
+    pub avatar: Option<String>,
     pub email: String,
     pub password: String,
 }
@@ -70,7 +72,9 @@ pub fn signup(
 
     user.password = Some(signup_form.password.clone());
 
-    user.aud = config.aud.to_string();
+    user.name = signup_form.name.clone();
+
+    user.avatar = signup_form.avatar.clone();
 
     user.confirmed = config.auto_confirm;
 

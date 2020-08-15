@@ -203,8 +203,9 @@ pub fn callback(
 
                 let new_user = NewUser {
                     email,
-                    aud: config.aud.clone(),
                     confirmed: user_data.verified || config.auto_confirm,
+                    name: user_data.name,
+                    avatar: user_data.avatar,
                     user_metadata: None,
                     confirmation_token_sent_at: None,
                     confirmation_token: None,

@@ -110,8 +110,6 @@ pub fn invite(
 
     user.email = invite_form.email.clone();
 
-    user.aud = config.aud.clone();
-
     user.confirmation_token = Some(secure_token(100));
 
     user.confirmation_token_sent_at = Some(Utc::now().naive_utc());

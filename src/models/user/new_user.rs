@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 #[table_name = "users"]
 pub struct NewUser {
     pub email: String,
-    pub aud: String,
+    pub name: Option<String>,
+    pub avatar: Option<String>,
     pub is_admin: bool,
     pub password: Option<String>,
     pub confirmed: bool,

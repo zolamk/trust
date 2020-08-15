@@ -6,7 +6,6 @@ CREATE DOMAIN email AS citext
 create table users (
     id bigserial primary key,
     email email not null constraint uq_email unique,
-    aud varchar(250) not null,
     name varchar,
     avatar varchar,
     is_admin boolean not null default false,

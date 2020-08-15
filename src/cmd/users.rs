@@ -25,8 +25,6 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
     user.password = Some(matches.value_of("password").unwrap().to_string());
 
-    user.aud = matches.value_of("aud").unwrap().to_string();
-
     user.is_admin = matches.is_present("admin");
 
     user.confirmed = config.auto_confirm || matches.is_present("confirm");

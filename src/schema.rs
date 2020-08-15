@@ -12,7 +12,6 @@ table! {
     users (id) {
         id -> Int8,
         email -> Varchar,
-        aud -> Varchar,
         name -> Nullable<Varchar>,
         avatar -> Nullable<Varchar>,
         is_admin -> Bool,
