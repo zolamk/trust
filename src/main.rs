@@ -62,6 +62,8 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, e
             handlers::users::users::create::create,
             handlers::users::users::delete::delete,
             handlers::users::user::get::get,
+            handlers::users::users::update::update::update,
+            handlers::users::users::update::email::update_email,
             handlers::users::user::change_password::change_password,
             handlers::users::user::change_email::change_email,
             handlers::users::user::change_email_confirm::change_email_confirm

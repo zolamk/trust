@@ -8,21 +8,23 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 use log::error;
-use rocket::{response::status, State};
-use rocket_contrib::json::JsonValue;
+use rocket::{http::Status, response::status, State};
+use rocket_contrib::json::{Json, JsonValue};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct UpdateForm {
-    pub email: String,
     pub password: String,
-    pub confirm: bool,
-    pub data: Option<serde_json::Value>,
-    pub app_metadata: Option<serde_json::Value>,
 }
 
-#[put("/users/<id>")]
-pub fn update(_config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, token: Result<JWT, CryptoError>, id: i64) -> Result<status::Custom<JsonValue>, Error> {
+#[put("/users/<id>/password", data = "<update_form>")]
+pub fn change_password(
+    config: State<Config>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    token: Result<JWT, CryptoError>,
+    update_form: Json<UpdateForm>,
+    id: i64,
+) -> Result<status::Custom<JsonValue>, Error> {
     if token.is_err() {
         let err = token.err().unwrap();
 
@@ -66,7 +68,7 @@ pub fn update(_config: State<Config>, connection_pool: State<Pool<ConnectionMana
         return Err(Error::from(err));
     }
 
-    let user = user.unwrap();
+    let mut user = user.unwrap();
 
     if user.id == token.sub {
         return Err(Error {
@@ -77,5 +79,33 @@ pub fn update(_config: State<Config>, connection_pool: State<Pool<ConnectionMana
         });
     }
 
-    unimplemented!();
+    if !config.password_rule.is_match(update_form.password.as_ref()) {
+        return Err(Error {
+            code: 400,
+            body: json!({
+                "code": "invalid_password_format",
+                "message": "invalid password"
+            }),
+        });
+    }
+
+    user.password = Some(update_form.password.clone());
+
+    user.hash_password();
+
+    let user = user.save(&connection);
+
+    if user.is_err() {
+        let err = user.err().unwrap();
+        error!("{:?}", err);
+        return Err(Error::from(err));
+    }
+
+    return Ok(status::Custom(
+        Status::Ok,
+        JsonValue(json!({
+            "code": "success",
+            "message": "password changed successfully"
+        })),
+    ));
 }

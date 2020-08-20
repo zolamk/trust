@@ -44,7 +44,7 @@ pub fn token(
     if form.grant_type == "password" {
         return password_grant(form.username.clone(), form.password.clone(), config, connection_pool, operator_signature);
     } else if form.grant_type == "refresh_token" {
-        return refresh_token_grant(form.refresh_token.clone(), config, connection_pool);
+        return refresh_token_grant(form.refresh_token.clone(), config, connection_pool, operator_signature);
     } else {
         let err = Error {
             code: 429,

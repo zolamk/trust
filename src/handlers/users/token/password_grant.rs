@@ -1,8 +1,8 @@
 use crate::{
     config::Config,
     crypto::jwt::JWT,
-    handlers::{trigger_hook, Error},
-    hook::HookEvent,
+    handlers::Error,
+    hook::{HookEvent, Webhook},
     models::{refresh_token::NewRefreshToken, Error as ModelError},
     operator_signature::OperatorSignature,
 };
@@ -77,19 +77,23 @@ pub fn password_grant(
         return Err(invalid_email_or_password);
     }
 
-    let user = trigger_hook(HookEvent::Signup, user, config.inner(), &connection, operator_signature, "email".to_string());
+    let payload = json!({
+        "event": HookEvent::Login,
+        "provider": "email",
+        "user": user,
+    });
 
-    if user.is_err() {
-        let err = user.err().unwrap();
+    let hook = Webhook::new(HookEvent::Login, payload, config.clone(), operator_signature);
 
-        error!("{:?}", err);
+    let hook_response = hook.trigger();
 
-        return Err(err);
+    if hook_response.is_err() {
+        return Err(Error::from(hook_response.err().unwrap()));
     }
 
-    let user = user.unwrap();
+    let hook_response = hook_response.unwrap();
 
-    let jwt = JWT::new(&user, config.aud.clone());
+    let jwt = JWT::new(&user, config.aud.clone(), hook_response);
 
     let jwt = jwt.sign(config.inner());
 

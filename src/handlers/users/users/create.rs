@@ -27,8 +27,6 @@ pub struct CreateForm {
     pub name: Option<String>,
     pub avatar: Option<String>,
     pub confirm: bool,
-    pub data: Option<serde_json::Value>,
-    pub app_metadata: Option<serde_json::Value>,
 }
 
 #[post("/users", data = "<create_form>")]
@@ -138,10 +136,6 @@ pub fn create(
 
         user.confirmation_token_sent_at = Some(Utc::now().naive_utc());
     }
-
-    user.user_metadata = create_form.data.clone();
-
-    user.app_metadata = create_form.app_metadata.clone();
 
     let transaction = connection.transaction::<_, Error, _>(|| {
         let user = user.save(&connection);

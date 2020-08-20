@@ -19,13 +19,20 @@ use crate::{
     crypto,
     crypto::jwt::JWT,
     handlers::Error,
+    hook::{HookEvent, Webhook},
     models::{refresh_token::get_refresh_token_by_token, user},
+    operator_signature::OperatorSignature,
 };
 use log::error;
 use rocket::{response::status, State};
 use rocket_contrib::json::JsonValue;
 
-pub fn refresh_token_grant(refresh_token: Option<String>, config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>) -> Result<status::Custom<JsonValue>, Error> {
+pub fn refresh_token_grant(
+    refresh_token: Option<String>,
+    config: State<Config>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    operator_signature: OperatorSignature,
+) -> Result<status::Custom<JsonValue>, Error> {
     if refresh_token.is_none() {
         return Err(Error {
             code: 400,
@@ -99,7 +106,23 @@ pub fn refresh_token_grant(refresh_token: Option<String>, config: State<Config>,
 
     let user = user.unwrap();
 
-    let jwt = JWT::new(&user, config.aud.clone());
+    let payload = json!({
+        "event": HookEvent::Login,
+        "provider": "email",
+        "user": user,
+    });
+
+    let hook = Webhook::new(HookEvent::Login, payload, config.clone(), operator_signature);
+
+    let hook_response = hook.trigger();
+
+    if hook_response.is_err() {
+        return Err(Error::from(hook_response.err().unwrap()));
+    }
+
+    let hook_response = hook_response.unwrap();
+
+    let jwt = JWT::new(&user, config.aud.clone(), hook_response);
 
     let jwt = jwt.sign(config.inner());
 

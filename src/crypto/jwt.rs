@@ -18,20 +18,17 @@ pub struct JWT {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exp: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub app_metadata: Option<Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub user_metadata: Option<Value>,
+    pub metadata: Option<Value>,
 }
 
 impl JWT {
-    pub fn new(user: &user::User, aud: String) -> JWT {
+    pub fn new(user: &user::User, aud: String, metadata: Option<Value>) -> JWT {
         return JWT {
             sub: user.id,
             exp: None,
             aud,
             email: user.email.clone(),
-            app_metadata: user.app_metadata.clone(),
-            user_metadata: user.user_metadata.clone(),
+            metadata,
         };
     }
 

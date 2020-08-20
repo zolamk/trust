@@ -76,7 +76,8 @@ fn admin_user_test() {
         "/",
         routes![
             handlers::users::users::create::create,
-            handlers::users::users::update::update,
+            handlers::users::users::update::update::update,
+            handlers::users::users::update::email::update_email,
             handlers::users::users::delete::delete,
             handlers::users::user::get::get,
             handlers::users::signup::signup,
@@ -189,7 +190,7 @@ fn admin_user_test() {
     let req = client
         .put(format!("/users/{}", admin.id))
         .header(n_authorization)
-        .body(r#"{ "email": "admin@zelalem.me", "password": "password", "confirm": false}"#);
+        .body(r#"{ "name": "Zelalem Mekonen", "avatar": "https://img.com/avatar", "confirm": false}"#);
 
     let res = req.dispatch();
 
@@ -198,7 +199,7 @@ fn admin_user_test() {
     let req = client
         .put(format!("/users/{}", admin.id))
         .header(authorization)
-        .body(r#"{ "email": "admin@zelalem.me", "password": "password", "confirm": false}"#);
+        .body(r#"{ "name": "admin@zelalem.me", "password": "password", "confirm": false}"#);
 
     let res = req.dispatch();
 

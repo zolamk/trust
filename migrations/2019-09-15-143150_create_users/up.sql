@@ -20,8 +20,6 @@ create table users (
     new_email citext,
     email_change_token_sent_at timestamp,
     last_signin_at timestamp,
-    app_metadata json,
-    user_metadata json,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null
 );

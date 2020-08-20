@@ -7,7 +7,7 @@ use chrono::NaiveDateTime;
 use diesel::{delete, update, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 use serde::Serialize;
 
-#[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug)]
+#[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug, Clone)]
 pub struct User {
     pub id: i64,
     pub email: String,
@@ -39,10 +39,6 @@ pub struct User {
     pub email_change_token_sent_at: Option<NaiveDateTime>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_signin_at: Option<NaiveDateTime>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub app_metadata: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub user_metadata: Option<serde_json::Value>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }

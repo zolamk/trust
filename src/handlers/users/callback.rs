@@ -1,15 +1,12 @@
 use crate::{
     config::Config,
     crypto::{jwt::JWT, secure_token},
-    handlers::{
-        trigger_hook,
-        users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderState},
-    },
-    hook::HookEvent,
+    handlers::users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderState},
+    hook::{HookEvent, Webhook},
     mailer::{send_email, EmailTemplates},
     models::{
         refresh_token::NewRefreshToken,
-        user::{get_by_email, NewUser},
+        user::{get_by_email, NewUser, User},
         Error as ModelError,
     },
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
@@ -184,16 +181,20 @@ pub fn callback(
 
     let email = user_data.email.clone().unwrap();
 
-    let u = get_by_email(email.clone(), &connection);
-
     let transaction = connection.transaction::<Redirect, CallbackError, _>(|| {
-        let mut user;
+        let u = get_by_email(email.clone(), &connection);
+
+        let mut user: User;
+
+        let hook_response: Option<serde_json::Value>;
 
         let internal_error_redirect_url = format!("{}?error=internal_error", operator_signature.site_url);
 
+        // there was an error finding the user
         if u.is_err() {
             let err = u.err().unwrap();
 
+            // if the error was the user doesn't exist
             if let ModelError::DatabaseError(NotFound) = err {
                 if config.disable_signup {
                     let redirect_url = format!("{}?error=signup_disabled", operator_signature.site_url);
@@ -206,13 +207,11 @@ pub fn callback(
                     confirmed: user_data.verified || config.auto_confirm,
                     name: user_data.name,
                     avatar: user_data.avatar,
-                    user_metadata: None,
                     confirmation_token_sent_at: None,
                     confirmation_token: None,
                     invitation_sent_at: None,
                     is_admin: false,
                     password: None,
-                    app_metadata: None,
                 };
 
                 let u = new_user.save(&connection);
@@ -231,30 +230,49 @@ pub fn callback(
                     return Err(CallbackError::new(internal_error_redirect_url));
                 }
 
-                let u = trigger_hook(HookEvent::Signup, u.unwrap(), config.inner(), &connection, operator_signature.clone(), state.provider);
+                user = u.unwrap();
 
-                if u.is_err() {
+                let hook_payload = json!({
+                    "event": HookEvent::Signup,
+                    "provider": state.provider,
+                    "user": user,
+                });
+
+                let hook = Webhook::new(HookEvent::Signup, hook_payload, config.clone(), operator_signature.clone());
+
+                let hr = hook.trigger();
+
+                if hr.is_err() {
                     let redirect_url = format!("{}?error=signup_hook_error", operator_signature.site_url);
 
                     return Err(CallbackError::new(redirect_url));
                 }
 
-                user = u.unwrap();
-            } else {
-                error!("{:?}", err);
-
-                return Err(CallbackError::new(internal_error_redirect_url));
+                hook_response = hr.unwrap();
             }
-        } else {
-            let u = trigger_hook(HookEvent::Login, u.unwrap(), config.inner(), &connection, operator_signature.clone(), state.provider);
+            error!("{:?}", err);
 
-            if u.is_err() {
+            return Err(CallbackError::new(internal_error_redirect_url));
+        } else {
+            user = u.unwrap();
+
+            let hook_payload = json!({
+                "event": HookEvent::Login,
+                "provider": state.provider,
+                "user": user,
+            });
+
+            let hook = Webhook::new(HookEvent::Login, hook_payload, config.clone(), operator_signature.clone());
+
+            let hr = hook.trigger();
+
+            if hr.is_err() {
                 let redirect_url = format!("{}?error=login_hook_error", operator_signature.site_url);
 
                 return Err(CallbackError::new(redirect_url));
             }
 
-            user = u.unwrap();
+            hook_response = hr.unwrap();
         }
 
         if !user.confirmed {
@@ -303,7 +321,7 @@ pub fn callback(
             }
         }
 
-        let jwt = JWT::new(&user, config.aud.clone());
+        let jwt = JWT::new(&user, config.aud.clone(), hook_response);
 
         let jwt = jwt.sign(config.inner());
 

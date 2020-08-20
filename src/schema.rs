@@ -26,8 +26,6 @@ table! {
         new_email -> Nullable<Varchar>,
         email_change_token_sent_at -> Nullable<Timestamp>,
         last_signin_at -> Nullable<Timestamp>,
-        app_metadata -> Nullable<Json>,
-        user_metadata -> Nullable<Json>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }

@@ -5,6 +5,7 @@ use rocket::{
     Request, Response,
 };
 use serde::Serialize;
+use serde_json::Error as SerdeError;
 use std::io::Cursor;
 
 #[derive(Debug, Serialize)]
@@ -26,6 +27,17 @@ impl<'r> Responder<'r> for Error {
         let status = Status::from_code(self.code).unwrap();
 
         return Response::build().sized_body(Cursor::new(body)).header(ContentType::JSON).status(status).ok();
+    }
+}
+
+impl From<SerdeError> for Error {
+    fn from(_e: SerdeError) -> Self {
+        return Error::new(
+            500,
+            json!({
+                "code": "json_error"
+            }),
+        );
     }
 }
 

@@ -1,8 +1,8 @@
 use crate::{
     config::Config,
     crypto::secure_token,
-    handlers::{trigger_hook, Error},
-    hook::HookEvent,
+    handlers::Error,
+    hook::{HookEvent, Webhook},
     mailer::{send_email, EmailTemplates},
     models::{user::NewUser, Error as ModelError},
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
@@ -158,17 +158,19 @@ pub fn signup(
 
         let user = user.unwrap();
 
-        let user = trigger_hook(HookEvent::Signup, user, config.inner(), &connection, operator_signature, "email".to_string());
+        let payload = json!({
+            "event": HookEvent::Signup,
+            "provider": "email",
+            "user": user,
+        });
 
-        if user.is_err() {
-            let err = user.err().unwrap();
+        let hook = Webhook::new(HookEvent::Signup, payload, config.clone(), operator_signature);
 
-            error!("{:?}", err);
+        let hook_response = hook.trigger();
 
-            return Err(err);
+        if hook_response.is_err() {
+            return Err(Error::from(hook_response.err().unwrap()));
         }
-
-        let user = user.unwrap();
 
         if !config.auto_confirm {
             let template = email_templates.clone().confirmation_email_template();
