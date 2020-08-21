@@ -20,7 +20,7 @@ impl OperatorSignature {
         return OperatorSignature { site_url, function_hooks };
     }
 
-    pub fn encode(self, operator_token: &str) -> Result<String, Error> {
+    pub fn encode(self, jwt_secret: &str) -> Result<String, Error> {
         let header = json!({});
 
         let payload = serde_json::to_value(self);
@@ -31,14 +31,14 @@ impl OperatorSignature {
 
         let payload = payload.unwrap();
 
-        match encode(header, &operator_token.to_string(), &payload, Algorithm::HS256) {
+        match encode(header, &jwt_secret.to_string(), &payload, Algorithm::HS256) {
             Ok(token) => Ok(token),
             Err(err) => Err(Error::from(err)),
         }
     }
 
-    pub fn decode(operator_signature: &str, operator_token: &str) -> Result<OperatorSignature, Error> {
-        let decoded_token = decode(operator_signature, &operator_token.to_string(), Algorithm::HS256, &ValidationOptions::dangerous());
+    pub fn decode(operator_signature: &str, jwt_secret: &str) -> Result<OperatorSignature, Error> {
+        let decoded_token = decode(operator_signature, &jwt_secret.to_string(), Algorithm::HS256, &ValidationOptions::dangerous());
 
         if decoded_token.is_err() {
             return Err(Error::from(decoded_token.err().unwrap()));

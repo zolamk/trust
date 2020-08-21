@@ -1,4 +1,4 @@
-#![allow(clippy::needless_return, clippy::module_inception)]
+#![allow(clippy::needless_return, clippy::module_inception, clippy::new_without_default)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #[macro_use]
 extern crate rocket;

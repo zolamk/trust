@@ -1,4 +1,4 @@
-#![allow(clippy::needless_return, clippy::module_inception)]
+#![allow(clippy::needless_return, clippy::module_inception, clippy::new_without_default)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #![feature(type_ascription)]
 
@@ -64,6 +64,7 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, e
             handlers::users::user::get::get,
             handlers::users::users::update::update::update,
             handlers::users::users::update::email::update_email,
+            handlers::users::users::update::password::change_password,
             handlers::users::user::change_password::change_password,
             handlers::users::user::change_email::change_email,
             handlers::users::user::change_email_confirm::change_email_confirm

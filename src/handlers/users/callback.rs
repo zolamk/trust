@@ -190,8 +190,27 @@ pub fn callback(
 
         let internal_error_redirect_url = format!("{}?error=internal_error", operator_signature.site_url);
 
-        // there was an error finding the user
-        if u.is_err() {
+        if let Ok(ur) = u {
+            user = ur;
+
+            let hook_payload = json!({
+                "event": HookEvent::Login,
+                "provider": state.provider,
+                "user": user,
+            });
+
+            let hook = Webhook::new(HookEvent::Login, hook_payload, config.clone(), operator_signature.clone());
+
+            let hr = hook.trigger();
+
+            if hr.is_err() {
+                let redirect_url = format!("{}?error=login_hook_error", operator_signature.site_url);
+
+                return Err(CallbackError::new(redirect_url));
+            }
+
+            hook_response = hr.unwrap();
+        } else {
             let err = u.err().unwrap();
 
             // if the error was the user doesn't exist
@@ -249,30 +268,11 @@ pub fn callback(
                 }
 
                 hook_response = hr.unwrap();
+            } else {
+                error!("{:?}", err);
+
+                return Err(CallbackError::new(internal_error_redirect_url));
             }
-            error!("{:?}", err);
-
-            return Err(CallbackError::new(internal_error_redirect_url));
-        } else {
-            user = u.unwrap();
-
-            let hook_payload = json!({
-                "event": HookEvent::Login,
-                "provider": state.provider,
-                "user": user,
-            });
-
-            let hook = Webhook::new(HookEvent::Login, hook_payload, config.clone(), operator_signature.clone());
-
-            let hr = hook.trigger();
-
-            if hr.is_err() {
-                let redirect_url = format!("{}?error=login_hook_error", operator_signature.site_url);
-
-                return Err(CallbackError::new(redirect_url));
-            }
-
-            hook_response = hr.unwrap();
         }
 
         if !user.confirmed {

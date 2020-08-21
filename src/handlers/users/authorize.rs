@@ -4,19 +4,28 @@ use crate::{
         users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderResponse, ProviderState},
         Error,
     },
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use log::error;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, CsrfToken, RedirectUrl, Scope, TokenUrl};
 use rocket::{response::Redirect, State};
 
 #[get("/authorize?<provider>")]
-pub fn authorize(config: State<Config>, provider: String) -> ProviderResponse {
+pub fn authorize(config: State<Config>, provider: String, operator_signature: Result<OperatorSignature, OperatorSignatureError>) -> ProviderResponse {
     let internal_error = Err(Error {
         code: 500,
         body: json!({
             "code": "internal_error",
         }),
     });
+
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return ProviderResponse::Other(internal_error);
+    }
 
     let provider_disabled = ProviderResponse::Other(Err(Error {
         code: 400,
