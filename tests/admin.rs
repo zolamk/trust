@@ -198,10 +198,25 @@ fn admin_user_test() {
 
     let req = client
         .put(format!("/users/{}", admin.id))
-        .header(authorization)
-        .body(r#"{ "name": "admin@zelalem.me", "password": "password", "confirm": false}"#);
+        .header(authorization.clone())
+        .body(r#"{ "name": "Zelalem Mekonen", "avatar": "https://img.com/avatar", "confirm": false}"#);
 
     let res = req.dispatch();
 
     assert_eq!(res.status(), Status::UnprocessableEntity);
+
+    let req = client
+        .put(format!("/users/{}", user.id))
+        .header(authorization.clone())
+        .body(r#"{"name": "James Bond", "avatar": "https://img.com/avatar.png", "confirm": true}"#);
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Ok);
+
+    let req = client.patch(format!("/users/{}/email", user.id)).header(authorization).body(r#"{ "email": "james@zelalem.me"}"#);
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Ok);
 }

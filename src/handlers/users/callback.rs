@@ -301,7 +301,7 @@ pub fn callback(
                     "email": user.email
                 });
 
-                let email = send_email(template, data, &user, &config);
+                let email = send_email(template, data, user.email, &config);
 
                 if email.is_err() {
                     let redirect_url = format!("{}?error=unable_to_send_confirmation_email", operator_signature.site_url);

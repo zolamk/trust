@@ -181,7 +181,7 @@ pub fn signup(
                 "site_url": config.site_url
             });
 
-            let email = send_email(template, data, &user, config.inner());
+            let email = send_email(template, data, user.email, config.inner());
 
             if email.is_err() {
                 let err = email.err().unwrap();

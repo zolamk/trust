@@ -147,7 +147,7 @@ pub fn invite(
             "site_url": config.site_url,
         });
 
-        let email = send_email(template, data, &user, &config);
+        let email = send_email(template, data, user.email, &config);
 
         if email.is_err() {
             let err = email.err().unwrap();

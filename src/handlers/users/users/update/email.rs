@@ -133,10 +133,11 @@ pub fn update_email(
         let data = json!({
             "confirmation_url": format!("{}/email_change_token={}", config.site_url, user.email_change_token.clone().unwrap()),
             "email": user.email,
+            "new_email": user.new_email,
             "site_url": config.site_url
         });
 
-        let email = send_email(template, data, &user, &config);
+        let email = send_email(template, data, user.new_email.unwrap(), &config);
 
         if email.is_err() {
             let err = email.err().unwrap();
