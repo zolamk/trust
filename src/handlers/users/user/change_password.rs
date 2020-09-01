@@ -3,6 +3,7 @@ use crate::{
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::Error,
     models::Error as ModelError,
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
     pg::PgConnection,
@@ -24,9 +25,18 @@ pub struct ChangePasswordForm {
 pub fn change_password(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     change_password_form: Json<ChangePasswordForm>,
     token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     if token.is_err() {
         let err = token.err().unwrap();
 

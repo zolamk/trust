@@ -5,6 +5,7 @@ use crate::{
     handlers::Error,
     mailer::{send_email, EmailTemplates},
     models::{user::NewUser, Error as ModelError},
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use chrono::Utc;
 use diesel::{
@@ -32,8 +33,17 @@ pub fn invite(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     email_templates: State<EmailTemplates>,
     invite_form: Json<InviteForm>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     if token.is_err() {
         let err = token.err().unwrap();
 

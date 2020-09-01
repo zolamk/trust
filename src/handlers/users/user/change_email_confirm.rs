@@ -1,6 +1,7 @@
 use crate::{
     handlers::Error,
     models::{user::get_by_email_change_token, Error as ModelError},
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
     pg::PgConnection,
@@ -18,7 +19,19 @@ pub struct ConfirmChangeEmailForm {
 }
 
 #[patch("/user/email/confirm", data = "<confirm_change_email_form>")]
-pub fn change_email_confirm(connection_pool: State<Pool<ConnectionManager<PgConnection>>>, confirm_change_email_form: Json<ConfirmChangeEmailForm>) -> Result<status::Custom<JsonValue>, Error> {
+pub fn change_email_confirm(
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
+    confirm_change_email_form: Json<ConfirmChangeEmailForm>,
+) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     let internal_error = Error {
         code: 500,
         body: json!({

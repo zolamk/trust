@@ -35,6 +35,16 @@ pub fn signup(
     signup_form: Json<SignUpForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
+    let operator_signature = operator_signature.unwrap();
+
     if config.disable_signup {
         let err = Error {
             code: 422,
@@ -45,16 +55,6 @@ pub fn signup(
         };
         return Err(err);
     }
-
-    if operator_signature.is_err() {
-        let err = operator_signature.err().unwrap();
-
-        error!("{:?}", err);
-
-        return Err(Error::from(err));
-    }
-
-    let operator_signature = operator_signature.unwrap();
 
     if !config.password_rule.is_match(signup_form.password.as_ref()) {
         return Err(Error {

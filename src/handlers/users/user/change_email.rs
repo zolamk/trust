@@ -4,6 +4,7 @@ use crate::{
     handlers::Error,
     mailer::{send_email, EmailTemplates},
     models::Error as ModelError,
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use chrono::Utc;
 use diesel::{
@@ -26,9 +27,18 @@ pub fn change_email(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     email_templates: State<EmailTemplates>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     change_email_form: Json<ChangeEmailFrom>,
     token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     if token.is_err() {
         let err = token.err().unwrap();
 

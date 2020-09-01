@@ -4,6 +4,7 @@ use crate::{
     diesel::Connection,
     handlers::Error,
     mailer::{send_email, EmailTemplates},
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use chrono::Utc;
 use diesel::{
@@ -28,8 +29,17 @@ pub fn update_email(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
     update_form: Json<UpdateForm>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     id: i64,
 ) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     if token.is_err() {
         let err = token.err().unwrap();
 

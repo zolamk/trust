@@ -2,6 +2,7 @@ use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::Error,
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
     pg::PgConnection,
@@ -12,7 +13,21 @@ use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::JsonValue;
 
 #[delete("/users/<id>")]
-pub fn delete(_config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, token: Result<JWT, CryptoError>, id: i64) -> Result<status::Custom<JsonValue>, Error> {
+pub fn delete(
+    _config: State<Config>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    token: Result<JWT, CryptoError>,
+    id: i64,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
+) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     if token.is_err() {
         let err = token.err().unwrap();
 

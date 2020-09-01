@@ -89,7 +89,7 @@ fn end_users_test() {
 
     let client = Client::new(rocket).expect("valid rocket instance");
 
-    let signature = Header::new("x-operator-signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdW5jdGlvbl9ob29rcyI6eyJsb2dpbiI6Imh0dHBzOi8vdHJ1c3QuZnJlZS5iZWVjZXB0b3IuY29tIiwic2lnbnVwIjoiaHR0cHM6Ly90cnVzdC5mcmVlLmJlZWNlcHRvci5jb20ifSwic2l0ZV91cmwiOiJodHRwOi8vbG9jYWxob3N0OjkwMDAiLCJyZWRpcmVjdF91cmwiOiJodHRwOi8vbG9jYWxob3N0OjkwMDAvbG9naW4ifQ.C5ESOhYXOuJtfXhFQvZVwfCwz1x7GsCKp1jpP9cTp7Y");
+    let signature = Header::new("x-operator-signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdW5jdGlvbl9ob29rcyI6eyJsb2dpbiI6Imh0dHBzOi8vcnVuLm1vY2t5LmlvL3YzLzQwYzZiYzM0LTRkYTgtNDFmMC05N2I0LWY4ZTgzY2JiMzVjMSIsInNpZ251cCI6Imh0dHBzOi8vcnVuLm1vY2t5LmlvL3YzLzQwYzZiYzM0LTRkYTgtNDFmMC05N2I0LWY4ZTgzY2JiMzVjMSJ9LCJzaXRlX3VybCI6Imh0dHA6Ly9sb2NhbGhvc3Q6OTAwMCIsInJlZGlyZWN0X3VybCI6Imh0dHA6Ly9sb2NhbGhvc3Q6OTAwMC9sb2dpbiJ9.9qZ_6Kr1YrykplVq-nrv19Dzj_Cfgovzcrez3imMneE");
 
     let req = client.post("/signup").header(signature.clone()).body(r#"{ "email": "zola@programmer.net", "password": "password"}"#);
 
@@ -160,7 +160,7 @@ fn end_users_test() {
 
     let authorization = Header::new("authorization", access_token);
 
-    let req = client.get("/user").header(authorization.clone());
+    let req = client.get("/user").header(authorization.clone()).header(signature.clone());
 
     let mut res = req.dispatch();
 
@@ -174,7 +174,7 @@ fn end_users_test() {
 
     assert_eq!(email, "zola@programmer.net");
 
-    let req = client.get("/user");
+    let req = client.get("/user").header(signature.clone());
 
     let res = req.dispatch();
 
@@ -183,6 +183,7 @@ fn end_users_test() {
     let req = client
         .patch("/user/password")
         .header(authorization.clone())
+        .header(signature.clone())
         .body(r#"{ "old_password": "wrongpassword", "new_password": "newpassword"}"#);
 
     let mut res = req.dispatch();
@@ -200,6 +201,7 @@ fn end_users_test() {
     let req = client
         .patch("/user/password")
         .header(authorization.clone())
+        .header(signature.clone())
         .body(r#"{ "old_password": "password", "new_password": "pass"}"#);
 
     let mut res = req.dispatch();
@@ -217,19 +219,24 @@ fn end_users_test() {
     let req = client
         .patch("/user/password")
         .header(authorization.clone())
+        .header(signature.clone())
         .body(r#"{ "old_password": "password", "new_password": "newpassword"}"#);
 
     let res = req.dispatch();
 
     assert_eq!(res.status(), Status::Ok);
 
-    let req = client.patch("/user/email").header(authorization.clone()).body(r#"{ "email": "admin@zelalem.me"}"#);
+    let req = client
+        .patch("/user/email")
+        .header(authorization.clone())
+        .header(signature.clone())
+        .body(r#"{ "email": "admin@zelalem.me"}"#);
 
     let res = req.dispatch();
 
     assert_eq!(res.status(), Status::Conflict);
 
-    let req = client.patch("/user/email").header(authorization).body(r#"{ "email": "zola@zelalem.me"}"#);
+    let req = client.patch("/user/email").header(authorization).header(signature.clone()).body(r#"{ "email": "zola@zelalem.me"}"#);
 
     let res = req.dispatch();
 
@@ -237,7 +244,10 @@ fn end_users_test() {
 
     let user = get_by_email("zola@programmer.net".to_string(), &connection).expect("expected to find user");
 
-    let req = client.patch("/user/email/confirm").body(format!("{{\"email_change_token\": \"{}\"}}", "wrongtoken"));
+    let req = client
+        .patch("/user/email/confirm")
+        .header(signature.clone())
+        .body(format!("{{\"email_change_token\": \"{}\"}}", "wrongtoken"));
 
     let res = req.dispatch();
 
@@ -245,6 +255,7 @@ fn end_users_test() {
 
     let req = client
         .patch("/user/email/confirm")
+        .header(signature.clone())
         .body(format!("{{\"email_change_token\": \"{}\"}}", user.email_change_token.unwrap()));
 
     let res = req.dispatch();
@@ -253,13 +264,13 @@ fn end_users_test() {
 
     get_by_email("zola@zelalem.me".to_string(), &connection).expect("expected to find user");
 
-    let req = client.post("/reset").body(r#"{ "email": "non@existent.email"}"#);
+    let req = client.post("/reset").header(signature.clone()).body(r#"{ "email": "non@existent.email"}"#);
 
     let res = req.dispatch();
 
     assert_eq!(res.status(), Status::Accepted);
 
-    let req = client.post("/reset").body(r#"{ "email": "zola@zelalem.me"}"#);
+    let req = client.post("/reset").header(signature.clone()).body(r#"{ "email": "zola@zelalem.me"}"#);
 
     let res = req.dispatch();
 
@@ -269,6 +280,7 @@ fn end_users_test() {
 
     let req = client
         .post("/reset/confirm")
+        .header(signature.clone())
         .body(format!("{{\"recovery_token\": \"{}\", \"new_password\": \"newpassword\"}}", "wrongtoken"));
 
     let res = req.dispatch();
@@ -277,6 +289,7 @@ fn end_users_test() {
 
     let req = client
         .post("/reset/confirm")
+        .header(signature.clone())
         .body(format!("{{\"recovery_token\": \"{}\", \"new_password\": \"newpassword\"}}", user.recovery_token.unwrap()));
 
     let res = req.dispatch();

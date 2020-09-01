@@ -2,6 +2,7 @@ use crate::{
     config::Config,
     handlers::Error,
     models::{user::get_by_recovery_token, Error as ModelError},
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
     pg::PgConnection,
@@ -20,7 +21,20 @@ pub struct ConfirmResetForm {
 }
 
 #[post("/reset/confirm", data = "<reset_form>")]
-pub fn confirm_reset(config: State<Config>, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, reset_form: Json<ConfirmResetForm>) -> Result<status::Custom<JsonValue>, Error> {
+pub fn confirm_reset(
+    config: State<Config>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    reset_form: Json<ConfirmResetForm>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
+) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     let internal_error = Error {
         code: 500,
         body: json!({

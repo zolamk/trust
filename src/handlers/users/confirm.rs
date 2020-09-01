@@ -1,4 +1,8 @@
-use crate::{handlers::Error, models::Error as ModelError};
+use crate::{
+    handlers::Error,
+    models::Error as ModelError,
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
+};
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
@@ -15,7 +19,19 @@ pub struct ConfirmForm {
 }
 
 #[post("/confirm", data = "<confirm_form>")]
-pub fn confirm(connection_pool: State<Pool<ConnectionManager<PgConnection>>>, confirm_form: Json<ConfirmForm>) -> Result<status::Custom<JsonValue>, Error> {
+pub fn confirm(
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    confirm_form: Json<ConfirmForm>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
+) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     let internal_error = Error {
         code: 500,
         body: json!({

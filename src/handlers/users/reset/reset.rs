@@ -4,6 +4,7 @@ use crate::{
     handlers::Error,
     mailer::{send_email, EmailTemplates},
     models::user::get_by_email,
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use chrono::Utc;
 use diesel::{
@@ -27,7 +28,16 @@ pub fn reset(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     email_templates: State<EmailTemplates>,
     reset_form: Json<ResetForm>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
+    if operator_signature.is_err() {
+        let err = operator_signature.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
+    }
+
     let internal_error = Error {
         code: 500,
         body: json!({

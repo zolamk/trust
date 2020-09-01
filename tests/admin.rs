@@ -79,6 +79,7 @@ fn admin_user_test() {
             handlers::users::users::update::update::update,
             handlers::users::users::update::email::update_email,
             handlers::users::users::delete::delete,
+            handlers::users::user::change_email_confirm::change_email_confirm,
             handlers::users::user::get::get,
             handlers::users::signup::signup,
             handlers::users::token::token,
@@ -88,7 +89,7 @@ fn admin_user_test() {
 
     let client = Client::new(rocket).expect("valid rocket instance");
 
-    let signature = Header::new("x-operator-signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdW5jdGlvbl9ob29rcyI6eyJsb2dpbiI6Imh0dHBzOi8vdHJ1c3QuZnJlZS5iZWVjZXB0b3IuY29tIiwic2lnbnVwIjoiaHR0cHM6Ly90cnVzdC5mcmVlLmJlZWNlcHRvci5jb20ifSwic2l0ZV91cmwiOiJodHRwOi8vbG9jYWxob3N0OjkwMDAiLCJyZWRpcmVjdF91cmwiOiJodHRwOi8vbG9jYWxob3N0OjkwMDAvbG9naW4ifQ.C5ESOhYXOuJtfXhFQvZVwfCwz1x7GsCKp1jpP9cTp7Y");
+    let signature = Header::new("x-operator-signature", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdW5jdGlvbl9ob29rcyI6eyJsb2dpbiI6Imh0dHBzOi8vcnVuLm1vY2t5LmlvL3YzLzQwYzZiYzM0LTRkYTgtNDFmMC05N2I0LWY4ZTgzY2JiMzVjMSIsInNpZ251cCI6Imh0dHBzOi8vcnVuLm1vY2t5LmlvL3YzLzQwYzZiYzM0LTRkYTgtNDFmMC05N2I0LWY4ZTgzY2JiMzVjMSJ9LCJzaXRlX3VybCI6Imh0dHA6Ly9sb2NhbGhvc3Q6OTAwMCIsInJlZGlyZWN0X3VybCI6Imh0dHA6Ly9sb2NhbGhvc3Q6OTAwMC9sb2dpbiJ9.9qZ_6Kr1YrykplVq-nrv19Dzj_Cfgovzcrez3imMneE");
 
     let req = client.post("/signup").header(signature.clone()).body(r#"{ "email": "zola@programmer.net", "password": "password"}"#);
 
@@ -189,6 +190,7 @@ fn admin_user_test() {
 
     let req = client
         .put(format!("/users/{}", admin.id))
+        .header(signature.clone())
         .header(n_authorization)
         .body(r#"{ "name": "Zelalem Mekonen", "avatar": "https://img.com/avatar", "confirm": false}"#);
 
@@ -198,6 +200,7 @@ fn admin_user_test() {
 
     let req = client
         .put(format!("/users/{}", admin.id))
+        .header(signature.clone())
         .header(authorization.clone())
         .body(r#"{ "name": "Zelalem Mekonen", "avatar": "https://img.com/avatar", "confirm": false}"#);
 
@@ -207,6 +210,7 @@ fn admin_user_test() {
 
     let req = client
         .put(format!("/users/{}", user.id))
+        .header(signature.clone())
         .header(authorization.clone())
         .body(r#"{"name": "James Bond", "avatar": "https://img.com/avatar.png", "confirm": true}"#);
 
@@ -214,7 +218,31 @@ fn admin_user_test() {
 
     assert_eq!(res.status(), Status::Ok);
 
-    let req = client.patch(format!("/users/{}/email", user.id)).header(authorization).body(r#"{ "email": "james@zelalem.me"}"#);
+    let req = client
+        .patch(format!("/users/{}/email", user.id))
+        .header(authorization)
+        .header(signature.clone())
+        .body(r#"{ "email": "james@zelalem.me"}"#);
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Ok);
+
+    let james = get_by_email("admin@zelalem.me".to_string(), &connection).expect("expected to find james");
+
+    let req = client
+        .patch("/user/email/confirm")
+        .header(signature.clone())
+        .body(format!("{{\"email_change_token\": \"{}\"}}", james.email_change_token.unwrap()));
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Ok);
+
+    let req = client
+        .post("/token")
+        .header(signature.clone())
+        .body(r#"{ "username": "james@zelalem.me", "password": "password", "grant_type": "password"}"#);
 
     let res = req.dispatch();
 
