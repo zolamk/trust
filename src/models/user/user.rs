@@ -7,9 +7,9 @@ use chrono::NaiveDateTime;
 use diesel::{delete, update, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 use serde::Serialize;
 
-#[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug, Clone)]
+#[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug, Clone, GraphQLObject)]
 pub struct User {
-    pub id: i64,
+    pub id: String,
     pub email: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -52,7 +52,7 @@ impl User {
     }
 
     pub fn delete(&self, connection: &PgConnection) -> Result<usize, Error> {
-        match delete(users.filter(id.eq(self.id))).execute(connection) {
+        match delete(users.filter(id.eq(self.id.clone()))).execute(connection) {
             Ok(affected_rows) => Ok(affected_rows),
             Err(err) => Err(Error::from(err)),
         }
@@ -74,7 +74,7 @@ impl User {
 
     pub fn confirm(&mut self, connection: &PgConnection) -> Result<usize, Error> {
         let n: Option<String> = None;
-        match update(users.filter(id.eq(self.id))).set((confirmed.eq(true), confirmation_token.eq(n))).execute(connection) {
+        match update(users.filter(id.eq(self.id.clone()))).set((confirmed.eq(true), confirmation_token.eq(n))).execute(connection) {
             Ok(affected_rows) => Ok(affected_rows),
             Err(err) => Err(Error::from(err)),
         }
@@ -82,7 +82,7 @@ impl User {
 
     pub fn confirm_email_change(&mut self, connection: &PgConnection) -> Result<usize, Error> {
         let n: Option<String> = None;
-        match update(users.filter(id.eq(self.id)))
+        match update(users.filter(id.eq(self.id.clone())))
             .set((email_change_token.eq(n.clone()), new_email.eq(n), email.eq(self.new_email.as_ref().unwrap())))
             .execute(connection)
         {
@@ -92,7 +92,7 @@ impl User {
     }
 
     pub fn save(self, connection: &PgConnection) -> Result<User, Error> {
-        match update(users.filter(id.eq(self.id))).set(&self).get_result(connection) {
+        match update(users.filter(id.eq(self.id.clone()))).set(&self).get_result(connection) {
             Ok(user) => Ok(user),
             Err(err) => Err(Error::from(err)),
         }

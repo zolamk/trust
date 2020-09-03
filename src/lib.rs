@@ -8,6 +8,8 @@ extern crate diesel;
 extern crate diesel_migrations;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate juniper;
 
 pub mod cmd;
 pub mod config;

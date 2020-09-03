@@ -10,11 +10,11 @@ use serde::{Deserialize, Serialize};
 #[table_name = "refresh_tokens"]
 pub struct NewRefreshToken {
     token: String,
-    user_id: i64,
+    user_id: String,
 }
 
 impl NewRefreshToken {
-    pub fn new(uid: i64) -> NewRefreshToken {
+    pub fn new(uid: String) -> NewRefreshToken {
         return NewRefreshToken {
             user_id: uid,
             token: secure_token(50),

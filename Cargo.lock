@@ -1063,6 +1063,7 @@ checksum = "86b45e59b16c76b11bf9738fd5d38879d3bd28ad292d7b313608becb17ae2df9"
 dependencies = [
  "autocfg 1.0.1",
  "hashbrown 0.8.2",
+ "serde",
 ]
 
 [[package]]
@@ -1105,6 +1106,46 @@ name = "itoa"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc6f3ad7b9d11a0c00842ff8de1b60ee58661048eb8049ed33c73594f359d7e6"
+
+[[package]]
+name = "juniper"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f662ba51e2fbc3d6dd1ca66be70b44963606a34473156abddcb0351fc6caa668"
+dependencies = [
+ "chrono",
+ "fnv",
+ "indexmap",
+ "juniper_codegen",
+ "serde",
+ "serde_derive",
+ "url 2.1.1",
+ "uuid",
+]
+
+[[package]]
+name = "juniper_codegen"
+version = "0.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d40af234d8e971a9d7dda93ffbcc8a44a93f17e69e3067f72ce7a6894c41d51b"
+dependencies = [
+ "proc-macro2 1.0.19",
+ "quote 1.0.7",
+ "syn 1.0.39",
+]
+
+[[package]]
+name = "juniper_rocket"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecba3f9ae0456648a94deccd1aac57ad9a5827c9022de4138e717994b02d1e62"
+dependencies = [
+ "juniper",
+ "rocket",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
 
 [[package]]
 name = "kernel32-sys"
@@ -2514,6 +2555,8 @@ dependencies = [
  "envy",
  "frank_jwt",
  "handlebars",
+ "juniper",
+ "juniper_rocket",
  "lettre",
  "lettre_email",
  "log 0.4.11",

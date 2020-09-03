@@ -11,7 +11,7 @@ pub fn get_by_email(e: String, connection: &PgConnection) -> Result<User, Error>
     }
 }
 
-pub fn get_by_id(i: i64, connection: &PgConnection) -> Result<User, Error> {
+pub fn get_by_id(i: String, connection: &PgConnection) -> Result<User, Error> {
     match users.find(i).first(connection) {
         Ok(user) => Ok(user),
         Err(err) => Err(Error::from(err)),
@@ -39,7 +39,7 @@ pub fn get_by_recovery_token(token: String, connection: &PgConnection) -> Result
     }
 }
 
-pub fn is_admin(user_id: i64, connection: &PgConnection) -> bool {
+pub fn is_admin(user_id: String, connection: &PgConnection) -> bool {
     let is_admin: QueryResult<bool> = users.filter(id.eq(user_id)).select(admin).first(connection);
 
     if is_admin.is_err() {

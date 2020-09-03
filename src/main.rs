@@ -12,6 +12,8 @@ extern crate diesel;
 extern crate diesel_migrations;
 #[macro_use]
 extern crate serde_json;
+#[macro_use]
+extern crate juniper;
 extern crate lettre;
 extern crate simple_logger;
 
@@ -25,6 +27,7 @@ mod models;
 mod operator_signature;
 mod schema;
 
+use crate::handlers::graphql::create_schema;
 use clap::App;
 use config::Config;
 use diesel::{
@@ -51,6 +54,8 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, e
         "/",
         routes![
             handlers::health_check::health,
+            handlers::graphql::graphiql,
+            handlers::graphql::graphql,
             handlers::users::signup::signup,
             handlers::users::confirm::confirm,
             handlers::users::token::token,
@@ -67,12 +72,13 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, e
             handlers::users::users::update::password::change_password,
             handlers::users::user::change_password::change_password,
             handlers::users::user::change_email::change_email,
-            handlers::users::user::change_email_confirm::change_email_confirm
+            handlers::users::user::change_email_confirm::change_email_confirm,
         ],
     )
     .manage(config)
     .manage(connection_pool)
     .manage(email_templates)
+    .manage(create_schema())
     .launch();
 }
 

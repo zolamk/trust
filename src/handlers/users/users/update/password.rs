@@ -25,7 +25,7 @@ pub fn change_password(
     token: Result<JWT, CryptoError>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     update_form: Json<UpdateForm>,
-    id: i64,
+    id: String,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();

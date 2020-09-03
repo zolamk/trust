@@ -1,7 +1,7 @@
 create table refresh_tokens (
     id bigserial primary key,
-    token varchar(250) not null,
-    user_id bigint not null,
+    token varchar not null,
+    user_id varchar not null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null,
     constraint fk_refresh_token_user_id foreign key(user_id) references users(id) on delete cascade on update cascade

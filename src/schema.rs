@@ -2,7 +2,7 @@ table! {
     refresh_tokens (id) {
         id -> Int8,
         token -> Varchar,
-        user_id -> Int8,
+        user_id -> Varchar,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
@@ -10,7 +10,7 @@ table! {
 
 table! {
     users (id) {
-        id -> Int8,
+        id -> Varchar,
         email -> Varchar,
         name -> Nullable<Varchar>,
         avatar -> Nullable<Varchar>,

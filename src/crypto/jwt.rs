@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct JWT {
-    pub sub: i64,
+    pub sub: String,
     pub email: String,
     pub aud: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -24,7 +24,7 @@ pub struct JWT {
 impl JWT {
     pub fn new(user: &user::User, aud: String, metadata: Option<Value>) -> JWT {
         return JWT {
-            sub: user.id,
+            sub: user.id.clone(),
             exp: None,
             aud,
             email: user.email.clone(),
@@ -48,7 +48,7 @@ impl JWT {
     }
 
     pub fn is_admin(&self, connection: &PgConnection) -> bool {
-        return user::is_admin(self.sub, connection);
+        return user::is_admin(self.sub.clone(), connection);
     }
 
     pub fn sign(mut self, config: &Config) -> Result<String, Error> {

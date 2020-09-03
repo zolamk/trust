@@ -11,7 +11,7 @@ use serde::Serialize;
 pub struct RefreshToken {
     pub id: i64,
     pub token: String,
-    pub user_id: i64,
+    pub user_id: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

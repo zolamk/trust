@@ -17,7 +17,7 @@ pub fn delete(
     _config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
-    id: i64,
+    id: String,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {

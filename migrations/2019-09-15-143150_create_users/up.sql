@@ -3,8 +3,56 @@ create extension citext;
 CREATE DOMAIN email AS citext
   CHECK ( value ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
 
+CREATE OR REPLACE FUNCTION public.feistel_crypt(value integer)
+  RETURNS integer
+  LANGUAGE plpgsql
+  IMMUTABLE STRICT
+AS $function$
+DECLARE
+    key numeric;
+    l1 int;
+    l2 int;
+    r1 int;
+    r2 int;
+    i int:=0;
+BEGIN
+    l1:= (VALUE >> 16) & 65535;
+    r1:= VALUE & 65535;
+    WHILE i < 3 LOOP
+        -- key can be any function that returns numeric between 0 and 1
+        key := (((1366 * r1 + 150889) % 714025) / 714025.0);
+        l2 := r1;
+        r2 := l1 # (key * 32767)::int;
+        l1 := l2;
+        r1 := r2;
+        i := i + 1;
+    END LOOP;
+    RETURN ((r1 << 16) + l1);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.int_to_string(n int)
+  RETURNS text
+  LANGUAGE plpgsql
+  IMMUTABLE STRICT
+AS $function$
+DECLARE
+    alphabet text:='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    base int:=length(alphabet);
+    output text:='';
+BEGIN
+    LOOP
+        output := output || substr(alphabet, 1+(n%base)::int, 1);
+        n := n / base;
+        EXIT WHEN n=0;
+    END LOOP;
+    RETURN output;
+END $function$;
+
+CREATE SEQUENCE users_id_seq AS INT INCREMENT 1 START 1;
+
 create table users (
-    id bigserial primary key,
+    id varchar primary key default int_to_string(feistel_crypt(nextval('users_id_seq')::int)),
     email email not null constraint uq_email unique,
     name varchar,
     avatar varchar,

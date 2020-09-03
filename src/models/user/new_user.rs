@@ -7,7 +7,8 @@ use chrono::NaiveDateTime;
 use diesel::{insert_into, PgConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Insertable, Deserialize, Serialize)]
+#[derive(Default, Insertable, Deserialize, Serialize, GraphQLInputObject)]
+#[graphql(description = "New User")]
 #[table_name = "users"]
 pub struct NewUser {
     pub email: String,
