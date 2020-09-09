@@ -1,21 +1,25 @@
 use crate::{
-    handlers::{lib::confirm, Error},
+    config::Config,
+    handlers::Error,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
+
+use crate::handlers::lib::token;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
 };
 use log::error;
-use rocket::{http::Status, response::status, State};
+use rocket::State;
 use rocket_contrib::json::{Json, JsonValue};
 
-#[post("/confirm", data = "<confirm_form>")]
-pub fn confirm(
+#[post("/token", data = "<login_form>")]
+pub fn token(
+    login_form: Json<token::LoginForm>,
+    config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    confirm_form: Json<confirm::ConfirmForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-) -> Result<status::Custom<JsonValue>, Error> {
+) -> Result<JsonValue, Error> {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
 
@@ -24,26 +28,23 @@ pub fn confirm(
         return Err(Error::from(err));
     }
 
-    let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
+    let operator_signature = operator_signature.unwrap();
+
+    let internal_error = Error::new(500, json!({"code": "internal_server_error"}), "Internal Server Error".to_string());
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
         Err(err) => {
-            error!("{}", err);
+            error!("{:?}", err);
             return Err(internal_error);
         }
     };
 
-    let user = confirm::confirm(&connection, confirm_form.into_inner());
+    let token = token::token(config.inner(), &connection, operator_signature, login_form.into_inner());
 
-    if user.is_err() {
-        return Err(user.err().unwrap());
+    if token.is_err() {
+        return Err(token.err().unwrap());
     }
 
-    let body = json!({
-        "code": "success",
-        "message": "email has been confirmed successfully"
-    });
-
-    return Ok(status::Custom(Status::Ok, JsonValue(body)));
+    return Ok(JsonValue(json!(token.unwrap())));
 }

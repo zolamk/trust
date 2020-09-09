@@ -2,7 +2,12 @@ pub mod context;
 mod mutation;
 mod query;
 
-use crate::config::Config;
+use crate::{
+    config::Config,
+    handlers::Error as HandlerError,
+    mailer::EmailTemplates,
+    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
+};
 use juniper_rocket::{GraphQLRequest, GraphQLResponse};
 use mutation::*;
 use query::*;
@@ -26,7 +31,19 @@ pub fn graphiql(config: State<Config>) -> content::Html<String> {
 }
 
 #[post("/graphql", data = "<request>")]
-pub fn graphql(request: GraphQLRequest, connection_pool: State<Pool<ConnectionManager<PgConnection>>>, config: State<Config>, schema: State<Schema>) -> GraphQLResponse {
+pub fn graphql(
+    request: GraphQLRequest,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    config: State<Config>,
+    schema: State<Schema>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
+    email_templates: State<EmailTemplates>,
+) -> GraphQLResponse {
+    if operator_signature.is_err() {
+        let err = HandlerError::from(operator_signature.err().unwrap());
+        return GraphQLResponse::custom(Status::new(err.code, "error"), err.body);
+    }
+
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
         Err(_err) => {
@@ -39,5 +56,13 @@ pub fn graphql(request: GraphQLRequest, connection_pool: State<Pool<ConnectionMa
         }
     };
 
-    return request.execute(&schema, &context::Context { connection });
+    return request.execute(
+        &schema,
+        &context::Context {
+            connection,
+            config: config.inner().clone(),
+            email_templates: email_templates.inner().clone(),
+            operator_signature: operator_signature.unwrap(),
+        },
+    );
 }

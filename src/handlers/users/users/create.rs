@@ -57,12 +57,7 @@ pub fn create(
 
     let token = token.unwrap();
 
-    let internal_error = Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    };
+    let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -72,31 +67,18 @@ pub fn create(
     };
 
     if !token.is_admin(&connection) {
-        return Err(Error {
-            code: 403,
-            body: json!({
-                "code": "only_admin_can_create"
-            }),
-        });
+        return Err(Error::new(403, json!({"code": "only_admin_can_create"}), "Only Admin Can Create Users".to_string()));
     }
 
     if !config.password_rule.is_match(create_form.password.as_ref()) {
-        return Err(Error {
-            code: 400,
-            body: json!({
-                "code": "invalid_password_format",
-                "message": "invalid password"
-            }),
-        });
+        return Err(Error::new(400, json!({"code": "invalid_password_format"}), "Invalid Password Format".to_string()));
     }
 
-    let conflict_error = Err(Error {
-        code: 409,
-        body: json!({
-            "code": "email_registered",
-            "message": "a user with this email has already been registered",
-        }),
-    });
+    let conflict_error = Err(Error::new(
+        409,
+        json!({"code": "email_registered"}),
+        "A user with this email address has already been registered".to_string(),
+    ));
 
     // if users exists and is confirmed return conflict error
     // if not delete the unconfirmed user
@@ -154,12 +136,11 @@ pub fn create(
             let err = user.err().unwrap();
 
             if let ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) = err {
-                let err = Error {
-                    code: 409,
-                    body: json!({
-                        "code": "email_already_registered"
-                    }),
-                };
+                let err = Error::new(
+                    409,
+                    json!({"code": "email_already_registered"}),
+                    "A user with this email address has already been registered".to_string(),
+                );
                 return Err(err);
             }
 

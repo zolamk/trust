@@ -1,3 +1,4 @@
+use crate::{config::Config, mailer::EmailTemplates, operator_signature::OperatorSignature};
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
     PgConnection,
@@ -5,6 +6,9 @@ use diesel::{
 
 pub struct Context {
     pub connection: PooledConnection<ConnectionManager<PgConnection>>,
+    pub config: Config,
+    pub email_templates: EmailTemplates,
+    pub operator_signature: OperatorSignature,
 }
 
 impl juniper::Context for Context {}

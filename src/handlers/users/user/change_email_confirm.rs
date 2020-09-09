@@ -32,12 +32,7 @@ pub fn change_email_confirm(
         return Err(Error::from(err));
     }
 
-    let internal_error = Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    };
+    let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -52,14 +47,7 @@ pub fn change_email_confirm(
     if user.is_err() {
         let err = user.err().unwrap();
         match err {
-            ModelError::DatabaseError(NotFound) => {
-                return Err(Error {
-                    code: 404,
-                    body: json!({
-                        "code": "user_not_found"
-                    }),
-                })
-            }
+            ModelError::DatabaseError(NotFound) => return Err(Error::new(404, json!({"code": "user_not_found"}), "User Not Found".to_string())),
             _ => {
                 error!("{:?}", err);
                 return Err(Error::from(err));

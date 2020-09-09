@@ -35,21 +35,10 @@ pub fn confirm_reset(
         return Err(Error::from(err));
     }
 
-    let internal_error = Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    };
+    let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     if !config.password_rule.is_match(reset_form.new_password.as_ref()) {
-        return Err(Error {
-            code: 400,
-            body: json!({
-                "code": "invalid_password_format",
-                "message": "invalid password"
-            }),
-        });
+        return Err(Error::new(400, json!({"code": "invalid_password_format"}), "Invalid Password Format".to_string()));
     }
 
     let connection = match connection_pool.get() {

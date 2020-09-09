@@ -38,12 +38,7 @@ pub fn reset(
         return Err(Error::from(err));
     }
 
-    let internal_error = Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    };
+    let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,

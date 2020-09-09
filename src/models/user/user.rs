@@ -3,43 +3,74 @@ use crate::{
     schema::{users, users::dsl::*},
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, Utc};
 use diesel::{delete, update, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 use serde::Serialize;
 
 #[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug, Clone, GraphQLObject)]
 pub struct User {
     pub id: String,
+
     pub email: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar: Option<String>,
+
+    #[graphql(skip)]
     #[serde(skip_serializing)]
     pub is_admin: bool,
+
+    #[graphql(skip)]
     #[serde(skip_serializing)]
     pub password: Option<String>,
+
+    #[graphql(skip)]
     #[serde(skip_serializing)]
     pub confirmed: bool,
+
+    #[graphql(name = "invitation_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invitation_sent_at: Option<NaiveDateTime>,
+
+    #[graphql(skip)]
     #[serde(skip_serializing)]
     pub confirmation_token: Option<String>,
+
+    #[graphql(name = "confirmation_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub confirmation_token_sent_at: Option<NaiveDateTime>,
+
+    #[graphql(skip)]
     #[serde(skip_serializing)]
     pub recovery_token: Option<String>,
+
+    #[graphql(name = "recovery_token_sent_at")]
     #[serde(skip_serializing)]
     pub recovery_token_sent_at: Option<NaiveDateTime>,
+
+    #[graphql(skip)]
     #[serde(skip_serializing)]
     pub email_change_token: Option<String>,
+
+    #[graphql(skip)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub new_email: Option<String>,
+
+    #[graphql(name = "email_change_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_change_token_sent_at: Option<NaiveDateTime>,
+
+    #[graphql(name = "last_signin_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_signin_at: Option<NaiveDateTime>,
+
+    #[graphql(name = "created_at")]
     pub created_at: NaiveDateTime,
+
+    #[graphql(name = "updated_at")]
     pub updated_at: NaiveDateTime,
 }
 
@@ -74,7 +105,17 @@ impl User {
 
     pub fn confirm(&mut self, connection: &PgConnection) -> Result<usize, Error> {
         let n: Option<String> = None;
+
         match update(users.filter(id.eq(self.id.clone()))).set((confirmed.eq(true), confirmation_token.eq(n))).execute(connection) {
+            Ok(affected_rows) => Ok(affected_rows),
+            Err(err) => Err(Error::from(err)),
+        }
+    }
+
+    pub fn update_last_sign_in(&mut self, connection: &PgConnection) -> Result<usize, Error> {
+        let now = Some(Utc::now().naive_utc());
+
+        match update(users.filter(id.eq(self.id.clone()))).set(last_signin_at.eq(now)).execute(connection) {
             Ok(affected_rows) => Ok(affected_rows),
             Err(err) => Err(Error::from(err)),
         }

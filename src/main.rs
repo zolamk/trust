@@ -59,7 +59,7 @@ fn run(connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, e
             handlers::users::signup::signup,
             handlers::users::confirm::confirm,
             handlers::users::token::token,
-            handlers::users::invite::invite,
+            handlers::users::refresh::refresh,
             handlers::users::authorize::authorize,
             handlers::users::callback::callback,
             handlers::users::reset::reset::reset,

@@ -206,7 +206,7 @@ fn admin_user_test() {
 
     let res = req.dispatch();
 
-    assert_eq!(res.status(), Status::UnprocessableEntity);
+    assert_eq!(res.status(), Status::Forbidden);
 
     let req = client
         .put(format!("/users/{}", user.id))

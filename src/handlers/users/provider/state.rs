@@ -38,12 +38,7 @@ impl ProviderState {
 
             error!("{:?}", err);
 
-            return Err(Error {
-                code: 400,
-                body: json!({
-                    "code": "error_decoding_state"
-                }),
-            });
+            return Err(Error::new(400, json!({"code": "error_decoding_state"}), "Error Decoding State".to_string()));
         }
 
         let (_, state) = state.unwrap();
@@ -55,12 +50,7 @@ impl ProviderState {
 
             error!("{:?}", err);
 
-            return Err(Error {
-                code: 400,
-                body: json!({
-                    "code": "error_deserializing_state"
-                }),
-            });
+            return Err(Error::new(400, json!({"code": "error_deserializing_state"}), "Error Deserializing State".to_string()));
         }
 
         return Ok(state.unwrap());

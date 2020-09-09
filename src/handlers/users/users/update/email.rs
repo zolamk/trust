@@ -50,12 +50,7 @@ pub fn update_email(
 
     let token = token.unwrap();
 
-    let internal_error = Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    };
+    let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -65,12 +60,7 @@ pub fn update_email(
     };
 
     if !token.is_admin(&connection) {
-        return Err(Error {
-            code: 403,
-            body: json!({
-                "code": "only_admin_can_update"
-            }),
-        });
+        return Err(Error::new(403, json!({"code": "only_admin_can_update"}), "Only Admin Can Update Users".to_string()));
     }
 
     let user = crate::models::user::get_by_id(id, &connection);
@@ -86,12 +76,7 @@ pub fn update_email(
     let mut user = user.unwrap();
 
     if user.id == token.sub {
-        return Err(Error {
-            code: 422,
-            body: json!({
-                "code": "admin_cant_update_self"
-            }),
-        });
+        return Err(Error::new(422, json!({"code": "admin_cant_update_self"}), "Admin Can't Update Self".to_string()));
     }
 
     if config.auto_confirm || update_form.confirm.is_some() && update_form.confirm.unwrap() {

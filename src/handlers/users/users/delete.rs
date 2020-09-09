@@ -38,12 +38,7 @@ pub fn delete(
 
     let token = token.unwrap();
 
-    let internal_error = Err(Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    });
+    let internal_error = Err(Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string()));
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -53,12 +48,7 @@ pub fn delete(
     };
 
     if !token.is_admin(&connection) {
-        return Err(Error {
-            code: 403,
-            body: json!({
-                "code": "only_admin_can_delete"
-            }),
-        });
+        return Err(Error::new(403, json!({"code": "only_admin_can_delete"}), "Only Admin Users Can Delete Users".to_string()));
     }
 
     let user = crate::models::user::get_by_id(id, &connection);

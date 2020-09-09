@@ -37,12 +37,7 @@ pub fn get(
 
     let token = token.unwrap();
 
-    let internal_error = Err(Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    });
+    let internal_error = Err(Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string()));
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -57,12 +52,7 @@ pub fn get(
         let err = user.err().unwrap();
 
         if let ModelError::DatabaseError(NotFound) = err {
-            return Err(Error {
-                code: 404,
-                body: json!({
-                    "code": "user_not_found"
-                }),
-            });
+            return Err(Error::new(404, json!({"code": "user_not_found"}), "User Not Found".to_string()));
         }
 
         error!("{:?}", err);

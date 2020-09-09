@@ -49,20 +49,9 @@ pub fn change_email(
 
     let token = token.unwrap();
 
-    let internal_error = Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    };
+    let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
-    let conflict_error = Error {
-        code: 409,
-        body: json!({
-            "code": "email_registered",
-            "message": "a user with this email has already been registered",
-        }),
-    };
+    let conflict_error = Error::new(409, json!({"code": "email_registered"}), "A user with this email address has already been registered".to_string());
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -77,12 +66,7 @@ pub fn change_email(
         let err = user.err().unwrap();
 
         if let ModelError::DatabaseError(NotFound) = err {
-            return Err(Error {
-                code: 422,
-                body: json!({
-                    "code": "user_not_found"
-                }),
-            });
+            return Err(Error::new(422, json!({"code": "user_not_found"}), "User Not Found".to_string()));
         }
 
         error!("{:?}", err);

@@ -47,12 +47,7 @@ pub fn change_password(
 
     let token = token.unwrap();
 
-    let internal_error = Error {
-        code: 500,
-        body: json!({
-            "code": "internal_error"
-        }),
-    };
+    let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -62,24 +57,13 @@ pub fn change_password(
     };
 
     if !config.password_rule.is_match(change_password_form.new_password.as_ref()) {
-        return Err(Error {
-            code: 400,
-            body: json!({
-                "code": "invalid_password_format",
-                "message": "invalid password"
-            }),
-        });
+        return Err(Error::new(400, json!({"code": "invalid_password_format"}), "Invalid Password Format".to_string()));
     }
 
     match crate::models::user::get_by_id(token.sub, &connection) {
         Ok(mut user) => {
             if !user.verify_password(change_password_form.old_password.clone()) {
-                return Err(Error {
-                    code: 400,
-                    body: json!({
-                        "code": "invalid_old_password"
-                    }),
-                });
+                return Err(Error::new(400, json!({"code": "invalid_old_password"}), "Invalid Old Password".to_string()));
             }
 
             user.password = Some(change_password_form.new_password.clone());
@@ -102,12 +86,7 @@ pub fn change_password(
         }
         Err(err) => match err {
             ModelError::DatabaseError(NotFound) => {
-                return Err(Error {
-                    code: 422,
-                    body: json!({
-                        "code": "user_not_found"
-                    }),
-                });
+                return Err(Error::new(422, json!({"code": "user_not_found"}), "User Not Found".to_string()));
             }
             _ => {
                 error!("{:?}", err);

@@ -12,12 +12,13 @@ use rocket::{response::Redirect, State};
 
 #[get("/authorize?<provider>")]
 pub fn authorize(config: State<Config>, provider: String, operator_signature: Result<OperatorSignature, OperatorSignatureError>) -> ProviderResponse {
-    let internal_error = Err(Error {
-        code: 500,
-        body: json!({
+    let internal_error = Err(Error::new(
+        500,
+        json!({
             "code": "internal_error",
         }),
-    });
+        "Internal Server Error".to_string(),
+    ));
 
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
@@ -27,12 +28,13 @@ pub fn authorize(config: State<Config>, provider: String, operator_signature: Re
         return ProviderResponse::Other(internal_error);
     }
 
-    let provider_disabled = ProviderResponse::Other(Err(Error {
-        code: 400,
-        body: json!({
+    let provider_disabled = ProviderResponse::Other(Err(Error::new(
+        400,
+        json!({
             "code": "provider_disabled",
         }),
-    }));
+        "Provider Disable".to_string(),
+    )));
 
     let oauth_provider: Box<dyn Provider> = match provider.as_str() {
         "facebook" => {
@@ -54,12 +56,13 @@ pub fn authorize(config: State<Config>, provider: String, operator_signature: Re
             Box::new(GithubProvider::new(config.inner().clone()))
         }
         _ => {
-            return ProviderResponse::Other(Err(Error {
-                code: 400,
-                body: json!({
+            return ProviderResponse::Other(Err(Error::new(
+                400,
+                json!({
                     "code": "invalid_provider",
                 }),
-            }))
+                "Invalid Provider".to_string(),
+            )))
         }
     };
 
