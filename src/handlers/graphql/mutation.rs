@@ -2,7 +2,9 @@ use crate::{
     handlers::{
         graphql::context::Context,
         lib::{
-            confirm, signup,
+            confirm,
+            reset::{confirm_reset, reset},
+            signup,
             user::{change_email, change_email_confirm, change_password},
             users::{
                 create, delete,
@@ -16,6 +18,11 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Mutation {}
+
+#[derive(GraphQLObject)]
+struct ResetResponse {
+    pub accepted: bool,
+}
 
 #[juniper::object(Context = Context)]
 impl Mutation {
@@ -216,6 +223,36 @@ impl Mutation {
             &context.email_templates,
             &context.operator_signature,
             change_email_confirm::ConfirmChangeEmailForm { email_change_token: token },
+        );
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(user.unwrap());
+    }
+
+    fn reset(context: &Context, email: String) -> Result<ResetResponse, HandlerError> {
+        let reset = reset::reset(&context.config, &context.connection, &context.email_templates, &context.operator_signature, reset::ResetForm { email });
+
+        if reset.is_err() {
+            return Err(reset.err().unwrap());
+        }
+
+        return Ok(ResetResponse { accepted: true });
+    }
+
+    #[graphql(name = "confirm_reset")]
+    fn confirm_reset(context: &Context, token: String, password: String) -> Result<User, HandlerError> {
+        let user = confirm_reset::confirm_reset(
+            &context.config,
+            &context.connection,
+            &context.email_templates,
+            &context.operator_signature,
+            confirm_reset::ConfirmResetForm {
+                recovery_token: token,
+                new_password: password,
+            },
         );
 
         if user.is_err() {

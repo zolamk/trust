@@ -4,6 +4,13 @@ use crate::{
 };
 use diesel::{result::QueryResult, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 
+pub fn get(offset: i64, limit: i64, connection: &PgConnection) -> Result<Vec<User>, Error> {
+    match users.offset(offset).limit(limit).load::<User>(connection) {
+        Ok(result) => Ok(result),
+        Err(err) => Err(Error::from(err)),
+    }
+}
+
 pub fn get_by_email(e: String, connection: &PgConnection) -> Result<User, Error> {
     match users.filter(email.eq(e)).first(connection) {
         Ok(user) => Ok(user),
