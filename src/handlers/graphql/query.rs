@@ -6,7 +6,6 @@ use crate::{
     },
     models::user::User,
 };
-use juniper::FieldResult;
 
 #[derive(Debug)]
 pub struct Query {}

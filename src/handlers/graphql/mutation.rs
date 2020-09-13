@@ -36,8 +36,8 @@ impl Mutation {
         return Ok(user.unwrap());
     }
 
-    fn confirm(context: &Context, confirmation: confirm::ConfirmForm) -> Result<User, HandlerError> {
-        let user = confirm::confirm(&context.connection, confirmation);
+    fn confirm(context: &Context, token: String) -> Result<User, HandlerError> {
+        let user = confirm::confirm(&context.connection, confirm::ConfirmForm { confirmation_token: token });
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -110,7 +110,7 @@ impl Mutation {
     }
 
     #[graphql(name = "update_email")]
-    fn update_email(context: &Context, id: String, user: email::EmailUpdateForm) -> Result<User, HandlerError> {
+    fn update_email(context: &Context, id: String, confirm: Option<bool>, email: String) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -121,7 +121,15 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = email::update_email(&context.config, &context.connection, &context.email_templates, &context.operator_signature, token, user, id);
+        let user = email::update_email(
+            &context.config,
+            &context.connection,
+            &context.email_templates,
+            &context.operator_signature,
+            token,
+            email::UpdateForm { email, confirm },
+            id,
+        );
 
         if user.is_err() {
             return Err(user.err().unwrap());

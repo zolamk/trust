@@ -19,7 +19,7 @@ pub fn update_email(
     email_templates: State<EmailTemplates>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
-    update_form: Json<email::EmailUpdateForm>,
+    update_form: Json<email::UpdateForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     id: String,
 ) -> Result<JsonValue, Error> {

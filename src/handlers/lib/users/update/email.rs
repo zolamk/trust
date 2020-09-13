@@ -16,7 +16,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
-pub struct EmailUpdateForm {
+pub struct UpdateForm {
     pub email: String,
     pub confirm: Option<bool>,
 }
@@ -27,7 +27,7 @@ pub fn update_email(
     email_templates: &EmailTemplates,
     _operator_signature: &OperatorSignature,
     token: &JWT,
-    update_form: EmailUpdateForm,
+    update_form: UpdateForm,
     id: String,
 ) -> Result<User, Error> {
     if !token.is_admin(connection) {
