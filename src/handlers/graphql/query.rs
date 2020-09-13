@@ -1,5 +1,9 @@
 use crate::{
-    handlers::{graphql::context::Context, lib::token, Error as HandlerError},
+    handlers::{
+        graphql::context::Context,
+        lib::{refresh, token, user::get},
+        Error as HandlerError,
+    },
     models::user::User,
 };
 use juniper::FieldResult;
@@ -7,29 +11,53 @@ use juniper::FieldResult;
 #[derive(Debug)]
 pub struct Query {}
 
-juniper::graphql_object!(Query: Context |&self| {
-    field api_version() -> &str {
-        return "1.0"
-    }
-
-    field user(&executor, id: String) -> Result<User, HandlerError> {
+#[juniper::object(Context = Context)]
+impl Query {
+    fn user(context: &Context, id: String) -> Result<User, HandlerError> {
         unimplemented!();
     }
 
-    field users(&executor) -> FieldResult<Vec<User>> {
+    fn users(context: &Context) -> FieldResult<Vec<User>> {
         unimplemented!();
     }
 
-    field token(&executor, user: token::LoginForm) -> Result<token::LoginResponse, HandlerError> {
-        let context = executor.context();
+    fn me(context: &Context) -> Result<User, HandlerError> {
+        let token = context.token.as_ref();
 
-        let token = token::token(&context.config, &context.connection, context.operator_signature.clone(), user);
+        if token.is_err() {
+            let err = token.err().unwrap();
+
+            return Err(HandlerError::from(err));
+        }
+
+        let token = token.unwrap();
+
+        let user = get::get(&context.config, &context.connection, &context.email_templates, &context.operator_signature, token);
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(user.unwrap());
+    }
+
+    fn token(context: &Context, username: String, password: String) -> Result<token::LoginResponse, HandlerError> {
+        let token = token::token(&context.config, &context.connection, context.operator_signature.clone(), token::LoginForm { username, password });
 
         if token.is_err() {
             return Err(token.err().unwrap());
         }
 
         return Ok(token.unwrap());
-
     }
-});
+
+    fn refresh(context: &Context, token: String) -> Result<token::LoginResponse, HandlerError> {
+        let token = refresh::refresh(&context.config, &context.connection, context.operator_signature.clone(), refresh::RefreshForm { refresh_token: token });
+
+        if token.is_err() {
+            return Err(token.err().unwrap());
+        }
+
+        return Ok(token.unwrap());
+    }
+}

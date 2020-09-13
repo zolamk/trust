@@ -59,7 +59,6 @@ create table users (
     is_admin boolean not null default false,
     password varchar(82) null,
     confirmed boolean not null default false,
-    invitation_sent_at timestamp,
     confirmation_token varchar(250),
     confirmation_token_sent_at timestamp,
     recovery_token varchar(250),

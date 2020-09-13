@@ -187,6 +187,38 @@ impl From<CryptoError> for Error {
     }
 }
 
+impl From<&CryptoError> for Error {
+    fn from(e: &CryptoError) -> Self {
+        if let CryptoError::TokenMissing = e {
+            return Error::new(
+                401,
+                json!({
+                    "code": "access_token_missing"
+                }),
+                "Access Token Missing".to_string(),
+            );
+        }
+
+        if let CryptoError::JWTError(_) = e {
+            return Error::new(
+                401,
+                json!({
+                    "code": "invalid_access_token"
+                }),
+                "Invalid Access Token".to_string(),
+            );
+        }
+
+        return Error::new(
+            500,
+            json!({
+                "code": "access_token_internal_error"
+            }),
+            "Internal Server Error While Processing Access Token".to_string(),
+        );
+    }
+}
+
 impl From<diesel::result::Error> for Error {
     fn from(_: diesel::result::Error) -> Self {
         return Error::new(

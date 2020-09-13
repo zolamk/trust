@@ -1,5 +1,3 @@
-use diesel::result::Error::NotFound;
-
 #[derive(Debug)]
 pub enum Error {
     DatabaseError(diesel::result::Error),

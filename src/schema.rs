@@ -17,7 +17,6 @@ table! {
         is_admin -> Bool,
         password -> Nullable<Varchar>,
         confirmed -> Bool,
-        invitation_sent_at -> Nullable<Timestamp>,
         confirmation_token -> Nullable<Varchar>,
         confirmation_token_sent_at -> Nullable<Timestamp>,
         recovery_token -> Nullable<Varchar>,
@@ -33,4 +32,4 @@ table! {
 
 joinable!(refresh_tokens -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(refresh_tokens, users,);
+allow_tables_to_appear_in_same_query!(refresh_tokens, users);

@@ -1,7 +1,8 @@
 use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
-    handlers::Error,
+    handlers::{lib::users::update::password, Error},
+    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -11,12 +12,6 @@ use diesel::{
 use log::error;
 use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::{Json, JsonValue};
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize)]
-pub struct UpdateForm {
-    pub password: String,
-}
 
 #[put("/users/<id>/password", data = "<update_form>")]
 pub fn change_password(
@@ -24,7 +19,8 @@ pub fn change_password(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-    update_form: Json<UpdateForm>,
+    email_templates: State<EmailTemplates>,
+    update_form: Json<password::UpdateForm>,
     id: String,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
@@ -34,6 +30,8 @@ pub fn change_password(
 
         return Err(Error::from(err));
     }
+
+    let operator_signature = operator_signature.unwrap();
 
     if token.is_err() {
         let err = token.err().unwrap();
@@ -54,40 +52,10 @@ pub fn change_password(
         }
     };
 
-    if !token.is_admin(&connection) {
-        return Err(Error::new(403, json!({"code": "only_admin_can_update"}), "Only Admin Can Update Users".to_string()));
-    }
-
-    let user = crate::models::user::get_by_id(id, &connection);
+    let user = password::update_password(config.inner(), &connection, email_templates.inner(), &operator_signature, &token, update_form.into_inner(), id);
 
     if user.is_err() {
-        let err = user.err().unwrap();
-
-        error!("{:?}", err);
-
-        return Err(Error::from(err));
-    }
-
-    let mut user = user.unwrap();
-
-    if user.id == token.sub {
-        return Err(Error::new(403, json!({"code": "admin_cant_update_self"}), "Admin Can't Update Self".to_string()));
-    }
-
-    if !config.password_rule.is_match(update_form.password.as_ref()) {
-        return Err(Error::new(400, json!({"code": "invalid_password_format"}), "Invalid Password Format".to_string()));
-    }
-
-    user.password = Some(update_form.password.clone());
-
-    user.hash_password();
-
-    let user = user.save(&connection);
-
-    if user.is_err() {
-        let err = user.err().unwrap();
-        error!("{:?}", err);
-        return Err(Error::from(err));
+        return Err(user.err().unwrap());
     }
 
     return Ok(status::Custom(

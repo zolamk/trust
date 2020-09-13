@@ -27,13 +27,7 @@ pub struct User {
     #[serde(skip_serializing)]
     pub password: Option<String>,
 
-    #[graphql(skip)]
-    #[serde(skip_serializing)]
     pub confirmed: bool,
-
-    #[graphql(name = "invitation_sent_at")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub invitation_sent_at: Option<NaiveDateTime>,
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
@@ -82,9 +76,9 @@ impl User {
         }
     }
 
-    pub fn delete(&self, connection: &PgConnection) -> Result<usize, Error> {
-        match delete(users.filter(id.eq(self.id.clone()))).execute(connection) {
-            Ok(affected_rows) => Ok(affected_rows),
+    pub fn delete(&self, connection: &PgConnection) -> Result<User, Error> {
+        match delete(users.filter(id.eq(self.id.clone()))).get_result(connection) {
+            Ok(user) => Ok(user),
             Err(err) => Err(Error::from(err)),
         }
     }
@@ -121,13 +115,13 @@ impl User {
         }
     }
 
-    pub fn confirm_email_change(&mut self, connection: &PgConnection) -> Result<usize, Error> {
+    pub fn confirm_email_change(&mut self, connection: &PgConnection) -> Result<User, Error> {
         let n: Option<String> = None;
         match update(users.filter(id.eq(self.id.clone())))
             .set((email_change_token.eq(n.clone()), new_email.eq(n), email.eq(self.new_email.as_ref().unwrap())))
-            .execute(connection)
+            .get_result(connection)
         {
-            Ok(affected_rows) => Ok(affected_rows),
+            Ok(user) => Ok(user),
             Err(err) => Err(Error::from(err)),
         }
     }

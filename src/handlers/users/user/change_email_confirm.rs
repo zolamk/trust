@@ -1,28 +1,24 @@
 use crate::{
-    handlers::Error,
-    models::{user::get_by_email_change_token, Error as ModelError},
+    config::Config,
+    handlers::{lib::user::change_email_confirm, Error},
+    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
-    result::Error::NotFound,
 };
 use log::error;
 use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::{Json, JsonValue};
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize)]
-pub struct ConfirmChangeEmailForm {
-    pub email_change_token: String,
-}
 
 #[patch("/user/email/confirm", data = "<confirm_change_email_form>")]
 pub fn change_email_confirm(
+    config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
+    email_templates: State<EmailTemplates>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-    confirm_change_email_form: Json<ConfirmChangeEmailForm>,
+    confirm_change_email_form: Json<change_email_confirm::ConfirmChangeEmailForm>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
@@ -31,6 +27,8 @@ pub fn change_email_confirm(
 
         return Err(Error::from(err));
     }
+
+    let operator_signature = operator_signature.unwrap();
 
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
@@ -42,34 +40,17 @@ pub fn change_email_confirm(
         }
     };
 
-    let user = get_by_email_change_token(confirm_change_email_form.email_change_token.clone(), &connection);
+    let user = change_email_confirm::change_email_confirm(config.inner(), &connection, email_templates.inner(), &operator_signature, confirm_change_email_form.into_inner());
 
     if user.is_err() {
-        let err = user.err().unwrap();
-        match err {
-            ModelError::DatabaseError(NotFound) => return Err(Error::new(404, json!({"code": "user_not_found"}), "User Not Found".to_string())),
-            _ => {
-                error!("{:?}", err);
-                return Err(Error::from(err));
-            }
-        }
+        return Err(user.err().unwrap());
     }
 
-    let mut user = user.unwrap();
-
-    match user.confirm_email_change(&connection) {
-        Ok(_) => {
-            return Ok(status::Custom(
-                Status::Ok,
-                JsonValue(json!({
-                    "code": "success",
-                    "message": "email changed successfully",
-                })),
-            ));
-        }
-        Err(err) => {
-            error!("{:?}", err);
-            return Err(Error::from(err));
-        }
-    }
+    return Ok(status::Custom(
+        Status::Ok,
+        JsonValue(json!({
+            "code": "success",
+            "message": "email changed successfully",
+        })),
+    ));
 }

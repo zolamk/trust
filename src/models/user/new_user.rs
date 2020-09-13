@@ -19,7 +19,6 @@ pub struct NewUser {
     pub confirmed: bool,
     pub confirmation_token: Option<String>,
     pub confirmation_token_sent_at: Option<NaiveDateTime>,
-    pub invitation_sent_at: Option<NaiveDateTime>,
 }
 
 impl NewUser {

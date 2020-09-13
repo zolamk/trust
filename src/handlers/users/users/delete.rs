@@ -1,7 +1,8 @@
 use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
-    handlers::Error,
+    handlers::{lib::users::delete, Error},
+    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -14,9 +15,10 @@ use rocket_contrib::json::JsonValue;
 
 #[delete("/users/<id>")]
 pub fn delete(
-    _config: State<Config>,
+    config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
+    email_templates: State<EmailTemplates>,
     id: String,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
@@ -27,6 +29,8 @@ pub fn delete(
 
         return Err(Error::from(err));
     }
+
+    let operator_signature = operator_signature.unwrap();
 
     if token.is_err() {
         let err = token.err().unwrap();
@@ -47,34 +51,16 @@ pub fn delete(
         }
     };
 
-    if !token.is_admin(&connection) {
-        return Err(Error::new(403, json!({"code": "only_admin_can_delete"}), "Only Admin Users Can Delete Users".to_string()));
-    }
-
-    let user = crate::models::user::get_by_id(id, &connection);
+    let user = delete::delete(config.inner(), &connection, email_templates.inner(), &operator_signature, &token, id);
 
     if user.is_err() {
-        let err = user.err().unwrap();
-
-        error!("{:?}", err);
-
-        return Err(Error::from(err));
+        return Err(user.err().unwrap());
     }
 
-    let user = user.unwrap();
+    let body = json!({
+        "code": "success",
+        "message": "user has been successfully deleted"
+    });
 
-    let res = user.delete(&connection);
-
-    if res.is_ok() {
-        let body = json!({
-            "code": "success",
-            "message": "user has been successfully deleted"
-        });
-
-        return Ok(status::Custom(Status::Ok, JsonValue(body)));
-    }
-
-    let err = res.err().unwrap();
-
-    return Err(Error::from(err));
+    return Ok(status::Custom(Status::Ok, JsonValue(body)));
 }

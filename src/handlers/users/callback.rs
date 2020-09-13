@@ -228,7 +228,6 @@ pub fn callback(
                     avatar: user_data.avatar,
                     confirmation_token_sent_at: None,
                     confirmation_token: None,
-                    invitation_sent_at: None,
                     is_admin: false,
                     password: None,
                 };

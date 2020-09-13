@@ -16,7 +16,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct RefreshForm {
-    refresh_token: String,
+    #[graphql(name = "refresh_token")]
+    pub refresh_token: String,
 }
 
 pub fn refresh(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: OperatorSignature, refresh_form: RefreshForm) -> Result<LoginResponse, Error> {

@@ -1,13 +1,13 @@
 use crate::{
+    config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
-    handlers::Error,
-    models::Error as ModelError,
+    handlers::{lib::user::get, Error},
+    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
-    result::Error::NotFound,
 };
 use log::error;
 use rocket::{http::Status, response::status, State};
@@ -15,9 +15,11 @@ use rocket_contrib::json::JsonValue;
 
 #[get("/user")]
 pub fn get(
+    config: State<Config>,
+    email_templates: State<EmailTemplates>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     token: Result<JWT, CryptoError>,
+    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
@@ -35,6 +37,8 @@ pub fn get(
         return Err(Error::from(err));
     }
 
+    let operator_signature = operator_signature.unwrap();
+
     let token = token.unwrap();
 
     let internal_error = Err(Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string()));
@@ -46,18 +50,10 @@ pub fn get(
         }
     };
 
-    let user = crate::models::user::get_by_id(token.sub, &connection);
+    let user = get::get(config.inner(), &connection, &email_templates, &operator_signature, &token);
 
     if user.is_err() {
-        let err = user.err().unwrap();
-
-        if let ModelError::DatabaseError(NotFound) = err {
-            return Err(Error::new(404, json!({"code": "user_not_found"}), "User Not Found".to_string()));
-        }
-
-        error!("{:?}", err);
-
-        return internal_error;
+        return Err(user.err().unwrap());
     }
 
     let user = user.unwrap();
