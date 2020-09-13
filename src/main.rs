@@ -35,7 +35,7 @@ use diesel::{
     PgConnection,
 };
 use dotenv::dotenv;
-use log::{info, Level};
+use log::info;
 use mailer::EmailTemplates;
 use std::str::FromStr;
 
@@ -103,7 +103,7 @@ fn main() {
 
     let matches = cli.get_matches();
 
-    simple_logger::init_with_level(Level::from_str(&log_level).unwrap()).unwrap();
+    simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
 
     match matches.subcommand() {
         ("run", _sub_m) => run(pool, config, email_templates),
