@@ -12,7 +12,7 @@ use rocket::{
     local::Client,
 };
 use serde_json::{Map, Value};
-use std::env;
+use std::{env, thread, time};
 use testcontainers::*;
 use trust::{config::Config, handlers, mailer::EmailTemplates, models::user::get_by_email};
 
@@ -64,7 +64,7 @@ fn end_users_test() {
 
     let manager = ConnectionManager::<PgConnection>::new(config.database_url.clone());
 
-    let pool = Pool::new(manager).unwrap();
+    let pool = Pool::new(manager).expect("expected to connect to database");
 
     let connection = pool.get().expect("unable to get database connection");
 
@@ -102,6 +102,10 @@ fn end_users_test() {
     let res = req.dispatch();
 
     assert_eq!(res.status(), Status::Ok);
+
+    let second = time::Duration::from_millis(1000);
+
+    thread::sleep(second);
 
     let req = client
         .post("/token")
@@ -236,6 +240,8 @@ fn end_users_test() {
 
     assert_eq!(res.status(), Status::Conflict);
 
+    thread::sleep(second);
+
     let req = client.patch("/user/email").header(authorization).header(signature.clone()).body(r#"{ "email": "zola@zelalem.me"}"#);
 
     let res = req.dispatch();
@@ -270,11 +276,15 @@ fn end_users_test() {
 
     assert_eq!(res.status(), Status::Accepted);
 
+    thread::sleep(second);
+
     let req = client.post("/reset").header(signature.clone()).body(r#"{ "email": "zola@zelalem.me"}"#);
 
     let res = req.dispatch();
 
     assert_eq!(res.status(), Status::Accepted);
+
+    thread::sleep(second);
 
     let user = get_by_email("zola@zelalem.me".to_string(), &connection).expect("expected to find user");
 

@@ -12,7 +12,7 @@ use rocket::{
     local::Client,
 };
 use serde_json::{Map, Value};
-use std::env;
+use std::{env, thread, time};
 use testcontainers::*;
 use trust::{config::Config, handlers, mailer::EmailTemplates, models::user::get_by_email};
 
@@ -64,7 +64,7 @@ fn admin_user_test() {
 
     let manager = ConnectionManager::<PgConnection>::new(config.database_url.clone());
 
-    let pool = Pool::new(manager).unwrap();
+    let pool = Pool::new(manager).expect("expected to connect to database");
 
     let connection = pool.get().expect("unable to get database connection");
 
@@ -94,6 +94,10 @@ fn admin_user_test() {
     let req = client.post("/signup").header(signature.clone()).body(r#"{ "email": "zola@programmer.net", "password": "password"}"#);
 
     let res = req.dispatch();
+
+    let second = time::Duration::from_millis(1000);
+
+    thread::sleep(second);
 
     assert_eq!(res.status(), Status::Ok);
 
@@ -227,6 +231,8 @@ fn admin_user_test() {
     let res = req.dispatch();
 
     assert_eq!(res.status(), Status::Ok);
+
+    thread::sleep(second);
 
     let james = get_by_email("admin@zelalem.me".to_string(), &connection).expect("expected to find james");
 

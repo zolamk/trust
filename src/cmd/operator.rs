@@ -2,7 +2,9 @@ use crate::{config::Config, operator_signature::OperatorSignature};
 use clap::ArgMatches;
 use serde_json::{Map, Value};
 
-pub fn operator(matches: Option<&ArgMatches>, config: Config) {
+pub fn operator(matches: Option<&ArgMatches>) {
+    let config = Config::new();
+
     let matches = matches.unwrap();
 
     if let ("create-signature", sub_m) = matches.subcommand() {

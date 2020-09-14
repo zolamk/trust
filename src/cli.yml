@@ -18,9 +18,6 @@ subcommands:
                   - site_url:
                       help: Site URL
                       required: true
-                  - confirmed_redirect_url:
-                      help: URL to redirect to after user has confirmed their email
-                      required: true
                   - login_hook:
                       short: l
                       long: login_hook

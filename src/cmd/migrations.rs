@@ -3,9 +3,24 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 
+use crate::config::Config;
+
 embed_migrations!("./migrations");
 
-pub fn migrations(connection_pool: Pool<ConnectionManager<PgConnection>>) {
+pub fn migrations() {
+    let config = Config::new();
+
+    let manager = ConnectionManager::<PgConnection>::new(config.database_url);
+
+    let connection_pool = Pool::new(manager);
+
+    if connection_pool.is_err() {
+        println!("{:?}", connection_pool.err().unwrap());
+        return;
+    }
+
+    let connection_pool = connection_pool.unwrap();
+
     let connection = connection_pool.get().expect("unable to get database connection");
 
     match embedded_migrations::run_with_output(&connection, &mut std::io::stdout()) {

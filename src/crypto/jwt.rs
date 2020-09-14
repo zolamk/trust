@@ -128,6 +128,16 @@ impl<'a, 'r> FromRequest<'a, 'r> for JWT {
 
         let encoded_token = encoded_token.unwrap();
 
+        let parts = encoded_token.split(' ').collect::<Vec<&str>>();
+
+        let encoded_token = parts.get(1);
+
+        if encoded_token.is_none() {
+            return Outcome::Failure((Status::BadRequest, Error::TokenMissing));
+        }
+
+        let encoded_token = encoded_token.unwrap();
+
         let decoded_token = Self::decode(encoded_token.to_string(), config.inner().clone());
 
         if decoded_token.is_err() {

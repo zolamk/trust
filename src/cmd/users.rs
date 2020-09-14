@@ -88,8 +88,26 @@ fn remove_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionMan
     }
 }
 
-pub fn users(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, email_templates: EmailTemplates) {
+pub fn users(matches: Option<&ArgMatches>) {
     let matches = matches.unwrap();
+
+    let config = Config::new();
+
+    let database_url = config.database_url.clone();
+
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
+
+    let connection_pool = Pool::new(manager);
+
+    if connection_pool.is_err() {
+        let err = connection_pool.err().unwrap();
+        error!("{:?}", err);
+        return;
+    }
+
+    let connection_pool = connection_pool.unwrap();
+
+    let email_templates = EmailTemplates::new(config.clone());
 
     match matches.subcommand() {
         ("create", sub_m) => new_user(sub_m, connection_pool, config, email_templates),
