@@ -133,7 +133,7 @@ fn admin_user_test() {
 
     let access_token = res.get("access_token").unwrap().as_str().unwrap().to_string();
 
-    let authorization = Header::new("authorization", access_token);
+    let authorization = Header::new("authorization", format!("Bearer {}", access_token));
 
     let req = client
         .post("/users")
@@ -190,7 +190,7 @@ fn admin_user_test() {
 
     let access_token = res.get("access_token").unwrap().as_str().unwrap().to_string();
 
-    let n_authorization = Header::new("authorization", access_token);
+    let n_authorization = Header::new("authorization", format!("Bearer {}", access_token));
 
     let req = client
         .put(format!("/users/{}", admin.id))

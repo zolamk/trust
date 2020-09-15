@@ -162,7 +162,7 @@ fn end_users_test() {
 
     let access_token = res.get("access_token").unwrap().as_str().unwrap().to_string();
 
-    let authorization = Header::new("authorization", access_token);
+    let authorization = Header::new("authorization", format!("Bearer {}", access_token));
 
     let req = client.get("/user").header(authorization.clone()).header(signature.clone());
 
