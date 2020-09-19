@@ -84,6 +84,8 @@ fn admin_user_test() {
             handlers::users::signup::signup,
             handlers::users::token::token,
             handlers::users::confirm::confirm,
+            handlers::users::users::user::user,
+            handlers::users::users::users::users,
         ],
     );
 
@@ -224,7 +226,7 @@ fn admin_user_test() {
 
     let req = client
         .patch(format!("/users/{}/email", user.id))
-        .header(authorization)
+        .header(authorization.clone())
         .header(signature.clone())
         .body(r#"{ "email": "james@zelalem.me"}"#);
 
@@ -244,6 +246,30 @@ fn admin_user_test() {
     let res = req.dispatch();
 
     assert_eq!(res.status(), Status::Ok);
+
+    let req = client.get(format!("/users/{}", user.id)).header(signature.clone()).header(authorization.clone());
+
+    let mut res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Ok);
+
+    let body = res.body_string().unwrap();
+
+    let res: Map<String, Value> = serde_json::from_str(&body).expect("expected response to parse");
+
+    let id = res.get("id").expect("expected to get id").as_str().expect("expected id to be string").to_string();
+
+    assert_eq!(id, user.id);
+
+    let req = client.get("/users?offset=0&limit=10").header(signature.clone()).header(authorization.clone());
+
+    let mut res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Ok);
+
+    let body = res.body_string().unwrap();
+
+    let _: Vec<Value> = serde_json::from_str(&body).expect("expected response to parse");
 
     let req = client
         .post("/token")

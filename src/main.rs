@@ -87,6 +87,8 @@ fn run() {
             handlers::users::user::change_password::change_password,
             handlers::users::user::change_email::change_email,
             handlers::users::user::change_email_confirm::change_email_confirm,
+            handlers::users::users::user::user,
+            handlers::users::users::users::users,
         ],
     )
     .manage(config)
