@@ -8,10 +8,16 @@ use diesel::{delete, update, ExpressionMethods, PgConnection, QueryDsl, RunQuery
 use serde::Serialize;
 
 #[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug, Clone, GraphQLObject)]
+#[changeset_options(treat_none_as_null = "true")]
 pub struct User {
     pub id: String,
 
-    pub email: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+
+    #[graphql(name = "phone_number")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phone_number: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -27,15 +33,27 @@ pub struct User {
     #[serde(skip_serializing)]
     pub password: Option<String>,
 
-    pub confirmed: bool,
+    #[graphql(name = "email_confirmed")]
+    pub email_confirmed: bool,
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
-    pub confirmation_token: Option<String>,
+    pub email_confirmation_token: Option<String>,
 
-    #[graphql(name = "confirmation_token_sent_at")]
+    #[graphql(name = "email_confirmation_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub confirmation_token_sent_at: Option<NaiveDateTime>,
+    pub email_confirmation_token_sent_at: Option<NaiveDateTime>,
+
+    #[graphql(name = "phone_confirmed")]
+    pub phone_confirmed: bool,
+
+    #[graphql(skip)]
+    #[serde(skip_serializing)]
+    pub phone_confirmation_token: Option<String>,
+
+    #[graphql(name = "phone_confirmation_token_sent_at")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phone_confirmation_token_sent_at: Option<NaiveDateTime>,
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
@@ -97,10 +115,13 @@ impl User {
         }
     }
 
-    pub fn confirm(&mut self, connection: &PgConnection) -> Result<usize, Error> {
+    pub fn confirm_email(&mut self, connection: &PgConnection) -> Result<User, Error> {
         let n: Option<String> = None;
 
-        match update(users.filter(id.eq(self.id.clone()))).set((confirmed.eq(true), confirmation_token.eq(n))).execute(connection) {
+        match update(users.filter(id.eq(self.id.clone())))
+            .set((email_confirmed.eq(true), email_confirmation_token.eq(n)))
+            .get_result(connection)
+        {
             Ok(affected_rows) => Ok(affected_rows),
             Err(err) => Err(Error::from(err)),
         }

@@ -21,20 +21,21 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
     let mut user = NewUser::default();
 
-    user.email = matches.value_of("email").unwrap().to_string();
+    user.email = Some(matches.value_of("email").unwrap().to_string());
 
     user.password = Some(matches.value_of("password").unwrap().to_string());
 
     user.is_admin = matches.is_present("admin");
 
-    user.confirmed = config.auto_confirm || matches.is_present("confirm");
+    user.email_confirmed = config.auto_confirm || matches.is_present("confirm");
+
+    user.phone_confirmed = user.email_confirmed;
 
     user.hash_password();
 
-    if !user.confirmed {
-        user.confirmation_token = Some(secure_token(100));
-
-        user.confirmation_token_sent_at = Some(Utc::now().naive_utc())
+    if !user.email_confirmed {
+        user.email_confirmation_token = Some(secure_token(100));
+        user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc())
     }
 
     let connection = match connection_pool.get() {
@@ -47,16 +48,16 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
     match user.save(&connection) {
         Ok(user) => {
-            if !user.confirmed {
+            if !user.email_confirmed {
                 let template = email_templates.confirmation_email_template();
 
                 let data = json!({
-                    "confirmation_url": format!("{}/confirm?confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap()),
+                    "confirmation_url": format!("{}/confirm?confirmation_token={}", config.site_url, user.email_confirmation_token.clone().unwrap()),
                     "site_url": config.site_url,
                     "email": user.email
                 });
 
-                let email = send_email(template, data, user.email.clone(), &config);
+                let email = send_email(template, data, user.email.clone().unwrap(), &config);
 
                 if email.is_err() {
                     let err = email.err().unwrap();
@@ -66,10 +67,10 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
                     return;
                 }
             }
-            println!("{} created successfully", user.email);
+            println!("{} created successfully", user.email.unwrap());
         }
         Err(err) => match err {
-            ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) => panic!("{} already exists!", user.email),
+            ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) => panic!("{} already exists!", user.email.unwrap()),
             _ => panic!("{:?}", err),
         },
     }

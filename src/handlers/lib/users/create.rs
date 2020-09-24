@@ -5,7 +5,7 @@ use crate::{
     handlers::Error,
     mailer::{send_email, EmailTemplates},
     models::{
-        user::{NewUser, User},
+        user::{get_by_email, get_by_phone_number, NewUser, User},
         Error as ModelError,
     },
     operator_signature::OperatorSignature,
@@ -24,7 +24,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct CreateForm {
-    pub email: String,
+    pub email: Option<String>,
+    pub phone_number: Option<String>,
     pub password: String,
     pub name: Option<String>,
     pub avatar: Option<String>,
@@ -55,40 +56,15 @@ pub fn create(
         "A user with this email address has already been registered".to_string(),
     ));
 
-    // if users exists and is confirmed return conflict error
-    // if not delete the unconfirmed user
-    // if the error is user not found proceed with the normal flow
-    match crate::models::user::get_by_email(create_form.email.clone(), &connection) {
-        Ok(user) => {
-            if user.confirmed {
-                return conflict_error;
-            }
-
-            let result = user.delete(&connection);
-
-            if result.is_err() {
-                let err = result.err().unwrap();
-
-                error!("{:?}", err);
-
-                return Err(Error::from(err));
-            }
-        }
-        Err(err) => match err {
-            ModelError::DatabaseError(NotFound) => {}
-            _ => {
-                error!("{:?}", err);
-
-                return Err(Error::from(err));
-            }
-        },
-    }
-
     let mut user = NewUser::default();
 
-    user.confirmed = config.auto_confirm || create_form.confirm;
+    user.email_confirmed = config.auto_confirm || create_form.confirm;
+
+    user.phone_confirmed = user.email_confirmed;
 
     user.email = create_form.email.clone();
+
+    user.phone_number = create_form.phone_number.clone();
 
     user.name = create_form.name.clone();
 
@@ -98,10 +74,89 @@ pub fn create(
 
     user.hash_password();
 
-    if !user.confirmed {
-        user.confirmation_token = Some(secure_token(100));
+    if user.email.is_some() {
+        // if the user is signing up with email and
+        // if user exists and is confirmed return conflict error
+        // if not delete the unconfirmed user and proceed with the normal flow
+        // if the error is user not found proceed with the normal flow
+        match get_by_email(user.email.clone().unwrap(), &connection) {
+            Ok(mut user) => {
+                if user.email_confirmed {
+                    return conflict_error;
+                }
 
-        user.confirmation_token_sent_at = Some(Utc::now().naive_utc());
+                // if the user has a phone number confirmed
+                // even though the email is not confirmed
+                // clear the accounts email otherwise
+                // delete the account since neither the phone number or email have been confirmed
+                let result = if user.phone_confirmed {
+                    user.email = None;
+
+                    user.save(&connection)
+                } else {
+                    user.delete(&connection)
+                };
+
+                if result.is_err() {
+                    let err = result.err().unwrap();
+
+                    error!("{:?}", err);
+
+                    return Err(Error::from(err));
+                }
+            }
+            Err(err) => match err {
+                ModelError::DatabaseError(NotFound) => {}
+                _ => {
+                    error!("{:?}", err);
+
+                    return Err(Error::from(err));
+                }
+            },
+        }
+
+        if !user.email_confirmed {
+            user.email_confirmation_token = Some(secure_token(100));
+            user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+        }
+    }
+
+    if user.phone_number.is_some() {
+        // if the user is signing up with phone number and
+        // if user exists and is confirmed return conflict error
+        // if not delete the unconfirmed user and proceed with the normal flow
+        // if the error is user not found proceed with the normal flow
+        match get_by_phone_number(user.phone_number.clone().unwrap(), &connection) {
+            Ok(mut user) => {
+                if user.phone_confirmed {
+                    return conflict_error;
+                }
+
+                let result = if user.email_confirmed {
+                    user.phone_number = None;
+
+                    user.save(&connection)
+                } else {
+                    user.delete(&connection)
+                };
+
+                if result.is_err() {
+                    let err = result.err().unwrap();
+
+                    error!("{:?}", err);
+
+                    return Err(Error::from(err));
+                }
+            }
+            Err(err) => match err {
+                ModelError::DatabaseError(NotFound) => {}
+                _ => {
+                    error!("{:?}", err);
+
+                    return Err(Error::from(err));
+                }
+            },
+        }
     }
 
     let transaction = connection.transaction::<User, Error, _>(|| {
@@ -126,16 +181,16 @@ pub fn create(
 
         let user = user.unwrap();
 
-        if !user.confirmed {
+        if user.email.is_some() && !user.email_confirmed {
             let template = email_templates.clone().confirmation_email_template();
 
             let data = json!({
-                "confirmation_url": format!("{}/confirmation_token={}", config.site_url, user.confirmation_token.clone().unwrap()),
+                "confirmation_url": format!("{}/confirmation_token={}", config.site_url, user.email_confirmation_token.clone().unwrap()),
                 "email": user.email,
                 "site_url": config.site_url
             });
 
-            let email = send_email(template, data, user.email.clone(), &config);
+            let email = send_email(template, data, user.email.clone().unwrap(), &config);
 
             if email.is_err() {
                 let err = email.err().unwrap();

@@ -1,7 +1,8 @@
 create extension citext;
 
-CREATE DOMAIN email AS citext
-  CHECK ( value ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
+CREATE DOMAIN email AS citext CHECK ( value ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
+
+CREATE DOMAIN phone_number AS citext CHECK (value ~ '^\+\d{5,15}$');
 
 CREATE OR REPLACE FUNCTION public.feistel_crypt(value integer)
   RETURNS integer
@@ -37,7 +38,7 @@ CREATE OR REPLACE FUNCTION public.int_to_string(n int)
   IMMUTABLE STRICT
 AS $function$
 DECLARE
-    alphabet text:='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    alphabet text:='QRBCF123JKLO45GHIJKLOSTU08MNVW67XAPYZ9';
     base int:=length(alphabet);
     output text:='';
 BEGIN
@@ -53,14 +54,18 @@ CREATE SEQUENCE users_id_seq AS INT INCREMENT 1 START 1;
 
 create table users (
     id varchar primary key default int_to_string(feistel_crypt(nextval('users_id_seq')::int)),
-    email email not null constraint uq_email unique,
+    email email constraint uq_email unique,
+    phone_number phone_number constraint uq_phone_number unique,
     name varchar,
     avatar varchar,
     is_admin boolean not null default false,
     password varchar(82) null,
-    confirmed boolean not null default false,
-    confirmation_token varchar(250),
-    confirmation_token_sent_at timestamp,
+    email_confirmed boolean not null default false,
+    email_confirmation_token varchar(250),
+    email_confirmation_token_sent_at timestamp,
+    phone_confirmed boolean not null default false,
+    phone_confirmation_token varchar(10),
+    phone_confirmation_token_sent_at timestamp,
     recovery_token varchar(250),
     recovery_token_sent_at timestamp,
     email_change_token varchar(250),
@@ -68,7 +73,8 @@ create table users (
     email_change_token_sent_at timestamp,
     last_signin_at timestamp,
     created_at timestamp not null default current_timestamp,
-    updated_at timestamp not null
+    updated_at timestamp not null,
+    constraint chk_email_or_phone_not_null check (email is not null or phone_number is not null)
 );
 
 create or replace function update_user_modified_at()

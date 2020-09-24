@@ -3,7 +3,7 @@ use crate::{
     crypto::jwt::JWT,
     handlers::Error,
     hook::{HookEvent, Webhook},
-    models::{refresh_token::NewRefreshToken, Error as ModelError},
+    models::{refresh_token::NewRefreshToken, user::get_by_email_or_phone_number, Error as ModelError},
     operator_signature::OperatorSignature,
 };
 use diesel::{
@@ -29,20 +29,26 @@ pub struct LoginResponse {
 }
 
 pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: OperatorSignature, form: LoginForm) -> Result<LoginResponse, Error> {
+    if !config.email_rule.is_match(&form.username) && !config.phone_rule.is_match(&form.username) {
+        return Err(Error::new(
+            422,
+            json!({"code": "invalid_username"}),
+            "Invalid Username! Username must be a valid email or phone number".to_string(),
+        ));
+    }
+
     let internal_error = Error::new(500, json!({"code": "internal_server_error"}), "Internal Server Error".to_string());
 
-    let user_not_confirmed = Error::new(412, json!({"code": "user_not_confirmed"}), "User hasn't been confirmed".to_string());
+    let invalid_username_or_password = Error::new(401, json!({"code": "invalid_username_or_password"}), "Invalid Username or Password".to_string());
 
-    let invalid_email_or_password = Error::new(401, json!({"code": "invalid_email_or_password"}), "Invalid Email or Password".to_string());
-
-    let user = crate::models::user::get_by_email(form.username, &connection);
+    let user = get_by_email_or_phone_number(form.username.clone(), form.username.clone(), &connection);
 
     if user.is_err() {
         let err = user.err().unwrap();
 
         match err {
             ModelError::DatabaseError(NotFound) => {
-                return Err(invalid_email_or_password);
+                return Err(invalid_username_or_password);
             }
             _ => {
                 error!("{:?}", err);
@@ -53,12 +59,16 @@ pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
 
     let mut user = user.unwrap();
 
-    if !user.confirmed {
-        return Err(user_not_confirmed);
+    if config.email_rule.is_match(form.username.as_ref()) && !user.email_confirmed {
+        return Err(Error::new(409, json!({"code": "email_not_confirmed"}), "Email Hasn't Been Confirmed".to_string()));
+    }
+
+    if config.phone_rule.is_match(form.username.as_ref()) && !user.phone_confirmed {
+        return Err(Error::new(409, json!({"code": "phone_not_confirmed"}), "Phone Number Hasn't Been Confirmed".to_string()));
     }
 
     if !user.verify_password(form.password) {
-        return Err(invalid_email_or_password);
+        return Err(invalid_username_or_password);
     }
 
     let payload = json!({

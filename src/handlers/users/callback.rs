@@ -222,12 +222,16 @@ pub fn callback(
                 }
 
                 let new_user = NewUser {
-                    email,
-                    confirmed: user_data.verified || config.auto_confirm,
+                    email: Some(email),
+                    phone_number: None,
+                    phone_confirmed: false,
+                    email_confirmed: user_data.verified || config.auto_confirm,
                     name: user_data.name,
                     avatar: user_data.avatar,
-                    confirmation_token_sent_at: None,
-                    confirmation_token: None,
+                    email_confirmation_token_sent_at: None,
+                    email_confirmation_token: None,
+                    phone_confirmation_token: None,
+                    phone_confirmation_token_sent_at: None,
                     is_admin: false,
                     password: None,
                 };
@@ -274,11 +278,11 @@ pub fn callback(
             }
         }
 
-        if !user.confirmed {
+        if !user.email_confirmed {
             if !user_data.verified && !config.auto_confirm {
-                user.confirmation_token = Some(secure_token(100));
+                user.email_confirmation_token = Some(secure_token(100));
 
-                user.confirmation_token_sent_at = Some(Utc::now().naive_utc());
+                user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
 
                 let user = user.save(&connection);
 
@@ -295,12 +299,12 @@ pub fn callback(
                 let template = email_templates.clone().confirmation_email_template();
 
                 let data = json!({
-                    "confirmation_url": format!("{}/confirm?confirmation_token={}", config.instance_url, user.confirmation_token.clone().unwrap()),
+                    "confirmation_url": format!("{}/confirm?confirmation_token={}", config.instance_url, user.email_confirmation_token.clone().unwrap()),
                     "site_url": config.site_url,
                     "email": user.email
                 });
 
-                let email = send_email(template, data, user.email, &config);
+                let email = send_email(template, data, user.email.unwrap(), &config);
 
                 if email.is_err() {
                     let redirect_url = format!("{}?error=unable_to_send_confirmation_email", operator_signature.site_url);
@@ -315,7 +319,7 @@ pub fn callback(
                 return Ok(Redirect::to(redirect_url));
             }
 
-            if user.confirm(&connection).is_err() {
+            if user.confirm_email(&connection).is_err() {
                 return Ok(Redirect::to(internal_error_redirect_url));
             }
         }

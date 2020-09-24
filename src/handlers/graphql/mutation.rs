@@ -240,8 +240,14 @@ impl Mutation {
         return Ok(user.unwrap());
     }
 
-    fn reset(context: &Context, email: String) -> Result<ResetResponse, HandlerError> {
-        let reset = reset::reset(&context.config, &context.connection, &context.email_templates, &context.operator_signature, reset::ResetForm { email });
+    fn reset(context: &Context, email: Option<String>, phone_number: Option<String>) -> Result<ResetResponse, HandlerError> {
+        let reset = reset::reset(
+            &context.config,
+            &context.connection,
+            &context.email_templates,
+            &context.operator_signature,
+            reset::ResetForm { email, phone_number },
+        );
 
         if reset.is_err() {
             return Err(reset.err().unwrap());

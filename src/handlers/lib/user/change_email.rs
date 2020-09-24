@@ -47,12 +47,22 @@ pub fn change_email(
     let mut user = user.unwrap();
 
     match crate::models::user::get_by_email(change_email_form.email.clone(), &connection) {
-        Ok(user) => {
-            if user.confirmed {
+        Ok(mut user) => {
+            if user.email_confirmed {
                 return Err(conflict_error);
             }
 
-            let result = user.delete(&connection);
+            // if the user has a phone number confirmed
+            // even though the email is not confirmed
+            // clear the accounts email otherwise
+            // delete the account since neither the phone number or email have been confirmed
+            let result = if user.phone_confirmed {
+                user.email = None;
+
+                user.save(&connection)
+            } else {
+                user.delete(&connection)
+            };
 
             if result.is_err() {
                 let err = result.err().unwrap();
@@ -73,9 +83,9 @@ pub fn change_email(
     }
 
     if config.auto_confirm {
-        user.new_email = Some(user.email.clone()); // store the old email in new email in case we ever need to revert it
+        user.new_email = user.email.clone(); // store the old email in new email in case we ever need to revert it
 
-        user.email = change_email_form.email;
+        user.email = Some(change_email_form.email);
 
         let user = user.save(&connection);
 

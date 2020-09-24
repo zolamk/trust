@@ -17,7 +17,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct ResetForm {
-    pub email: String,
+    pub email: Option<String>,
+    pub phone_number: Option<String>,
 }
 
 pub fn reset(
@@ -27,51 +28,62 @@ pub fn reset(
     _operator_signature: &OperatorSignature,
     reset_form: ResetForm,
 ) -> Result<(), Error> {
-    let user = get_by_email(reset_form.email, &connection);
-
-    if user.is_err() {
-        let err = user.err().unwrap();
-        error!("{:?}", err);
-        return Ok(());
+    if reset_form.email.is_none() && reset_form.phone_number.is_none() {
+        return Err(Error::new(
+            422,
+            json!({"code": "email_or_phone_number_required"}),
+            "Email or Phone Number Is Required To Recover Account".to_string(),
+        ));
     }
 
-    let mut user = user.unwrap();
-
-    let template = email_templates.clone().recovery_email_template();
-
     let transaction = connection.transaction::<_, Error, _>(|| {
-        user.recovery_token = Some(secure_token(100));
+        if reset_form.email.is_some() {
+            let user = get_by_email(reset_form.email.unwrap(), &connection);
 
-        user.recovery_token_sent_at = Some(Utc::now().naive_utc());
+            if user.is_err() {
+                let err = user.err().unwrap();
+                error!("{:?}", err);
+                return Ok(());
+            }
 
-        let user = user.save(&connection);
+            let mut user = user.unwrap();
 
-        if user.is_err() {
-            let err = user.err().unwrap();
-            error!("{:?}", err);
-            return Err(Error::from(err));
+            let template = email_templates.clone().recovery_email_template();
+
+            user.recovery_token = Some(secure_token(100));
+
+            user.recovery_token_sent_at = Some(Utc::now().naive_utc());
+
+            let user = user.save(&connection);
+
+            if user.is_err() {
+                let err = user.err().unwrap();
+                error!("{:?}", err);
+                return Err(Error::from(err));
+            }
+
+            let user = user.unwrap();
+
+            let recovery_url = format!("{}/recovery?recovery_token={}", config.site_url, user.recovery_token.clone().unwrap());
+
+            let data = json!({
+                "recovery_url": recovery_url,
+                "site_url": config.site_url,
+                "email": user.email
+            });
+
+            let email = send_email(template, data, user.email.unwrap(), config);
+
+            if email.is_err() {
+                let err = email.err().unwrap();
+
+                error!("{:?}", err);
+
+                return Err(Error::from(err));
+            }
+
+            return Ok(());
         }
-
-        let user = user.unwrap();
-
-        let recovery_url = format!("{}/recovery?recovery_token={}", config.site_url, user.recovery_token.clone().unwrap());
-
-        let data = json!({
-            "recovery_url": recovery_url,
-            "site_url": config.site_url,
-            "email": user.email
-        });
-
-        let email = send_email(template, data, user.email, config);
-
-        if email.is_err() {
-            let err = email.err().unwrap();
-
-            error!("{:?}", err);
-
-            return Err(Error::from(err));
-        }
-
         return Ok(());
     });
 

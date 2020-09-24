@@ -19,7 +19,7 @@ pub struct ConfirmForm {
 pub fn confirm(connection: &PooledConnection<ConnectionManager<PgConnection>>, confirm_form: ConfirmForm) -> Result<User, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
-    let user = crate::models::user::get_by_confirmation_token(confirm_form.confirmation_token, connection);
+    let user = crate::models::user::get_by_email_confirmation_token(confirm_form.confirmation_token, connection);
 
     if user.is_err() {
         match user.err().unwrap() {
@@ -33,7 +33,7 @@ pub fn confirm(connection: &PooledConnection<ConnectionManager<PgConnection>>, c
 
     let mut user = user.unwrap();
 
-    let u = user.confirm(connection);
+    let u = user.confirm_email(connection);
 
     if u.is_err() {
         error!("{:?}", u.err().unwrap());
@@ -41,5 +41,5 @@ pub fn confirm(connection: &PooledConnection<ConnectionManager<PgConnection>>, c
         return Err(internal_error);
     }
 
-    return Ok(user);
+    return Ok(u.unwrap());
 }

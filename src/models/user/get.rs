@@ -18,6 +18,20 @@ pub fn get_by_email(e: String, connection: &PgConnection) -> Result<User, Error>
     }
 }
 
+pub fn get_by_phone_number(p: String, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(phone_number.eq(p)).first(connection) {
+        Ok(user) => Ok(user),
+        Err(err) => Err(Error::from(err)),
+    }
+}
+
+pub fn get_by_email_or_phone_number(e: String, p: String, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(email.eq(e)).or_filter(phone_number.eq(p)).first(connection) {
+        Ok(user) => Ok(user),
+        Err(err) => Err(Error::from(err)),
+    }
+}
+
 pub fn get_by_id(i: String, connection: &PgConnection) -> Result<User, Error> {
     match users.find(i).first(connection) {
         Ok(user) => Ok(user),
@@ -25,8 +39,8 @@ pub fn get_by_id(i: String, connection: &PgConnection) -> Result<User, Error> {
     }
 }
 
-pub fn get_by_confirmation_token(token: String, connection: &PgConnection) -> Result<User, Error> {
-    match users.filter(confirmation_token.eq(token)).first(connection) {
+pub fn get_by_email_confirmation_token(token: String, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(email_confirmation_token.eq(token)).first(connection) {
         Ok(user) => Ok(user),
         Err(err) => Err(Error::from(err)),
     }

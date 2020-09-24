@@ -61,7 +61,7 @@ pub fn create(
 
     let body = json!({
         "code": "success",
-        "confirmation_required": !user.confirmed,
+        "email_confirmation_required": !user.email_confirmed,
         "message": "user has been successfully created"
     });
 

@@ -121,7 +121,7 @@ fn end_users_test() {
     let req = client
         .post("/confirm")
         .header(signature.clone())
-        .body(format!("{{\"confirmation_token\": \"{}\"}}", user.confirmation_token.unwrap()));
+        .body(format!("{{\"confirmation_token\": \"{}\"}}", user.email_confirmation_token.unwrap()));
 
     let res = req.dispatch();
 
@@ -132,7 +132,7 @@ fn end_users_test() {
     let req = client
         .post("/confirm")
         .header(signature.clone())
-        .body(format!("{{\"confirmation_token\": \"{}\"}}", user.confirmation_token.unwrap()));
+        .body(format!("{{\"confirmation_token\": \"{}\"}}", user.email_confirmation_token.unwrap()));
 
     let res = req.dispatch();
 

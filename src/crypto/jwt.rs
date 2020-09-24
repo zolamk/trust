@@ -13,7 +13,8 @@ use serde_json::{json, Value};
 #[derive(Deserialize, Serialize, Debug)]
 pub struct JWT {
     pub sub: String,
-    pub email: String,
+    pub email: Option<String>,
+    pub phone_number: Option<String>,
     pub aud: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exp: Option<i64>,
@@ -28,6 +29,7 @@ impl JWT {
             exp: None,
             aud,
             email: user.email.clone(),
+            phone_number: user.phone_number.clone(),
             metadata,
         };
     }

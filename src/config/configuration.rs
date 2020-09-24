@@ -70,6 +70,14 @@ pub struct Config {
     #[serde(with = "serde_regex")]
     pub password_rule: Regex,
 
+    #[serde(default = "default_email_rule")]
+    #[serde(with = "serde_regex")]
+    pub email_rule: Regex,
+
+    #[serde(default = "default_phone_rule")]
+    #[serde(with = "serde_regex")]
+    pub phone_rule: Regex,
+
     pub site_url: String,
 
     pub smtp_admin_email: String,
@@ -199,6 +207,14 @@ fn default_jwt_exp() -> i64 {
 
 fn default_password_rule() -> Regex {
     regex::Regex::new(r".{8,1000}").unwrap()
+}
+
+fn default_email_rule() -> Regex {
+    regex::Regex::new(r"^[\w\-\.]+@([\w\-]+\.)+[\w\-]{1,}$").unwrap()
+}
+
+fn default_phone_rule() -> Regex {
+    regex::Regex::new(r"\+\d{5,15}").unwrap()
 }
 
 fn default_host() -> String {

@@ -51,9 +51,9 @@ pub fn update_email(
     }
 
     if config.auto_confirm || update_form.confirm.is_some() && update_form.confirm.unwrap() {
-        user.new_email = Some(user.email.clone()); // store the old email in new email in case we ever need to revert it
+        user.new_email = user.email.clone(); // store the old email in new email in case we ever need to revert it
 
-        user.email = update_form.email;
+        user.email = Some(update_form.email);
 
         let user = user.save(connection);
 
