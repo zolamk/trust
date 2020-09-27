@@ -9,6 +9,7 @@ use crate::{
         Error as ModelError,
     },
     operator_signature::OperatorSignature,
+    sms::{send_sms, SMSTemplates},
 };
 use chrono::Utc;
 use diesel::{
@@ -35,6 +36,7 @@ pub fn signup(
     connection: &PooledConnection<ConnectionManager<PgConnection>>,
     operator_signature: OperatorSignature,
     email_templates: &EmailTemplates,
+    sms_templates: &SMSTemplates,
     signup_form: SignUpForm,
 ) -> Result<User, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
@@ -62,7 +64,7 @@ pub fn signup(
 
     user.name = signup_form.name.clone();
 
-    user.avatar = signup_form.avatar.clone();
+    user.avatar = signup_form.avatar;
 
     user.email_confirmed = config.auto_confirm;
 
@@ -200,7 +202,7 @@ pub fn signup(
             return Err(Error::from(hook_response.err().unwrap()));
         }
 
-        if !config.auto_confirm && signup_form.email.is_some() {
+        if !user.email_confirmed && user.email.is_some() {
             let template = email_templates.clone().confirmation_email_template();
 
             let data = json!({
@@ -213,6 +215,26 @@ pub fn signup(
 
             if email.is_err() {
                 let err = email.err().unwrap();
+
+                error!("{:?}", err);
+
+                return Err(Error::from(err));
+            }
+        }
+
+        if !user.phone_confirmed && user.phone_number.is_some() && !config.disable_phone {
+            let template = sms_templates.clone().confirmation_sms_template();
+
+            let data = json!({
+                "confirmation_code": user.phone_confirmation_token.clone().unwrap(),
+                "phone_number": user.phone_number,
+                "site_url": config.site_url
+            });
+
+            let sms = send_sms(template, data, user.phone_number.clone().unwrap(), &config);
+
+            if sms.is_err() {
+                let err = sms.err().unwrap();
 
                 error!("{:?}", err);
 

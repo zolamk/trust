@@ -46,6 +46,13 @@ pub fn get_by_email_confirmation_token(token: String, connection: &PgConnection)
     }
 }
 
+pub fn get_by_phone_confirmation_token(token: String, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(phone_confirmation_token.eq(token)).first(connection) {
+        Ok(user) => Ok(user),
+        Err(err) => Err(Error::from(err)),
+    }
+}
+
 pub fn get_by_email_change_token(token: String, connection: &PgConnection) -> Result<User, Error> {
     match users.filter(email_change_token.eq(token)).first(connection) {
         Ok(user) => Ok(user),

@@ -2,7 +2,7 @@ use crate::{
     handlers::{
         graphql::context::Context,
         lib::{
-            confirm,
+            confirm_email, confirm_phone,
             reset::{confirm_reset, reset},
             signup,
             user::{change_email, change_email_confirm, change_password},
@@ -27,7 +27,14 @@ struct ResetResponse {
 #[juniper::object(Context = Context)]
 impl Mutation {
     fn signup(context: &Context, user: signup::SignUpForm) -> Result<User, HandlerError> {
-        let user = signup::signup(&context.config, &context.connection, context.operator_signature.clone(), &context.email_templates, user);
+        let user = signup::signup(
+            &context.config,
+            &context.connection,
+            context.operator_signature.clone(),
+            &context.email_templates,
+            &context.sms_templates,
+            user,
+        );
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -36,8 +43,20 @@ impl Mutation {
         return Ok(user.unwrap());
     }
 
-    fn confirm(context: &Context, token: String) -> Result<User, HandlerError> {
-        let user = confirm::confirm(&context.connection, confirm::ConfirmForm { confirmation_token: token });
+    #[graphql(name = "confirm_email")]
+    fn confirm_email(context: &Context, token: String) -> Result<User, HandlerError> {
+        let user = confirm_email::confirm(&context.connection, confirm_email::ConfirmForm { confirmation_token: token });
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(user.unwrap());
+    }
+
+    #[graphql(name = "confirm_phone")]
+    fn confirm_phone(context: &Context, token: String) -> Result<User, HandlerError> {
+        let user = confirm_phone::confirm(&context.connection, confirm_phone::ConfirmForm { confirmation_token: token });
 
         if user.is_err() {
             return Err(user.err().unwrap());

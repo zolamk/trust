@@ -83,7 +83,7 @@ fn admin_user_test() {
             handlers::users::user::get::get,
             handlers::users::signup::signup,
             handlers::users::token::token,
-            handlers::users::confirm::confirm,
+            handlers::users::confirm_email::confirm,
             handlers::users::users::user::user,
             handlers::users::users::users::users,
         ],
@@ -106,7 +106,7 @@ fn admin_user_test() {
     let user = get_by_email("zola@programmer.net".to_string(), &connection).expect("expected to find user");
 
     let req = client
-        .post("/confirm")
+        .post("/confirm/email")
         .header(signature.clone())
         .body(format!("{{\"confirmation_token\": \"{}\"}}", user.email_confirmation_token.unwrap()));
 
@@ -169,7 +169,7 @@ fn admin_user_test() {
     let user = get_by_email("admin@zelalem.me".to_string(), &connection).expect("expected to find user");
 
     let req = client
-        .post("/confirm")
+        .post("/confirm/email")
         .header(signature.clone())
         .body(format!("{{\"confirmation_token\": \"{}\"}}", user.email_confirmation_token.unwrap()));
 

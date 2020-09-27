@@ -20,3 +20,4 @@ pub mod mailer;
 pub mod models;
 pub mod operator_signature;
 mod schema;
+pub mod sms;

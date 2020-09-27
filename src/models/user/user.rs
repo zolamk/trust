@@ -44,6 +44,10 @@ pub struct User {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_confirmation_token_sent_at: Option<NaiveDateTime>,
 
+    #[graphql(name = "email_confirmed_at")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email_confirmed_at: Option<NaiveDateTime>,
+
     #[graphql(name = "phone_confirmed")]
     pub phone_confirmed: bool,
 
@@ -54,6 +58,10 @@ pub struct User {
     #[graphql(name = "phone_confirmation_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phone_confirmation_token_sent_at: Option<NaiveDateTime>,
+
+    #[graphql(name = "phone_confirmed_at")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phone_confirmed_at: Option<NaiveDateTime>,
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
@@ -118,8 +126,23 @@ impl User {
     pub fn confirm_email(&mut self, connection: &PgConnection) -> Result<User, Error> {
         let n: Option<String> = None;
 
+        let now = Some(Utc::now().naive_utc());
+
         match update(users.filter(id.eq(self.id.clone())))
-            .set((email_confirmed.eq(true), email_confirmation_token.eq(n)))
+            .set((email_confirmed.eq(true), email_confirmation_token.eq(n), email_confirmed_at.eq(now)))
+            .get_result(connection)
+        {
+            Ok(affected_rows) => Ok(affected_rows),
+            Err(err) => Err(Error::from(err)),
+        }
+    }
+
+    pub fn confirm_phone(&mut self, connection: &PgConnection) -> Result<User, Error> {
+        let n: Option<String> = None;
+        let now = Some(Utc::now().naive_utc());
+
+        match update(users.filter(id.eq(self.id.clone())))
+            .set((phone_confirmed.eq(true), phone_confirmation_token.eq(n), phone_confirmed_at.eq(now)))
             .get_result(connection)
         {
             Ok(affected_rows) => Ok(affected_rows),

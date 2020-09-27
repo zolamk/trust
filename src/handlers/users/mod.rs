@@ -1,6 +1,7 @@
 pub mod authorize;
 pub mod callback;
-pub mod confirm;
+pub mod confirm_email;
+pub mod confirm_phone;
 pub mod provider;
 pub mod refresh;
 pub mod reset;

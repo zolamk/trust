@@ -77,7 +77,7 @@ fn end_users_test() {
         routes![
             handlers::users::signup::signup,
             handlers::users::token::token,
-            handlers::users::confirm::confirm,
+            handlers::users::confirm_email::confirm,
             handlers::users::user::get::get,
             handlers::users::user::change_password::change_password,
             handlers::users::user::change_email::change_email,
@@ -119,7 +119,7 @@ fn end_users_test() {
     let user = get_by_email("zola@programmer.net".to_string(), &connection).expect("expected to find user");
 
     let req = client
-        .post("/confirm")
+        .post("/confirm/email")
         .header(signature.clone())
         .body(format!("{{\"confirmation_token\": \"{}\"}}", user.email_confirmation_token.unwrap()));
 
@@ -130,7 +130,7 @@ fn end_users_test() {
     let user = get_by_email("admin@zelalem.me".to_string(), &connection).expect("expected to find user");
 
     let req = client
-        .post("/confirm")
+        .post("/confirm/email")
         .header(signature.clone())
         .body(format!("{{\"confirmation_token\": \"{}\"}}", user.email_confirmation_token.unwrap()));
 

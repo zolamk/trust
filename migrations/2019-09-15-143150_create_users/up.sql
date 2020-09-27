@@ -63,9 +63,11 @@ create table users (
     email_confirmed boolean not null default false,
     email_confirmation_token varchar(250),
     email_confirmation_token_sent_at timestamp,
+    email_confirmed_at timestamp,
     phone_confirmed boolean not null default false,
     phone_confirmation_token varchar(10),
     phone_confirmation_token_sent_at timestamp,
+    phone_confirmed_at timestamp,
     recovery_token varchar(250),
     recovery_token_sent_at timestamp,
     email_change_token varchar(250),
@@ -74,7 +76,9 @@ create table users (
     last_signin_at timestamp,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null,
-    constraint chk_email_or_phone_not_null check (email is not null or phone_number is not null)
+    constraint chk_email_or_phone_not_null check (email is not null or phone_number is not null),
+    constraint chk_email_confirm check (email_confirmed = false or email_confirmed_at is not null),
+    constraint chk_phone_confirm check (phone_confirmed = false or phone_confirmed_at is not null)
 );
 
 create or replace function update_user_modified_at()

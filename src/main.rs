@@ -26,6 +26,7 @@ mod mailer;
 mod models;
 mod operator_signature;
 mod schema;
+mod sms;
 
 use crate::handlers::graphql::create_schema;
 use clap::App;
@@ -37,6 +38,7 @@ use diesel::{
 use dotenv::dotenv;
 use log::info;
 use mailer::EmailTemplates;
+use sms::SMSTemplates;
 use std::str::FromStr;
 
 fn run() {
@@ -49,6 +51,8 @@ fn run() {
     simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
 
     let email_templates = EmailTemplates::new(config.clone());
+
+    let sms_templates = SMSTemplates::new(config.clone());
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
 
@@ -71,7 +75,8 @@ fn run() {
             handlers::graphql::graphiql,
             handlers::graphql::graphql,
             handlers::users::signup::signup,
-            handlers::users::confirm::confirm,
+            handlers::users::confirm_email::confirm,
+            handlers::users::confirm_phone::confirm,
             handlers::users::token::token,
             handlers::users::refresh::refresh,
             handlers::users::authorize::authorize,
@@ -94,6 +99,7 @@ fn run() {
     .manage(config)
     .manage(connection_pool)
     .manage(email_templates)
+    .manage(sms_templates)
     .manage(create_schema())
     .launch();
 }

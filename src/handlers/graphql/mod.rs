@@ -8,6 +8,7 @@ use crate::{
     handlers::Error as HandlerError,
     mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
+    sms::SMSTemplates,
 };
 use juniper_rocket::{GraphQLRequest, GraphQLResponse};
 use mutation::*;
@@ -65,6 +66,7 @@ pub fn graphql(
     schema: State<Schema>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     email_templates: State<EmailTemplates>,
+    sms_templates: State<SMSTemplates>,
     token: Result<JWT, CryptoError>,
 ) -> GraphQLResponse {
     if operator_signature.is_err() {
@@ -90,6 +92,7 @@ pub fn graphql(
             connection,
             config: config.inner().clone(),
             email_templates: email_templates.inner().clone(),
+            sms_templates: sms_templates.inner().clone(),
             operator_signature: operator_signature.unwrap(),
             token,
         },

@@ -1,5 +1,5 @@
 use crate::{
-    handlers::{lib::confirm, Error},
+    handlers::{lib::confirm_phone, Error},
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -10,10 +10,10 @@ use log::error;
 use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::{Json, JsonValue};
 
-#[post("/confirm", data = "<confirm_form>")]
+#[post("/confirm/phone", data = "<confirm_form>")]
 pub fn confirm(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    confirm_form: Json<confirm::ConfirmForm>,
+    confirm_form: Json<confirm_phone::ConfirmForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
@@ -34,7 +34,7 @@ pub fn confirm(
         }
     };
 
-    let user = confirm::confirm(&connection, confirm_form.into_inner());
+    let user = confirm_phone::confirm(&connection, confirm_form.into_inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());
@@ -42,7 +42,7 @@ pub fn confirm(
 
     let body = json!({
         "code": "success",
-        "message": "email has been confirmed successfully"
+        "message": "phone number has been confirmed successfully"
     });
 
     return Ok(status::Custom(Status::Ok, JsonValue(body)));

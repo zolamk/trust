@@ -1,7 +1,23 @@
 use log::error;
 use regex::Regex;
 use serde::Deserialize;
-use std::{fs, path::Path, process::exit};
+use std::{collections::HashMap, fs, path::Path, process::exit};
+
+#[derive(Deserialize, Clone)]
+pub struct SMSMapping {
+    pub source: String,
+    pub destination: String,
+    pub message: String,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct SMSConfig {
+    pub url: String,
+    pub method: String,
+    pub source: String,
+    pub mapping: SMSMapping,
+    pub headers: HashMap<String, String>,
+}
 
 #[derive(Deserialize, Clone)]
 pub struct Config {
@@ -57,11 +73,11 @@ pub struct Config {
 
     pub mailer_template_confirmation: Option<String>,
 
-    pub mailer_template_email_change: Option<String>,
-
-    pub mailer_template_invitation: Option<String>,
-
     pub mailer_template_recovery: Option<String>,
+
+    pub sms_template_confirmation: Option<String>,
+
+    pub sms_template_recovery: Option<String>,
 
     #[serde(default = "default_port")]
     pub port: u16,
@@ -89,6 +105,14 @@ pub struct Config {
     pub smtp_port: u16,
 
     pub smtp_username: String,
+
+    #[serde(default = "default_disable_phone")]
+    pub disable_phone: bool,
+
+    pub sms_config_path: Option<String>,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    pub sms_config: Option<SMSConfig>,
 
     #[serde(skip_serializing, skip_deserializing)]
     private_key: Option<String>,
@@ -158,7 +182,26 @@ impl Config {
                 if config.github_enabled {
                     assert_eq!(config.github_client_id.is_some(), true, "expected GITHUB_CLIENT_ID to be set if github provider is enabled");
 
-                    assert_eq!(config.github_client_secret.is_some(), true, "expected GITHUB_CLIENT_SECRET to be set if github provider is enabled")
+                    assert_eq!(config.github_client_secret.is_some(), true, "expected GITHUB_CLIENT_SECRET to be set if github provider is enabled");
+                }
+
+                if !config.disable_phone {
+                    assert_eq!(config.sms_config_path.is_some(), true, "expected SMS_CONFIG_PATH to be set if phone support is enabled");
+
+                    match fs::read_to_string(Path::new(&config.sms_config_path.clone().unwrap())) {
+                        Ok(sms) => {
+                            let sms: Result<SMSConfig, serde_json::Error> = serde_json::from_str(&sms);
+
+                            if sms.is_err() {
+                                panic!("unable to parse sms config file: {}", sms.err().unwrap());
+                            }
+
+                            config.sms_config = Some(sms.unwrap());
+                        }
+                        Err(err) => {
+                            panic!("unable to read sms config file: {}", err);
+                        }
+                    }
                 }
 
                 return config;
@@ -226,6 +269,10 @@ fn default_port() -> u16 {
 }
 
 fn default_social_enabled() -> bool {
+    false
+}
+
+fn default_disable_phone() -> bool {
     false
 }
 

@@ -1,4 +1,6 @@
-use crate::{crypto::Error as CryptoError, hook::Error as HookError, mailer::Error as MailerError, models::Error as ModelError, operator_signature::Error as OperatorSignatureError};
+use crate::{
+    crypto::Error as CryptoError, hook::Error as HookError, mailer::Error as MailerError, models::Error as ModelError, operator_signature::Error as OperatorSignatureError, sms::Error as SMSError,
+};
 use rocket::{
     http::{ContentType, Status},
     response::{self, Responder},
@@ -183,6 +185,28 @@ impl From<CryptoError> for Error {
                 "code": "access_token_internal_error"
             }),
             "Internal Server Error While Processing Access Token".to_string(),
+        );
+    }
+}
+
+impl From<SMSError> for Error {
+    fn from(e: SMSError) -> Self {
+        if let SMSError::TemplateError(_) = e {
+            return Error::new(
+                500,
+                json!({
+                    "code": "sms_template_error"
+                }),
+                "SMS Template Error".to_string(),
+            );
+        }
+
+        return Error::new(
+            500,
+            json!({
+                "code": "sms_internal_error"
+            }),
+            "Internal Server Error While Processing SMS".to_string(),
         );
     }
 }
