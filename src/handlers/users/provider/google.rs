@@ -2,7 +2,7 @@ use crate::{
     config::Config,
     handlers::users::provider::{Provider, UserProvidedData},
 };
-use reqwest::{Client, Error};
+use reqwest::{blocking::Client, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -52,7 +52,7 @@ impl Provider for GoogleProvider {
     fn get_user_data(&self, access_token: String) -> Result<UserProvidedData, Error> {
         let client = Client::new();
 
-        let mut response = client.get("https://www.googleapis.com/oauth2/v1/userinfo?alt=json").bearer_auth(access_token).send()?;
+        let response = client.get("https://www.googleapis.com/oauth2/v1/userinfo?alt=json").bearer_auth(access_token).send()?;
 
         let data: GoogleUser = response.json()?;
 

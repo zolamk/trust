@@ -1,4 +1,4 @@
-#![allow(clippy::needless_return, clippy::module_inception, clippy::new_without_default)]
+#![allow(clippy::needless_return, clippy::module_inception, clippy::new_without_default, clippy::too_many_arguments)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #![feature(type_ascription)]
 

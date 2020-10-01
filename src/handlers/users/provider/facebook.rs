@@ -2,7 +2,7 @@ use crate::{
     config::Config,
     handlers::users::provider::{Provider, UserProvidedData},
 };
-use reqwest::{Client, Error};
+use reqwest::{blocking::Client, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -62,23 +62,19 @@ impl Provider for FacebookProvider {
     fn get_user_data(&self, access_token: String) -> Result<UserProvidedData, Error> {
         let client = Client::new();
 
-        let mut response = client
+        let response = client
             .get("https://graph.facebook.com/me?fields=name,email,picture{url,is_silhouette}")
             .bearer_auth(access_token)
             .send()?;
 
         let data: FacebookUser = response.json()?;
 
-        let mut d = UserProvidedData {
+        let d = UserProvidedData {
             email: data.email,
             verified: true,
             name: data.name,
-            avatar: None,
+            avatar: if !data.picture.data.is_silhouette { Some(data.picture.data.url) } else { None },
         };
-
-        if !data.picture.data.is_silhouette {
-            d.avatar = Some(data.picture.data.url)
-        }
 
         return Ok(d);
     }

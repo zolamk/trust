@@ -18,7 +18,7 @@ pub fn send_sms(template: String, data: Value, to: String, config: &Config) -> R
         .map(|(k, v)| (k.unwrap(), v.unwrap()))
         .collect();
 
-    let client = reqwest::Client::builder().default_headers(sms_headers).build();
+    let client = reqwest::blocking::Client::builder().default_headers(sms_headers).build();
 
     if client.is_err() {
         return Err(Error::from(client.err().unwrap()));
@@ -54,11 +54,11 @@ pub fn send_sms(template: String, data: Value, to: String, config: &Config) -> R
 
     let res = res.unwrap();
 
-    let status = res.status().as_u16();
+    let status = res.status();
 
-    if status < 200 || status > 299 {
-        return Err(Error::SMSResponseError);
+    if status.is_success() {
+        return Ok(());
     }
 
-    return Ok(());
+    return Err(Error::SMSResponseError);
 }

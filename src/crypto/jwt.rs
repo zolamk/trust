@@ -13,7 +13,9 @@ use serde_json::{json, Value};
 #[derive(Deserialize, Serialize, Debug)]
 pub struct JWT {
     pub sub: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub phone_number: Option<String>,
     pub aud: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -28,8 +30,8 @@ impl JWT {
             sub: user.id.clone(),
             exp: None,
             aud,
-            email: user.email.clone(),
-            phone_number: user.phone_number.clone(),
+            email: if user.email_confirmed { user.email.clone() } else { None },
+            phone_number: if user.phone_confirmed { user.phone_number.clone() } else { None },
             metadata,
         };
     }

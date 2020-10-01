@@ -3,8 +3,9 @@ use crate::{
     crypto::secure_token,
     handlers::Error,
     mailer::{send_email, EmailTemplates},
-    models::user::get_by_email,
+    models::user::get_by_email_or_phone_number,
     operator_signature::OperatorSignature,
+    sms::{send_sms, SMSTemplates},
 };
 use chrono::Utc;
 use diesel::{
@@ -17,18 +18,18 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct ResetForm {
-    pub email: Option<String>,
-    pub phone_number: Option<String>,
+    pub username: String,
 }
 
 pub fn reset(
     config: &Config,
     connection: &PooledConnection<ConnectionManager<PgConnection>>,
     email_templates: &EmailTemplates,
+    sms_templates: &SMSTemplates,
     _operator_signature: &OperatorSignature,
     reset_form: ResetForm,
 ) -> Result<(), Error> {
-    if reset_form.email.is_none() && reset_form.phone_number.is_none() {
+    if !config.email_rule.is_match(&reset_form.username) && !config.phone_rule.is_match(&reset_form.username) {
         return Err(Error::new(
             422,
             json!({"code": "email_or_phone_number_required"}),
@@ -37,22 +38,26 @@ pub fn reset(
     }
 
     let transaction = connection.transaction::<_, Error, _>(|| {
-        if reset_form.email.is_some() {
-            let user = get_by_email(reset_form.email.unwrap(), &connection);
+        let user = get_by_email_or_phone_number(reset_form.username.clone(), reset_form.username.clone(), connection);
 
-            if user.is_err() {
-                let err = user.err().unwrap();
-                error!("{:?}", err);
+        if user.is_err() {
+            let err = user.err().unwrap();
+            error!("{:?}", err);
+            return Ok(());
+        }
+
+        let mut user = user.unwrap();
+
+        user.recovery_token_sent_at = Some(Utc::now().naive_utc());
+
+        if config.email_rule.is_match(&reset_form.username) && user.email.is_some() && user.email_confirmed {
+            if !user.email_confirmed {
                 return Ok(());
             }
-
-            let mut user = user.unwrap();
 
             let template = email_templates.clone().recovery_email_template();
 
             user.recovery_token = Some(secure_token(100));
-
-            user.recovery_token_sent_at = Some(Utc::now().naive_utc());
 
             let user = user.save(&connection);
 
@@ -83,7 +88,40 @@ pub fn reset(
             }
 
             return Ok(());
+        } else if config.phone_rule.is_match(&reset_form.username) && user.phone_number.is_some() && user.phone_confirmed {
+            user.recovery_token = Some(secure_token(6));
+
+            let user = user.save(&connection);
+
+            if user.is_err() {
+                let err = user.err().unwrap();
+                error!("{:?}", err);
+                return Err(Error::from(err));
+            }
+
+            let user = user.unwrap();
+
+            let template = sms_templates.clone().recovery_sms_template();
+
+            let data = json!({
+                "recovery_code": user.recovery_token.clone().unwrap(),
+                "site_url": config.site_url,
+                "phone_number": user.phone_number
+            });
+
+            let sms = send_sms(template, data, user.phone_number.unwrap(), config);
+
+            if sms.is_err() {
+                let err = sms.err().unwrap();
+
+                error!("{:?}", err);
+
+                return Err(Error::from(err));
+            }
+
+            return Ok(());
         }
+
         return Ok(());
     });
 

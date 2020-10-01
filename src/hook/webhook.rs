@@ -64,7 +64,7 @@ impl Webhook {
 
         let signature = signature.unwrap();
 
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
 
         let res = client.post(url).header(AUTHORIZATION, signature).json(&payload).send();
 
@@ -72,7 +72,7 @@ impl Webhook {
             return Err(Error::from(res.err().unwrap()));
         }
 
-        let mut res = res.unwrap();
+        let res = res.unwrap();
 
         let status = res.status();
 

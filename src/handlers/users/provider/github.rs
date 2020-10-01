@@ -2,7 +2,7 @@ use crate::{
     config::Config,
     handlers::users::provider::{Provider, UserProvidedData},
 };
-use reqwest::{Client, Error};
+use reqwest::{blocking::Client, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
