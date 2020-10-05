@@ -2,12 +2,10 @@ use crate::{
     config::Config,
     crypto::jwt::JWT,
     handlers::Error,
-    mailer::EmailTemplates,
     models::{
         user::{get_by_id, User},
         Error as ModelError,
     },
-    operator_signature::OperatorSignature,
 };
 use diesel::{
     pg::PgConnection,
@@ -23,14 +21,7 @@ pub struct ChangePasswordForm {
     pub new_password: String,
 }
 
-pub fn change_password(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    _email_templates: &EmailTemplates,
-    _operator_signature: &OperatorSignature,
-    token: &JWT,
-    change_password_form: ChangePasswordForm,
-) -> Result<User, Error> {
+pub fn change_password(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, change_password_form: ChangePasswordForm) -> Result<User, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     if !config.password_rule.is_match(change_password_form.new_password.as_ref()) {

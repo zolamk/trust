@@ -60,6 +60,13 @@ pub fn get_by_email_change_token(token: String, connection: &PgConnection) -> Re
     }
 }
 
+pub fn get_by_phone_number_change_token(token: String, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(phone_number_change_token.eq(token)).first(connection) {
+        Ok(user) => Ok(user),
+        Err(err) => Err(Error::from(err)),
+    }
+}
+
 pub fn get_by_recovery_token(token: String, connection: &PgConnection) -> Result<User, Error> {
     match users.filter(recovery_token.eq(token)).first(connection) {
         Ok(user) => Ok(user),

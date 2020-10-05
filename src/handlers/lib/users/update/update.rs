@@ -1,4 +1,4 @@
-use crate::{config::Config, crypto::jwt::JWT, handlers::Error, mailer::EmailTemplates, models::user::User, operator_signature::OperatorSignature};
+use crate::{crypto::jwt::JWT, handlers::Error, models::user::User};
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, PooledConnection},
@@ -12,15 +12,7 @@ pub struct UpdateForm {
     pub avatar: Option<String>,
 }
 
-pub fn update(
-    _config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    _email_templates: &EmailTemplates,
-    _operator_signature: &OperatorSignature,
-    token: &JWT,
-    update_form: UpdateForm,
-    id: String,
-) -> Result<User, Error> {
+pub fn update(connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, update_form: UpdateForm, id: String) -> Result<User, Error> {
     if !token.is_admin(connection) {
         return Err(Error::new(403, json!({"code": "only_admin_can_update"}), "Only Admin Can Update Users".to_string()));
     }

@@ -8,7 +8,6 @@ use crate::{
         user::{get_by_email, get_by_phone_number, NewUser, User},
         Error as ModelError,
     },
-    operator_signature::OperatorSignature,
 };
 use chrono::Utc;
 use diesel::{
@@ -32,14 +31,7 @@ pub struct CreateForm {
     pub confirm: bool,
 }
 
-pub fn create(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    email_templates: &EmailTemplates,
-    _operator_signature: &OperatorSignature,
-    token: &JWT,
-    create_form: CreateForm,
-) -> Result<User, Error> {
+pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, email_templates: &EmailTemplates, token: &JWT, create_form: CreateForm) -> Result<User, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     if !token.is_admin(&connection) {

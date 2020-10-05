@@ -2,7 +2,6 @@ use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::user::change_password, Error},
-    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -18,7 +17,6 @@ pub fn change_password(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-    email_templates: State<EmailTemplates>,
     change_password_form: Json<change_password::ChangePasswordForm>,
     token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
@@ -29,8 +27,6 @@ pub fn change_password(
 
         return Err(Error::from(err));
     }
-
-    let operator_signature = operator_signature.unwrap();
 
     if token.is_err() {
         let err = token.err().unwrap();
@@ -51,7 +47,7 @@ pub fn change_password(
         }
     };
 
-    let user = change_password::change_password(config.inner(), &connection, email_templates.inner(), &operator_signature, &token, change_password_form.into_inner());
+    let user = change_password::change_password(config.inner(), &connection, &token, change_password_form.into_inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());

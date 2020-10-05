@@ -1,10 +1,7 @@
 use crate::{
-    config::Config,
     crypto::jwt::JWT,
     handlers::Error,
-    mailer::EmailTemplates,
     models::{user::User, Error as ModelError},
-    operator_signature::OperatorSignature,
 };
 use diesel::{
     pg::PgConnection,
@@ -13,14 +10,7 @@ use diesel::{
 };
 use log::error;
 
-pub fn get_by_id(
-    _config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    _email_templates: &EmailTemplates,
-    _operator_signature: &OperatorSignature,
-    token: &JWT,
-    id: String,
-) -> Result<User, Error> {
+pub fn get_by_id(connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, id: String) -> Result<User, Error> {
     if !token.is_admin(connection) {
         return Err(Error::new(403, json!({"code": "only_admin_can_get"}), "Only Admin Users Can Get Users".to_string()));
     }

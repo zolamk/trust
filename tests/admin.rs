@@ -14,7 +14,7 @@ use rocket::{
 use serde_json::{Map, Value};
 use std::{env, thread, time};
 use testcontainers::*;
-use trust::{config::Config, handlers, mailer::EmailTemplates, models::user::get_by_email};
+use trust::{config::Config, handlers, mailer::EmailTemplates, models::user::get_by_email, sms::SMSTemplates};
 
 embed_migrations!("./migrations");
 
@@ -60,6 +60,8 @@ fn admin_user_test() {
 
     env::set_var("SMTP_PASSWORD", "baee5138d7bc80");
 
+    env::set_var("DISABLE_PHONE", "true");
+
     let config = Config::new();
 
     let manager = ConnectionManager::<PgConnection>::new(config.database_url.clone());
@@ -72,7 +74,9 @@ fn admin_user_test() {
 
     let email_templates = EmailTemplates::new(config.clone());
 
-    let rocket = rocket::ignite().manage(config).manage(pool).manage(email_templates).mount(
+    let sms_templates = SMSTemplates::new(config.clone());
+
+    let rocket = rocket::ignite().manage(config).manage(pool).manage(email_templates).manage(sms_templates).mount(
         "/",
         routes![
             handlers::users::users::create::create,

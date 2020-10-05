@@ -1,10 +1,7 @@
 use crate::{
-    config::Config,
     crypto::jwt::JWT,
     handlers::Error,
-    mailer::EmailTemplates,
     models::{user::User, Error as ModelError},
-    operator_signature::OperatorSignature,
 };
 use diesel::{
     pg::PgConnection,
@@ -13,13 +10,7 @@ use diesel::{
 };
 use log::error;
 
-pub fn get(
-    _config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    _email_templates: &EmailTemplates,
-    _operator_signature: &OperatorSignature,
-    token: &JWT,
-) -> Result<User, Error> {
+pub fn get(connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT) -> Result<User, Error> {
     let internal_error = Err(Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string()));
 
     let user = crate::models::user::get_by_id(token.sub.clone(), &connection);

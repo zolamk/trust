@@ -1,8 +1,6 @@
 use crate::{
-    config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::users::update::update, Error},
-    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -15,11 +13,9 @@ use rocket_contrib::json::{Json, JsonValue};
 
 #[put("/users/<id>", data = "<update_form>")]
 pub fn update(
-    config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
     update_form: Json<update::UpdateForm>,
-    email_templates: State<EmailTemplates>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     id: String,
 ) -> Result<JsonValue, Error> {
@@ -41,8 +37,6 @@ pub fn update(
 
     let token = token.unwrap();
 
-    let operator_signature = operator_signature.unwrap();
-
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     let connection = match connection_pool.get() {
@@ -52,7 +46,7 @@ pub fn update(
         }
     };
 
-    let user = update::update(config.inner(), &connection, email_templates.inner(), &operator_signature, &token, update_form.into_inner(), id);
+    let user = update::update(&connection, &token, update_form.into_inner(), id);
 
     if user.is_err() {
         return Err(user.err().unwrap());

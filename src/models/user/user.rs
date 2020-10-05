@@ -76,12 +76,24 @@ pub struct User {
     pub email_change_token: Option<String>,
 
     #[graphql(skip)]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing)]
     pub new_email: Option<String>,
 
     #[graphql(name = "email_change_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email_change_token_sent_at: Option<NaiveDateTime>,
+
+    #[graphql(skip)]
+    #[serde(skip_serializing)]
+    pub new_phone_number: Option<String>,
+
+    #[graphql(skip)]
+    #[serde(skip_serializing)]
+    pub phone_number_change_token: Option<String>,
+
+    #[graphql(name = "phone_number_change_token_sent_at")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub phone_number_change_token_sent_at: Option<NaiveDateTime>,
 
     #[graphql(name = "last_signin_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -163,6 +175,21 @@ impl User {
         let n: Option<String> = None;
         match update(users.filter(id.eq(self.id.clone())))
             .set((email_change_token.eq(n.clone()), new_email.eq(n), email.eq(self.new_email.as_ref().unwrap())))
+            .get_result(connection)
+        {
+            Ok(user) => Ok(user),
+            Err(err) => Err(Error::from(err)),
+        }
+    }
+
+    pub fn confirm_phone_number_change(&mut self, connection: &PgConnection) -> Result<User, Error> {
+        let n: Option<String> = None;
+        match update(users.filter(id.eq(self.id.clone())))
+            .set((
+                phone_number_change_token.eq(n.clone()),
+                new_phone_number.eq(n),
+                phone_number.eq(self.new_phone_number.as_ref().unwrap()),
+            ))
             .get_result(connection)
         {
             Ok(user) => Ok(user),

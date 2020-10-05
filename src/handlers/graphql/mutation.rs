@@ -5,7 +5,7 @@ use crate::{
             confirm_email, confirm_phone,
             reset::{confirm_reset, reset},
             signup,
-            user::{change_email, change_email_confirm, change_password},
+            user::{change_email, change_email_confirm, change_password, change_phone, change_phone_confirm},
             users::{
                 create, delete,
                 update::{email, password, update},
@@ -77,7 +77,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = create::create(&context.config, &context.connection, &context.email_templates, &context.operator_signature, token, user);
+        let user = create::create(&context.config, &context.connection, &context.email_templates, token, user);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -98,7 +98,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = update::update(&context.config, &context.connection, &context.email_templates, &context.operator_signature, token, user, id);
+        let user = update::update(&context.connection, token, user, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -119,7 +119,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = delete::delete(&context.config, &context.connection, &context.email_templates, &context.operator_signature, token, id);
+        let user = delete::delete(&context.connection, token, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -140,15 +140,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = email::update_email(
-            &context.config,
-            &context.connection,
-            &context.email_templates,
-            &context.operator_signature,
-            token,
-            email::UpdateForm { email, confirm },
-            id,
-        );
+        let user = email::update_email(&context.config, &context.connection, &context.email_templates, token, email::UpdateForm { email, confirm }, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -169,15 +161,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = password::update_password(
-            &context.config,
-            &context.connection,
-            &context.email_templates,
-            &context.operator_signature,
-            token,
-            password::UpdateForm { password },
-            id,
-        );
+        let user = password::update_password(&context.config, &context.connection, token, password::UpdateForm { password }, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -198,14 +182,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = change_password::change_password(
-            &context.config,
-            &context.connection,
-            &context.email_templates,
-            &context.operator_signature,
-            token,
-            change_password::ChangePasswordForm { old_password, new_password },
-        );
+        let user = change_password::change_password(&context.config, &context.connection, token, change_password::ChangePasswordForm { old_password, new_password });
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -226,14 +203,39 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = change_email::change_email(
-            &context.config,
-            &context.connection,
-            &context.email_templates,
-            &context.operator_signature,
-            token,
-            change_email::ChangeEmailFrom { email },
-        );
+        let user = change_email::change_email(&context.config, &context.connection, &context.email_templates, token, change_email::ChangeEmailFrom { email });
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(user.unwrap());
+    }
+
+    #[graphql(name = "change_phone")]
+    fn change_phone(context: &Context, phone_number: String) -> Result<User, HandlerError> {
+        let token = context.token.as_ref();
+
+        if token.is_err() {
+            let err = token.err().unwrap();
+
+            return Err(HandlerError::from(err));
+        }
+
+        let token = token.unwrap();
+
+        let user = change_phone::change_phone(&context.config, &context.connection, &context.sms_templates, token, change_phone::ChangePhoneForm { phone_number });
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(user.unwrap());
+    }
+
+    #[graphql(name = "confirm_phone_change")]
+    fn confirm_phone_change(context: &Context, token: String) -> Result<User, HandlerError> {
+        let user = change_phone_confirm::change_phone_confirm(&context.connection, change_phone_confirm::ConfirmPhoneChangeForm { phone_change_token: token });
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -244,13 +246,7 @@ impl Mutation {
 
     #[graphql(name = "confirm_email_change")]
     fn confirm_email_change(context: &Context, token: String) -> Result<User, HandlerError> {
-        let user = change_email_confirm::change_email_confirm(
-            &context.config,
-            &context.connection,
-            &context.email_templates,
-            &context.operator_signature,
-            change_email_confirm::ConfirmChangeEmailForm { email_change_token: token },
-        );
+        let user = change_email_confirm::change_email_confirm(&context.connection, change_email_confirm::ConfirmChangeEmailForm { email_change_token: token });
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -260,14 +256,7 @@ impl Mutation {
     }
 
     fn reset(context: &Context, username: String) -> Result<ResetResponse, HandlerError> {
-        let reset = reset::reset(
-            &context.config,
-            &context.connection,
-            &context.email_templates,
-            &context.sms_templates,
-            &context.operator_signature,
-            reset::ResetForm { username },
-        );
+        let reset = reset::reset(&context.config, &context.connection, &context.email_templates, &context.sms_templates, reset::ResetForm { username });
 
         if reset.is_err() {
             return Err(reset.err().unwrap());
@@ -281,8 +270,6 @@ impl Mutation {
         let user = confirm_reset::confirm_reset(
             &context.config,
             &context.connection,
-            &context.email_templates,
-            &context.operator_signature,
             confirm_reset::ConfirmResetForm {
                 recovery_token: token,
                 new_password: password,

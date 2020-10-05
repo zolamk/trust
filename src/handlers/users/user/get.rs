@@ -1,8 +1,6 @@
 use crate::{
-    config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::user::get, Error},
-    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -15,8 +13,6 @@ use rocket_contrib::json::JsonValue;
 
 #[get("/user")]
 pub fn get(
-    config: State<Config>,
-    email_templates: State<EmailTemplates>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
@@ -37,8 +33,6 @@ pub fn get(
         return Err(Error::from(err));
     }
 
-    let operator_signature = operator_signature.unwrap();
-
     let token = token.unwrap();
 
     let internal_error = Err(Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string()));
@@ -50,7 +44,7 @@ pub fn get(
         }
     };
 
-    let user = get::get(config.inner(), &connection, &email_templates, &operator_signature, &token);
+    let user = get::get(&connection, &token);
 
     if user.is_err() {
         return Err(user.err().unwrap());

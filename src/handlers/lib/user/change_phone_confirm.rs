@@ -1,7 +1,7 @@
 use crate::{
     handlers::Error,
     models::{
-        user::{get_by_email_change_token, User},
+        user::{get_by_phone_number_change_token, User},
         Error as ModelError,
     },
 };
@@ -14,12 +14,12 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-pub struct ConfirmChangeEmailForm {
-    pub email_change_token: String,
+pub struct ConfirmPhoneChangeForm {
+    pub phone_change_token: String,
 }
 
-pub fn change_email_confirm(connection: &PooledConnection<ConnectionManager<PgConnection>>, confirm_change_email_form: ConfirmChangeEmailForm) -> Result<User, Error> {
-    let user = get_by_email_change_token(confirm_change_email_form.email_change_token, connection);
+pub fn change_phone_confirm(connection: &PooledConnection<ConnectionManager<PgConnection>>, confirm_change_phone_form: ConfirmPhoneChangeForm) -> Result<User, Error> {
+    let user = get_by_phone_number_change_token(confirm_change_phone_form.phone_change_token, connection);
 
     if user.is_err() {
         let err = user.err().unwrap();
@@ -34,7 +34,7 @@ pub fn change_email_confirm(connection: &PooledConnection<ConnectionManager<PgCo
 
     let mut user = user.unwrap();
 
-    let user = user.confirm_email_change(connection);
+    let user = user.confirm_phone_number_change(connection);
 
     if user.is_err() {
         let err = user.err().unwrap();

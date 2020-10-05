@@ -60,11 +60,11 @@ pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
     let mut user = user.unwrap();
 
     if config.email_rule.is_match(form.username.as_ref()) && !user.email_confirmed {
-        return Err(Error::new(409, json!({"code": "email_not_confirmed"}), "Email Hasn't Been Confirmed".to_string()));
+        return Err(Error::new(412, json!({"code": "email_not_confirmed"}), "Email Hasn't Been Confirmed".to_string()));
     }
 
     if config.phone_rule.is_match(form.username.as_ref()) && !user.phone_confirmed {
-        return Err(Error::new(409, json!({"code": "phone_not_confirmed"}), "Phone Number Hasn't Been Confirmed".to_string()));
+        return Err(Error::new(412, json!({"code": "phone_not_confirmed"}), "Phone Number Hasn't Been Confirmed".to_string()));
     }
 
     if !user.verify_password(form.password) {

@@ -6,6 +6,7 @@ use crate::{
         user::{NewUser, User},
         Error as ModelError,
     },
+    sms::{send_sms, SMSTemplates},
 };
 use chrono::Utc;
 use clap::ArgMatches;
@@ -16,27 +17,36 @@ use diesel::{
 };
 use log::error;
 
-fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, email_templates: EmailTemplates) {
+fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, email_templates: EmailTemplates, sms_templates: SMSTemplates) {
     let matches = matches.unwrap();
 
-    let mut user = NewUser::default();
+    let phone_number = matches.value_of("phone_number");
 
-    user.email = Some(matches.value_of("email").unwrap().to_string());
+    let email = matches.value_of("email");
+
+    let mut user = NewUser::default();
 
     user.password = Some(matches.value_of("password").unwrap().to_string());
 
     user.is_admin = matches.is_present("admin");
 
-    user.email_confirmed = config.auto_confirm || matches.is_present("confirm");
+    if let Some(email) = email {
+        user.email = Some(email.to_string());
+        if !config.email_rule.is_match(user.email.clone().unwrap().as_ref()) {
+            error!("email address doesn't match email rule");
+            std::process::exit(1);
+        }
+    }
 
-    user.phone_confirmed = user.email_confirmed;
+    if let Some(phone_number) = phone_number {
+        user.phone_number = Some(phone_number.to_string());
+        if !config.phone_rule.is_match(user.phone_number.clone().unwrap().as_ref()) {
+            error!("phone number doesn't match phone number rule");
+            std::process::exit(1);
+        }
+    }
 
     user.hash_password();
-
-    if !user.email_confirmed {
-        user.email_confirmation_token = Some(secure_token(100));
-        user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc())
-    }
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -47,8 +57,12 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
     };
 
     match user.save(&connection) {
-        Ok(user) => {
-            if !user.email_confirmed {
+        Ok(mut user) => {
+            if user.email.is_some() && !config.auto_confirm && !matches.is_present("confirm") {
+                user.email_confirmation_token = Some(secure_token(100));
+
+                user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+
                 let template = email_templates.confirmation_email_template();
 
                 let data = json!({
@@ -64,9 +78,46 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
                     error!("{:?}", err);
 
-                    return;
+                    std::process::exit(1);
                 }
             }
+
+            let user = user.confirm_email(&connection);
+
+            if user.is_err() {
+                let err = user.err().unwrap();
+
+                error!("{:?}", err);
+
+                return;
+            }
+
+            let mut user = user.unwrap();
+
+            if user.phone_number.is_some() && !config.auto_confirm && !matches.is_present("confirm") {
+                user.phone_confirmation_token = Some(secure_token(6));
+
+                user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+
+                let template = sms_templates.confirmation_sms_template();
+
+                let data = json!({
+                    "confirmation_code": user.phone_confirmation_token.clone().unwrap(),
+                    "phone_number": user.phone_number,
+                    "site_url": config.site_url
+                });
+
+                let sms = send_sms(template, data, user.phone_number.clone().unwrap(), &config);
+
+                if sms.is_err() {
+                    let err = sms.err().unwrap();
+
+                    error!("{:?}", err);
+
+                    std::process::exit(1);
+                }
+            }
+
             println!("{} created successfully", user.email.unwrap());
         }
         Err(err) => match err {
@@ -110,8 +161,10 @@ pub fn users(matches: Option<&ArgMatches>) {
 
     let email_templates = EmailTemplates::new(config.clone());
 
+    let sms_templates = SMSTemplates::new(config.clone());
+
     match matches.subcommand() {
-        ("create", sub_m) => new_user(sub_m, connection_pool, config, email_templates),
+        ("create", sub_m) => new_user(sub_m, connection_pool, config, email_templates, sms_templates),
         ("remove", sub_m) => remove_user(sub_m, connection_pool),
         _ => {}
     }

@@ -37,7 +37,8 @@ subcommands:
               args:
                 - email:
                     help: user email
-                    required: true
+                - phone_number:
+                    help: user phone number
                 - password:
                     help: user password
                     required: true

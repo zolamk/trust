@@ -5,7 +5,6 @@ use crate::{
     handlers::Error,
     mailer::{send_email, EmailTemplates},
     models::user::User,
-    operator_signature::OperatorSignature,
 };
 use chrono::Utc;
 use diesel::{
@@ -25,7 +24,6 @@ pub fn update_email(
     config: &Config,
     connection: &PooledConnection<ConnectionManager<PgConnection>>,
     email_templates: &EmailTemplates,
-    _operator_signature: &OperatorSignature,
     token: &JWT,
     update_form: UpdateForm,
     id: String,

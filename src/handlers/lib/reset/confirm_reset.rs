@@ -1,12 +1,10 @@
 use crate::{
     config::Config,
     handlers::Error,
-    mailer::EmailTemplates,
     models::{
         user::{get_by_recovery_token, User},
         Error as ModelError,
     },
-    operator_signature::OperatorSignature,
 };
 use diesel::{
     pg::PgConnection,
@@ -22,13 +20,7 @@ pub struct ConfirmResetForm {
     pub new_password: String,
 }
 
-pub fn confirm_reset(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    _email_templates: &EmailTemplates,
-    _operator_signature: &OperatorSignature,
-    reset_form: ConfirmResetForm,
-) -> Result<User, Error> {
+pub fn confirm_reset(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, reset_form: ConfirmResetForm) -> Result<User, Error> {
     if !config.password_rule.is_match(reset_form.new_password.as_ref()) {
         return Err(Error::new(400, json!({"code": "invalid_password_format"}), "Invalid Password Format".to_string()));
     }

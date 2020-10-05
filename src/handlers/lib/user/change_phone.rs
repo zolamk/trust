@@ -2,8 +2,8 @@ use crate::{
     config::Config,
     crypto::{jwt::JWT, secure_token},
     handlers::Error,
-    mailer::{send_email, EmailTemplates},
     models::{user::User, Error as ModelError},
+    sms::{send_sms, SMSTemplates},
 };
 use chrono::Utc;
 use diesel::{
@@ -15,18 +15,18 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-pub struct ChangeEmailFrom {
-    pub email: String,
+pub struct ChangePhoneForm {
+    pub phone_number: String,
 }
 
-pub fn change_email(
+pub fn change_phone(
     config: &Config,
     connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    email_templates: &EmailTemplates,
+    sms_templates: &SMSTemplates,
     token: &JWT,
-    change_email_form: ChangeEmailFrom,
+    change_phone_form: ChangePhoneForm,
 ) -> Result<User, Error> {
-    let conflict_error = Error::new(409, json!({"code": "email_registered"}), "A user with this email address has already been registered".to_string());
+    let conflict_error = Error::new(409, json!({"code": "phone_registered"}), "A user with this phone number has already been registered".to_string());
 
     let user = crate::models::user::get_by_id(token.sub.clone(), &connection);
 
@@ -44,9 +44,9 @@ pub fn change_email(
 
     let mut user = user.unwrap();
 
-    match crate::models::user::get_by_email(change_email_form.email.clone(), &connection) {
+    match crate::models::user::get_by_phone_number(change_phone_form.phone_number.clone(), &connection) {
         Ok(mut user) => {
-            if user.email_confirmed {
+            if user.phone_confirmed {
                 return Err(conflict_error);
             }
 
@@ -54,9 +54,8 @@ pub fn change_email(
             // even though the email is not confirmed
             // clear the accounts email otherwise
             // delete the account since neither the phone number or email have been confirmed
-            let result = if user.phone_confirmed {
-                user.email = None;
-
+            let result = if user.email_confirmed {
+                user.phone_number = None;
                 user.save(&connection)
             } else {
                 user.delete(&connection)
@@ -81,9 +80,9 @@ pub fn change_email(
     }
 
     if config.auto_confirm {
-        user.new_email = user.email.clone(); // store the old email in new email in case we ever need to revert it
+        user.new_phone_number = user.phone_number.clone(); // store the old phone number in new phone number in case we ever need to revert it
 
-        user.email = Some(change_email_form.email);
+        user.phone_number = Some(change_phone_form.phone_number);
 
         let user = user.save(&connection);
 
@@ -98,11 +97,11 @@ pub fn change_email(
         return Ok(user.unwrap());
     }
 
-    user.new_email = Some(change_email_form.email);
+    user.new_phone_number = Some(change_phone_form.phone_number);
 
-    user.email_change_token = Some(secure_token(100));
+    user.phone_number_change_token = Some(secure_token(6));
 
-    user.email_change_token_sent_at = Some(Utc::now().naive_utc());
+    user.phone_number_change_token_sent_at = Some(Utc::now().naive_utc());
 
     let user = user.save(&connection);
 
@@ -116,19 +115,19 @@ pub fn change_email(
 
     let user = user.unwrap();
 
-    let template = email_templates.clone().confirmation_email_template();
+    let template = sms_templates.clone().confirmation_sms_template();
 
     let data = json!({
-        "confirmation_url": format!("{}/email_change_token={}", config.site_url, user.email_change_token.clone().unwrap()),
-        "email": user.email,
-        "new_email": user.new_email,
+        "confirmation_code": user.phone_number_change_token.clone().unwrap(),
+        "phone_number": user.phone_number,
+        "new_phone_number": user.new_phone_number,
         "site_url": config.site_url
     });
 
-    let email = send_email(template, data, user.new_email.clone().unwrap(), &config);
+    let sms = send_sms(template, data, user.new_phone_number.clone().unwrap(), &config);
 
-    if email.is_err() {
-        let err = email.err().unwrap();
+    if sms.is_err() {
+        let err = sms.err().unwrap();
 
         error!("{:?}", err);
 

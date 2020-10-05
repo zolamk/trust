@@ -1,8 +1,6 @@
 use crate::{
-    config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::users::delete, Error},
-    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -15,10 +13,8 @@ use rocket_contrib::json::JsonValue;
 
 #[delete("/users/<id>")]
 pub fn delete(
-    config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
-    email_templates: State<EmailTemplates>,
     id: String,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
@@ -29,8 +25,6 @@ pub fn delete(
 
         return Err(Error::from(err));
     }
-
-    let operator_signature = operator_signature.unwrap();
 
     if token.is_err() {
         let err = token.err().unwrap();
@@ -51,7 +45,7 @@ pub fn delete(
         }
     };
 
-    let user = delete::delete(config.inner(), &connection, email_templates.inner(), &operator_signature, &token, id);
+    let user = delete::delete(&connection, &token, id);
 
     if user.is_err() {
         return Err(user.err().unwrap());

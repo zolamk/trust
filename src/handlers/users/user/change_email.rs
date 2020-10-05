@@ -30,8 +30,6 @@ pub fn change_email(
         return Err(Error::from(err));
     }
 
-    let operator_signature = operator_signature.unwrap();
-
     if token.is_err() {
         let err = token.err().unwrap();
 
@@ -51,7 +49,7 @@ pub fn change_email(
         }
     };
 
-    let user = change_email::change_email(config.inner(), &connection, email_templates.inner(), &operator_signature, &token, change_email_form.into_inner());
+    let user = change_email::change_email(config.inner(), &connection, email_templates.inner(), &token, change_email_form.into_inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());

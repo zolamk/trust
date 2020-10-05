@@ -23,7 +23,7 @@ impl Query {
 
         let token = token.unwrap();
 
-        let user = users::get_by_id::get_by_id(&context.config, &context.connection, &context.email_templates, &context.operator_signature, token, id);
+        let user = users::get_by_id::get_by_id(&context.connection, token, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -43,15 +43,7 @@ impl Query {
 
         let token = token.unwrap();
 
-        let users = users::get::get(
-            &context.config,
-            &context.connection,
-            &context.email_templates,
-            &context.operator_signature,
-            token,
-            offset as i64,
-            limit as i64,
-        );
+        let users = users::get::get(&context.connection, token, offset as i64, limit as i64);
 
         if users.is_err() {
             return Err(users.err().unwrap());
@@ -71,7 +63,7 @@ impl Query {
 
         let token = token.unwrap();
 
-        let user = get::get(&context.config, &context.connection, &context.email_templates, &context.operator_signature, token);
+        let user = get::get(&context.connection, token);
 
         if user.is_err() {
             return Err(user.err().unwrap());

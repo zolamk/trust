@@ -4,7 +4,6 @@ use crate::{
     handlers::Error,
     mailer::{send_email, EmailTemplates},
     models::user::get_by_email_or_phone_number,
-    operator_signature::OperatorSignature,
     sms::{send_sms, SMSTemplates},
 };
 use chrono::Utc;
@@ -26,7 +25,6 @@ pub fn reset(
     connection: &PooledConnection<ConnectionManager<PgConnection>>,
     email_templates: &EmailTemplates,
     sms_templates: &SMSTemplates,
-    _operator_signature: &OperatorSignature,
     reset_form: ResetForm,
 ) -> Result<(), Error> {
     if !config.email_rule.is_match(&reset_form.username) && !config.phone_rule.is_match(&reset_form.username) {
