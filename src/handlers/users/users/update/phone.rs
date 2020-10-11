@@ -1,8 +1,7 @@
 use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
-    handlers::{lib::users::create, Error},
-    mailer::EmailTemplates,
+    handlers::{lib::users::update::phone, Error},
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
     sms::SMSTemplates,
 };
@@ -11,19 +10,19 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 use log::error;
-use rocket::{http::Status, response::status, State};
+use rocket::State;
 use rocket_contrib::json::{Json, JsonValue};
 
-#[post("/users", data = "<create_form>")]
-pub fn create(
+#[patch("/users/<id>/phone", data = "<update_form>")]
+pub fn update_phone(
     config: State<Config>,
-    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    email_templates: State<EmailTemplates>,
     sms_templates: State<SMSTemplates>,
-    create_form: Json<create::CreateForm>,
+    connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
+    update_form: Json<phone::UpdateForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-) -> Result<status::Custom<JsonValue>, Error> {
+    id: String,
+) -> Result<JsonValue, Error> {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
 
@@ -51,20 +50,13 @@ pub fn create(
         }
     };
 
-    let user = create::create(config.inner(), &connection, email_templates.inner(), sms_templates.inner(), &token, create_form.into_inner());
+    let user = phone::update_phone(config.inner(), &connection, sms_templates.inner(), &token, update_form.into_inner(), id);
 
     if user.is_err() {
         return Err(user.err().unwrap());
     }
 
-    let user = user.unwrap();
-
-    let body = json!({
+    return Ok(JsonValue(json!({
         "code": "success",
-        "email_confirmation_required": !user.email_confirmed,
-        "phone_confirmation_required": !user.phone_confirmed,
-        "message": "user has been successfully created"
-    });
-
-    return Ok(status::Custom(Status::Ok, JsonValue(body)));
+    })));
 }

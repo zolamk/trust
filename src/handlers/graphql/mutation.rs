@@ -8,7 +8,7 @@ use crate::{
             user::{change_email, change_email_confirm, change_password, change_phone, change_phone_confirm},
             users::{
                 create, delete,
-                update::{email, password, update},
+                update::{email, password, phone, update},
             },
         },
         Error as HandlerError,
@@ -77,7 +77,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = create::create(&context.config, &context.connection, &context.email_templates, token, user);
+        let user = create::create(&context.config, &context.connection, &context.email_templates, &context.sms_templates, token, user);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -141,6 +141,27 @@ impl Mutation {
         let token = token.unwrap();
 
         let user = email::update_email(&context.config, &context.connection, &context.email_templates, token, email::UpdateForm { email, confirm }, id);
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(user.unwrap());
+    }
+
+    #[graphql(name = "update_phone")]
+    fn update_phone(context: &Context, id: String, confirm: Option<bool>, phone_number: String) -> Result<User, HandlerError> {
+        let token = context.token.as_ref();
+
+        if token.is_err() {
+            let err = token.err().unwrap();
+
+            return Err(HandlerError::from(err));
+        }
+
+        let token = token.unwrap();
+
+        let user = phone::update_phone(&context.config, &context.connection, &context.sms_templates, token, phone::UpdateForm { phone_number, confirm }, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());

@@ -8,6 +8,7 @@ use crate::{
         user::{get_by_email, get_by_phone_number, NewUser, User},
         Error as ModelError,
     },
+    sms::{send_sms, SMSTemplates},
 };
 use chrono::Utc;
 use diesel::{
@@ -24,14 +25,22 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct CreateForm {
     pub email: Option<String>,
+    #[graphql(name = "phone_number")]
     pub phone_number: Option<String>,
     pub password: String,
     pub name: Option<String>,
     pub avatar: Option<String>,
-    pub confirm: bool,
+    pub confirm: Option<bool>,
 }
 
-pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, email_templates: &EmailTemplates, token: &JWT, create_form: CreateForm) -> Result<User, Error> {
+pub fn create(
+    config: &Config,
+    connection: &PooledConnection<ConnectionManager<PgConnection>>,
+    email_templates: &EmailTemplates,
+    sms_templates: &SMSTemplates,
+    token: &JWT,
+    create_form: CreateForm,
+) -> Result<User, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     if !token.is_admin(&connection) {
@@ -42,15 +51,9 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         return Err(Error::new(400, json!({"code": "invalid_password_format"}), "Invalid Password Format".to_string()));
     }
 
-    let conflict_error = Err(Error::new(
-        409,
-        json!({"code": "email_registered"}),
-        "A user with this email address has already been registered".to_string(),
-    ));
-
     let mut user = NewUser::default();
 
-    user.email_confirmed = config.auto_confirm || create_form.confirm;
+    user.email_confirmed = config.auto_confirm || (create_form.confirm.is_some() && create_form.confirm.unwrap());
 
     user.phone_confirmed = user.email_confirmed;
 
@@ -64,8 +67,6 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
     user.password = Some(create_form.password);
 
-    user.hash_password();
-
     if user.email.is_some() {
         // if the user is signing up with email and
         // if user exists and is confirmed return conflict error
@@ -74,7 +75,11 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         match get_by_email(user.email.clone().unwrap(), &connection) {
             Ok(mut user) => {
                 if user.email_confirmed {
-                    return conflict_error;
+                    return Err(Error::new(
+                        409,
+                        json!({"code": "email_registered"}),
+                        "A user with this email address has already been registered".to_string(),
+                    ));
                 }
 
                 // if the user has a phone number confirmed
@@ -121,7 +126,11 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         match get_by_phone_number(user.phone_number.clone().unwrap(), &connection) {
             Ok(mut user) => {
                 if user.phone_confirmed {
-                    return conflict_error;
+                    return Err(Error::new(
+                        409,
+                        json!({"code": "phone_registered"}),
+                        "A user with this phone number has already been registered".to_string(),
+                    ));
                 }
 
                 let result = if user.email_confirmed {
@@ -149,9 +158,16 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 }
             },
         }
+
+        if !user.phone_confirmed {
+            user.phone_confirmation_token = Some(secure_token(6));
+            user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+        }
     }
 
     let transaction = connection.transaction::<User, Error, _>(|| {
+        user.hash_password();
+
         let user = user.save(&connection);
 
         if user.is_err() {
@@ -186,6 +202,26 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
             if email.is_err() {
                 let err = email.err().unwrap();
+
+                error!("{:?}", err);
+
+                return Err(Error::from(err));
+            }
+        }
+
+        if user.phone_number.is_some() && !user.phone_confirmed {
+            let template = sms_templates.clone().confirmation_sms_template();
+
+            let data = json!({
+                "confirmation_code": user.phone_confirmation_token.clone().unwrap(),
+                "phone_number": user.phone_number,
+                "site_url": config.site_url
+            });
+
+            let sms = send_sms(template, data, user.phone_number.clone().unwrap(), &config);
+
+            if sms.is_err() {
+                let err = sms.err().unwrap();
 
                 error!("{:?}", err);
 

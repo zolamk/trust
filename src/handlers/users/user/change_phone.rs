@@ -1,8 +1,7 @@
 use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
-    handlers::{lib::users::create, Error},
-    mailer::EmailTemplates,
+    handlers::{lib::user::change_phone, Error},
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
     sms::SMSTemplates,
 };
@@ -14,15 +13,14 @@ use log::error;
 use rocket::{http::Status, response::status, State};
 use rocket_contrib::json::{Json, JsonValue};
 
-#[post("/users", data = "<create_form>")]
-pub fn create(
+#[patch("/user/phone", data = "<change_phone_form>")]
+pub fn change_phone(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    email_templates: State<EmailTemplates>,
     sms_templates: State<SMSTemplates>,
-    create_form: Json<create::CreateForm>,
-    token: Result<JWT, CryptoError>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
+    change_phone_form: Json<change_phone::ChangePhoneForm>,
+    token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
@@ -51,7 +49,7 @@ pub fn create(
         }
     };
 
-    let user = create::create(config.inner(), &connection, email_templates.inner(), sms_templates.inner(), &token, create_form.into_inner());
+    let user = change_phone::change_phone(config.inner(), &connection, sms_templates.inner(), &token, change_phone_form.into_inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());
@@ -59,12 +57,12 @@ pub fn create(
 
     let user = user.unwrap();
 
-    let body = json!({
-        "code": "success",
-        "email_confirmation_required": !user.email_confirmed,
-        "phone_confirmation_required": !user.phone_confirmed,
-        "message": "user has been successfully created"
-    });
-
-    return Ok(status::Custom(Status::Ok, JsonValue(body)));
+    return Ok(status::Custom(
+        Status::Ok,
+        JsonValue(json!({
+            "code": "success",
+            "message": "phone changed successfully",
+            "confirmation_required": !user.phone_confirmed
+        })),
+    ));
 }

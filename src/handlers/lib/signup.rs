@@ -74,7 +74,7 @@ pub fn signup(
 
     user.phone_confirmed = config.auto_confirm;
 
-    user.phone_confirmation_token = if config.auto_confirm { None } else { Some(secure_token(10)) };
+    user.phone_confirmation_token = if config.auto_confirm { None } else { Some(secure_token(6)) };
 
     user.phone_confirmation_token_sent_at = if config.auto_confirm { None } else { Some(Utc::now().naive_utc()) };
 
