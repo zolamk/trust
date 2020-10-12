@@ -8,7 +8,7 @@ use serde_json::Value;
 use std::{collections::HashMap, str::FromStr};
 
 pub fn send_sms(template: String, data: Value, to: String, config: &Config) -> Result<(), Error> {
-    let sms_config = config.sms_config.clone().unwrap();
+    let sms_config = config.sms.clone().unwrap();
 
     let sms_headers: HeaderMap = sms_config
         .headers

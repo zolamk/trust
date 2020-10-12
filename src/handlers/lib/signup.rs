@@ -47,7 +47,7 @@ pub fn signup(
     }
 
     if signup_form.email.is_none() && signup_form.phone_number.is_none() {
-        return Err(Error::new(409, json!({"code": "email_or_phone_number_required"}), "Signup Required Email Or Phone Number".to_string()));
+        return Err(Error::new(409, json!({"code": "email_or_phone_number_required"}), "Signup Requires Email Or Phone Number".to_string()));
     }
 
     if !config.password_rule.is_match(signup_form.password.as_ref()) {

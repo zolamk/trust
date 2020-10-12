@@ -39,6 +39,7 @@ regex = "1.3.3"
 juniper = "0.14.2"
 juniper_rocket = "0.5.2"
 http = "0.2.1"
+hocon = "0.3.5"
 
 [dev-dependencies]
 testcontainers = "0.9.1"

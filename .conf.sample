@@ -1,0 +1,46 @@
+# https://github.com/lightbend/config/blob/master/HOCON.md
+{
+    "host": "localhost",
+    "port": 8082,
+    "disable_signup": false,
+    "disable_phone": false,
+    "site_url": "http://localhost:3002",
+    "instance_url": "http://localhost:8083",
+    "database_url": "postgres://user:password@localhost:5432/db",
+    "log_level": "error",
+    "smtp_host": "smtp.mailtrap.io",
+    "smtp_port": 25,
+    "smtp_username": "username",
+    "smtp_password": "password",
+    "smtp_admin_email": "no-reply@zelalem.me",
+    "auto_confirm": false,
+    "facebook_enabled": true,
+    "facebook_client_id": "fb_client_id",
+    "facebook_client_secret": "fb_client_secret",
+    "google_enabled": true,
+    "google_client_id": "google_client_id",
+    "google_client_secret": "google_client_secret",
+    "github_enabled": true,
+    "github_client_id": "github_client_id",
+    "github_client_secret": "github_client_secret",
+    "jwt_algorithm": "RS512",
+    "jwt_secret": "supersecret",
+    "jwt_private_key_path": "./private.key",
+    "jwt_public_key_path": "./public.key",
+    "jwt_exp": 3600,
+    "aud": "trust",
+    "password_rule": ".{8,1000}",
+    "sms": {
+        "headers": {
+            "Authorization": "Basic sms_api_auth_header"
+        },
+        "url": "https://api.sms.net/send",
+        "method": "POST",
+        "source": "+1111111111",
+        "mapping": {
+            "source": "src",
+            "destination": "dst",
+            "message": "text"
+        }
+    }
+}

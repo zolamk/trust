@@ -12,7 +12,7 @@ use rocket::{
     local::Client,
 };
 use serde_json::{Map, Value};
-use std::{env, thread, time};
+use std::{thread, time};
 use testcontainers::*;
 use trust::{config::Config, handlers, mailer::EmailTemplates, models::user::get_by_email, sms::SMSTemplates};
 
@@ -38,31 +38,25 @@ fn admin_user_test() {
 
     let connection_string = &format!("postgres://{}:{}@localhost:{}/{}", user, password, node.get_host_port(5432).unwrap(), db);
 
-    env::set_var("AUD", "trust");
+    let c = format!(
+        r#"{{
+        "aud": "trust",
+        "database_url": "{}",
+        "instance_url": "localhost:1996",
+        "jwt_algorithm": "HS256",
+        "jwt_secret": "supersecret",
+        "site_url": "localhost",
+        "smtp_admin_email": "trust-85efd0@inbox.mailtrap.io",
+        smtp_host: "smtp.mailtrap.io",
+        smtp_port: 25,
+        smtp_username: "06b45c64cb46b9",
+        smtp_password: "baee5138d7bc80",
+        disable_phone: true
+    }}"#,
+        connection_string
+    );
 
-    env::set_var("DATABASE_URL", connection_string);
-
-    env::set_var("INSTANCE_URL", "localhost:1996");
-
-    env::set_var("JWT_ALGORITHM", "HS256");
-
-    env::set_var("JWT_SECRET", "supersecret");
-
-    env::set_var("SITE_URL", "localhost");
-
-    env::set_var("SMTP_ADMIN_EMAIL", "trust-85efd0@inbox.mailtrap.io");
-
-    env::set_var("SMTP_HOST", "smtp.mailtrap.io");
-
-    env::set_var("SMTP_PORT", "25");
-
-    env::set_var("SMTP_USERNAME", "06b45c64cb46b9");
-
-    env::set_var("SMTP_PASSWORD", "baee5138d7bc80");
-
-    env::set_var("DISABLE_PHONE", "true");
-
-    let config = Config::new();
+    let config = Config::new_from_string(c);
 
     let manager = ConnectionManager::<PgConnection>::new(config.database_url.clone());
 

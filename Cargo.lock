@@ -1018,6 +1018,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "hocon"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39554b1a6dc84511d3f8c0287ad63a78de60444b4032aec529d9e303ceaf0641"
+dependencies = [
+ "failure",
+ "java-properties",
+ "memchr",
+ "nom",
+ "reqwest 0.10.8",
+ "serde",
+ "uuid 0.8.1",
+]
+
+[[package]]
 name = "hostname"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1263,6 +1278,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc6f3ad7b9d11a0c00842ff8de1b60ee58661048eb8049ed33c73594f359d7e6"
 
 [[package]]
+name = "java-properties"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "caf4418ade5bde22a283a7f2fb537ea397ec102718f259f2630714e7a5b389fa"
+dependencies = [
+ "encoding",
+ "regex",
+]
+
+[[package]]
 name = "js-sys"
 version = "0.3.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1284,7 +1309,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "url 2.1.1",
- "uuid",
+ "uuid 0.7.4",
 ]
 
 [[package]]
@@ -1368,7 +1393,7 @@ dependencies = [
  "lettre",
  "mime 0.3.16",
  "time",
- "uuid",
+ "uuid 0.7.4",
 ]
 
 [[package]]
@@ -2223,7 +2248,7 @@ dependencies = [
  "tokio-threadpool",
  "tokio-timer",
  "url 1.7.2",
- "uuid",
+ "uuid 0.7.4",
  "winreg 0.6.2",
 ]
 
@@ -2945,6 +2970,7 @@ dependencies = [
  "envy",
  "frank_jwt",
  "handlebars",
+ "hocon",
  "http 0.2.1",
  "juniper",
  "juniper_rocket",
@@ -3093,6 +3119,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90dbc611eb48397705a6b0f6e917da23ae517e4d127123d2cf7674206627d32a"
 dependencies = [
  "rand 0.6.5",
+]
+
+[[package]]
+name = "uuid"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fde2f6a4bea1d6e007c4ad38c6839fa71cbb63b6dbf5b595aa38dc9b1093c11"
+dependencies = [
+ "rand 0.7.3",
 ]
 
 [[package]]

@@ -1,16 +1,17 @@
+use hocon::HoconLoader;
 use log::error;
 use regex::Regex;
 use serde::Deserialize;
 use std::{collections::HashMap, fs, path::Path, process::exit};
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct SMSMapping {
     pub source: String,
     pub destination: String,
     pub message: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct SMSConfig {
     pub url: String,
     pub method: String,
@@ -19,7 +20,7 @@ pub struct SMSConfig {
     pub headers: HashMap<String, String>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub aud: String,
 
@@ -109,10 +110,7 @@ pub struct Config {
     #[serde(default = "default_disable_phone")]
     pub disable_phone: bool,
 
-    pub sms_config_path: Option<String>,
-
-    #[serde(skip_serializing, skip_deserializing)]
-    pub sms_config: Option<SMSConfig>,
+    pub sms: Option<SMSConfig>,
 
     #[serde(skip_serializing, skip_deserializing)]
     private_key: Option<String>,
@@ -124,93 +122,115 @@ pub struct Config {
     jwt_type: String,
 }
 
-impl Config {
-    pub fn new() -> Config {
-        match envy::from_env::<Config>() {
-            Ok(mut config) => {
-                match config.jwt_algorithm.as_ref() {
-                    "RS256" | "RS384" | "RS512" | "ES256" | "ES384" | "ES512" => {
-                        assert_eq!(
-                            config.jwt_private_key_path.is_some(),
-                            true,
-                            "expected JWT_PRIVATE_KEY_PATH to be set for all supported assymetric algorithms"
-                        );
+fn complete(c: Config) -> Config {
+    let mut config = c;
 
-                        assert_eq!(
-                            config.jwt_public_key_path.is_some(),
-                            true,
-                            "expected JWT_PUBLIC_KEY_PATH to be set for all supported assymetric algorithms"
-                        );
+    match config.jwt_algorithm.as_ref() {
+        "RS256" | "RS384" | "RS512" | "ES256" | "ES384" | "ES512" => {
+            assert_eq!(
+                config.jwt_private_key_path.is_some(),
+                true,
+                "expected jwt_private_key_path to be set for all supported assymetric algorithms"
+            );
 
-                        config.private_key = match fs::read_to_string(Path::new(&config.jwt_private_key_path.clone().unwrap())) {
-                            Ok(key) => Some(key),
-                            Err(err) => {
-                                panic!("unable to read private key file: {}", err);
-                            }
-                        };
+            assert_eq!(
+                config.jwt_public_key_path.is_some(),
+                true,
+                "expected jwt_public_key_path to be set for all supported assymetric algorithms"
+            );
 
-                        config.public_key = match fs::read_to_string(Path::new(&config.jwt_public_key_path.clone().unwrap())) {
-                            Ok(key) => Some(key),
-                            Err(err) => {
-                                panic!("unable to read public key file: {}", err);
-                            }
-                        };
-
-                        config.jwt_type = String::from("assymetric");
-                    }
-                    "HS256" | "HS384" | "HS512" => {
-                        config.jwt_type = String::from("symmetric");
-                    }
-                    other => {
-                        error!("unsupported algorithm {}", other);
-                        std::process::exit(1);
-                    }
+            config.private_key = match fs::read_to_string(Path::new(&config.jwt_private_key_path.clone().unwrap())) {
+                Ok(key) => Some(key),
+                Err(err) => {
+                    panic!("unable to read private key file: {}", err);
                 }
+            };
 
-                if config.google_enabled {
-                    assert_eq!(config.google_client_id.is_some(), true, "expected GOOGLE_CLIENT_ID to be set if google provider is enabled");
-
-                    assert_eq!(config.google_client_secret.is_some(), true, "expected GOOGLE_CLIENT_SECRET to be set if google provider is enabled")
+            config.public_key = match fs::read_to_string(Path::new(&config.jwt_public_key_path.clone().unwrap())) {
+                Ok(key) => Some(key),
+                Err(err) => {
+                    panic!("unable to read public key file: {}", err);
                 }
+            };
 
-                if config.facebook_enabled {
-                    assert_eq!(config.facebook_client_id.is_some(), true, "expected FACEBOOK_CLIENT_ID to be set if facebook provider is enabled");
-
-                    assert_eq!(config.facebook_client_secret.is_some(), true, "expected FACEBOOK_CLIENT_SECRET to be set if google provider is enabled")
-                }
-
-                if config.github_enabled {
-                    assert_eq!(config.github_client_id.is_some(), true, "expected GITHUB_CLIENT_ID to be set if github provider is enabled");
-
-                    assert_eq!(config.github_client_secret.is_some(), true, "expected GITHUB_CLIENT_SECRET to be set if github provider is enabled");
-                }
-
-                if !config.disable_phone {
-                    assert_eq!(config.sms_config_path.is_some(), true, "expected SMS_CONFIG_PATH to be set if phone support is enabled");
-
-                    match fs::read_to_string(Path::new(&config.sms_config_path.clone().unwrap())) {
-                        Ok(sms) => {
-                            let sms: Result<SMSConfig, serde_json::Error> = serde_json::from_str(&sms);
-
-                            if sms.is_err() {
-                                panic!("unable to parse sms config file: {}", sms.err().unwrap());
-                            }
-
-                            config.sms_config = Some(sms.unwrap());
-                        }
-                        Err(err) => {
-                            panic!("unable to read sms config file: {}", err);
-                        }
-                    }
-                }
-
-                return config;
-            }
-            Err(e) => {
-                println!("{}", e);
-                exit(1);
-            }
+            config.jwt_type = String::from("assymetric");
         }
+        "HS256" | "HS384" | "HS512" => {
+            config.jwt_type = String::from("symmetric");
+        }
+        other => {
+            error!("unsupported algorithm {}", other);
+            exit(1);
+        }
+    }
+
+    if config.google_enabled {
+        assert_eq!(config.google_client_id.is_some(), true, "expected \"google_client_id\" to be set if google provider is enabled");
+
+        assert_eq!(config.google_client_secret.is_some(), true, "expected \"google_client_secret\" to be set if google provider is enabled")
+    }
+
+    if config.facebook_enabled {
+        assert_eq!(config.facebook_client_id.is_some(), true, "expected \"facebook_client_id\" to be set if facebook provider is enabled");
+
+        assert_eq!(
+            config.facebook_client_secret.is_some(),
+            true,
+            "expected \"facebook_client_secret\" to be set if google provider is enabled"
+        )
+    }
+
+    if config.github_enabled {
+        assert_eq!(config.github_client_id.is_some(), true, "expected \"github_client_id\" to be set if github provider is enabled");
+
+        assert_eq!(config.github_client_secret.is_some(), true, "expected \"github_client_secret\" to be set if github provider is enabled");
+    }
+
+    if !config.disable_phone && config.sms.is_none() {
+        panic!("expected \"sms\" to be set if phone is enabled");
+    }
+
+    println!("{:?}", config);
+
+    return config;
+}
+
+impl Config {
+    pub fn new_from_string(s: String) -> Config {
+        let h = HoconLoader::new().load_str(s.as_ref());
+
+        if h.is_err() {
+            let err = h.err().unwrap();
+            panic!("{:?}", err);
+        }
+
+        let h = h.unwrap();
+
+        let config = h.resolve();
+
+        if config.is_err() {
+            let err = config.err().unwrap();
+            panic!("{:?}", err);
+        }
+
+        let config: Config = config.unwrap();
+
+        return complete(config);
+    }
+
+    pub fn new() -> Config {
+        let h = HoconLoader::new().load_file(".conf").expect("expected to find \".conf\" configuration file");
+
+        let config = h.resolve();
+
+        if config.is_err() {
+            let err = config.err().unwrap();
+            panic!("{:?}", err);
+        }
+
+        let config: Config = config.unwrap();
+
+        return complete(config);
     }
 
     fn get_private_key(self) -> String {
