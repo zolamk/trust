@@ -1,14 +1,18 @@
+use crate::config::Config;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
 };
-
-use crate::config::Config;
+use std::str::FromStr;
 
 embed_migrations!("./migrations");
 
 pub fn migrations() {
     let config = Config::new();
+
+    let log_level = config.log_level.clone();
+
+    simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
 
     let manager = ConnectionManager::<PgConnection>::new(config.database_url);
 

@@ -3,7 +3,7 @@ use crate::{
     crypto::{jwt::JWT, secure_token},
     handlers::Error,
     models::{user::User, Error as ModelError},
-    sms::{send_sms, SMSTemplates},
+    sms::send_sms,
 };
 use chrono::Utc;
 use diesel::{
@@ -19,13 +19,7 @@ pub struct ChangePhoneForm {
     pub phone_number: String,
 }
 
-pub fn change_phone(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    sms_templates: &SMSTemplates,
-    token: &JWT,
-    change_phone_form: ChangePhoneForm,
-) -> Result<User, Error> {
+pub fn change_phone(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, change_phone_form: ChangePhoneForm) -> Result<User, Error> {
     let conflict_error = Error::new(409, json!({"code": "phone_registered"}), "A user with this phone number has already been registered".to_string());
 
     let user = crate::models::user::get_by_id(token.sub.clone(), &connection);
@@ -115,10 +109,10 @@ pub fn change_phone(
 
     let user = user.unwrap();
 
-    let template = sms_templates.clone().confirmation_sms_template();
+    let template = config.clone().get_change_phone_sms_template();
 
     let data = json!({
-        "confirmation_code": user.phone_number_change_token.clone().unwrap(),
+        "phone_number_change_token": user.phone_number_change_token.clone().unwrap(),
         "phone_number": user.phone_number,
         "new_phone_number": user.new_phone_number,
         "site_url": config.site_url

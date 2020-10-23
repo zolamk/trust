@@ -1,9 +1,14 @@
 use crate::{config::Config, operator_signature::OperatorSignature};
 use clap::ArgMatches;
 use serde_json::{Map, Value};
+use std::str::FromStr;
 
 pub fn operator(matches: Option<&ArgMatches>) {
     let config = Config::new();
+
+    let log_level = config.log_level.clone();
+
+    simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
 
     let matches = matches.unwrap();
 

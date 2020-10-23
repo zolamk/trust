@@ -4,7 +4,7 @@ use crate::{
     diesel::Connection,
     handlers::Error,
     models::user::User,
-    sms::{send_sms, SMSTemplates},
+    sms::send_sms,
 };
 use chrono::Utc;
 use diesel::{
@@ -20,14 +20,7 @@ pub struct UpdateForm {
     pub confirm: Option<bool>,
 }
 
-pub fn update_phone(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    sms_templates: &SMSTemplates,
-    token: &JWT,
-    update_form: UpdateForm,
-    id: String,
-) -> Result<User, Error> {
+pub fn update_phone(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, update_form: UpdateForm, id: String) -> Result<User, Error> {
     if !token.is_admin(connection) {
         return Err(Error::new(403, json!({"code": "only_admin_can_update"}), "Only Admin Can Update Users".to_string()));
     }
@@ -83,10 +76,10 @@ pub fn update_phone(
 
         let user = user.unwrap();
 
-        let template = sms_templates.clone().confirmation_sms_template();
+        let template = config.clone().get_change_phone_sms_template();
 
         let data = json!({
-            "confirmation_code": user.phone_number_change_token,
+            "phone_number_change_token": user.phone_number_change_token,
             "phone_number": user.phone_number,
             "new_phone_number": user.new_phone_number,
             "site_url": config.site_url

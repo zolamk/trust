@@ -27,14 +27,7 @@ struct ResetResponse {
 #[juniper::object(Context = Context)]
 impl Mutation {
     fn signup(context: &Context, user: signup::SignUpForm) -> Result<User, HandlerError> {
-        let user = signup::signup(
-            &context.config,
-            &context.connection,
-            context.operator_signature.clone(),
-            &context.email_templates,
-            &context.sms_templates,
-            user,
-        );
+        let user = signup::signup(&context.config, &context.connection, context.operator_signature.clone(), user);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -77,7 +70,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = create::create(&context.config, &context.connection, &context.email_templates, &context.sms_templates, token, user);
+        let user = create::create(&context.config, &context.connection, token, user);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -140,7 +133,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = email::update_email(&context.config, &context.connection, &context.email_templates, token, email::UpdateForm { email, confirm }, id);
+        let user = email::update_email(&context.config, &context.connection, token, email::UpdateForm { email, confirm }, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -161,7 +154,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = phone::update_phone(&context.config, &context.connection, &context.sms_templates, token, phone::UpdateForm { phone_number, confirm }, id);
+        let user = phone::update_phone(&context.config, &context.connection, token, phone::UpdateForm { phone_number, confirm }, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -224,7 +217,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = change_email::change_email(&context.config, &context.connection, &context.email_templates, token, change_email::ChangeEmailFrom { email });
+        let user = change_email::change_email(&context.config, &context.connection, token, change_email::ChangeEmailFrom { email });
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -245,7 +238,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = change_phone::change_phone(&context.config, &context.connection, &context.sms_templates, token, change_phone::ChangePhoneForm { phone_number });
+        let user = change_phone::change_phone(&context.config, &context.connection, token, change_phone::ChangePhoneForm { phone_number });
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -277,7 +270,7 @@ impl Mutation {
     }
 
     fn reset(context: &Context, username: String) -> Result<ResetResponse, HandlerError> {
-        let reset = reset::reset(&context.config, &context.connection, &context.email_templates, &context.sms_templates, reset::ResetForm { username });
+        let reset = reset::reset(&context.config, &context.connection, reset::ResetForm { username });
 
         if reset.is_err() {
             return Err(reset.err().unwrap());

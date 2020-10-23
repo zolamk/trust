@@ -2,7 +2,7 @@ use crate::{
     config::Config,
     crypto::{jwt::JWT, secure_token},
     handlers::Error,
-    mailer::{send_email, EmailTemplates},
+    mailer::send_email,
     models::{user::User, Error as ModelError},
 };
 use chrono::Utc;
@@ -19,13 +19,7 @@ pub struct ChangeEmailFrom {
     pub email: String,
 }
 
-pub fn change_email(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    email_templates: &EmailTemplates,
-    token: &JWT,
-    change_email_form: ChangeEmailFrom,
-) -> Result<User, Error> {
+pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, change_email_form: ChangeEmailFrom) -> Result<User, Error> {
     let conflict_error = Error::new(409, json!({"code": "email_registered"}), "A user with this email address has already been registered".to_string());
 
     let user = crate::models::user::get_by_id(token.sub.clone(), &connection);
@@ -116,10 +110,10 @@ pub fn change_email(
 
     let user = user.unwrap();
 
-    let template = email_templates.clone().confirmation_email_template();
+    let template = config.clone().get_change_email_template();
 
     let data = json!({
-        "confirmation_url": format!("{}/email_change_token={}", config.site_url, user.email_change_token.clone().unwrap()),
+        "change_email_token": user.email_change_token.clone().unwrap(),
         "email": user.email,
         "new_email": user.new_email,
         "site_url": config.site_url

@@ -3,7 +3,7 @@ use crate::{
     crypto::{jwt::JWT, secure_token},
     handlers::users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderState},
     hook::{HookEvent, Webhook},
-    mailer::{send_email, EmailTemplates},
+    mailer::send_email,
     models::{
         refresh_token::NewRefreshToken,
         user::{get_by_email, NewUser, User},
@@ -30,7 +30,6 @@ pub fn callback(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-    email_templates: State<EmailTemplates>,
     code: String,
     state: String,
 ) -> Redirect {
@@ -296,10 +295,10 @@ pub fn callback(
 
                 let user = user.unwrap();
 
-                let template = email_templates.clone().confirmation_email_template();
+                let template = config.clone().get_confirmation_email_template();
 
                 let data = json!({
-                    "confirmation_url": format!("{}/confirm?confirmation_token={}", config.instance_url, user.email_confirmation_token.clone().unwrap()),
+                    "confirmation_token": user.email_confirmation_token.clone().unwrap(),
                     "site_url": config.site_url,
                     "email": user.email
                 });

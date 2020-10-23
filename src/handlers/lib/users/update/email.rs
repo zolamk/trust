@@ -3,7 +3,7 @@ use crate::{
     crypto::{jwt::JWT, secure_token},
     diesel::Connection,
     handlers::Error,
-    mailer::{send_email, EmailTemplates},
+    mailer::send_email,
     models::user::User,
 };
 use chrono::Utc;
@@ -20,14 +20,7 @@ pub struct UpdateForm {
     pub confirm: Option<bool>,
 }
 
-pub fn update_email(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    email_templates: &EmailTemplates,
-    token: &JWT,
-    update_form: UpdateForm,
-    id: String,
-) -> Result<User, Error> {
+pub fn update_email(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, update_form: UpdateForm, id: String) -> Result<User, Error> {
     if !token.is_admin(connection) {
         return Err(Error::new(403, json!({"code": "only_admin_can_update"}), "Only Admin Can Update Users".to_string()));
     }
@@ -85,10 +78,10 @@ pub fn update_email(
 
         let user = user.unwrap();
 
-        let template = email_templates.clone().confirmation_email_template();
+        let template = config.clone().get_change_email_template();
 
         let data = json!({
-            "confirmation_url": format!("{}/email_change_token={}", config.site_url, user.email_change_token.clone().unwrap()),
+            "change_email_token": user.email_change_token.clone().unwrap(),
             "email": user.email,
             "new_email": user.new_email,
             "site_url": config.site_url

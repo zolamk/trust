@@ -1,12 +1,12 @@
 use crate::{
     config::Config,
     crypto::secure_token,
-    mailer::{send_email, EmailTemplates},
+    mailer::send_email,
     models::{
         user::{NewUser, User},
         Error as ModelError,
     },
-    sms::{send_sms, SMSTemplates},
+    sms::send_sms,
 };
 use chrono::Utc;
 use clap::ArgMatches;
@@ -16,8 +16,9 @@ use diesel::{
     result::{DatabaseErrorKind, Error::DatabaseError},
 };
 use log::error;
+use std::str::FromStr;
 
-fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config, email_templates: EmailTemplates, sms_templates: SMSTemplates) {
+fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
     let matches = matches.unwrap();
 
     let phone_number = matches.value_of("phone_number");
@@ -63,10 +64,10 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
                 user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
 
-                let template = email_templates.confirmation_email_template();
+                let template = config.clone().get_confirmation_email_template();
 
                 let data = json!({
-                    "confirmation_url": format!("{}/confirm?confirmation_token={}", config.site_url, user.email_confirmation_token.clone().unwrap()),
+                    "confirmation_token": user.email_confirmation_token.clone().unwrap(),
                     "site_url": config.site_url,
                     "email": user.email
                 });
@@ -99,10 +100,10 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
                 user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
 
-                let template = sms_templates.confirmation_sms_template();
+                let template = config.clone().get_confirmation_sms_template();
 
                 let data = json!({
-                    "confirmation_code": user.phone_confirmation_token.clone().unwrap(),
+                    "confirmation_token": user.phone_confirmation_token.clone().unwrap(),
                     "phone_number": user.phone_number,
                     "site_url": config.site_url
                 });
@@ -145,6 +146,10 @@ pub fn users(matches: Option<&ArgMatches>) {
 
     let config = Config::new();
 
+    let log_level = config.log_level.clone();
+
+    simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
+
     let database_url = config.database_url.clone();
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
@@ -159,12 +164,8 @@ pub fn users(matches: Option<&ArgMatches>) {
 
     let connection_pool = connection_pool.unwrap();
 
-    let email_templates = EmailTemplates::new(config.clone());
-
-    let sms_templates = SMSTemplates::new(config.clone());
-
     match matches.subcommand() {
-        ("create", sub_m) => new_user(sub_m, connection_pool, config, email_templates, sms_templates),
+        ("create", sub_m) => new_user(sub_m, connection_pool, config),
         ("remove", sub_m) => remove_user(sub_m, connection_pool),
         _ => {}
     }

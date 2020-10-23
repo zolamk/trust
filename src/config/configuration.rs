@@ -18,6 +18,7 @@ pub struct SMSConfig {
     pub source: String,
     pub mapping: SMSMapping,
     pub headers: HashMap<String, String>,
+    pub extra: HashMap<String, String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -72,13 +73,23 @@ pub struct Config {
     #[serde(default = "default_log_level")]
     pub log_level: String,
 
-    pub mailer_template_confirmation: Option<String>,
+    pub confirmation_email_template_path: Option<String>,
 
-    pub mailer_template_recovery: Option<String>,
+    pub recovery_email_template_path: Option<String>,
 
-    pub sms_template_confirmation: Option<String>,
+    pub change_email_template_path: Option<String>,
 
-    pub sms_template_recovery: Option<String>,
+    mailer_template_confirmation: Option<String>,
+
+    mailer_template_recovery: Option<String>,
+
+    mailer_template_change: Option<String>,
+
+    pub confirmation_sms_template: Option<String>,
+
+    pub recovery_sms_template: Option<String>,
+
+    pub change_phone_sms_template: Option<String>,
 
     #[serde(default = "default_port")]
     pub port: u16,
@@ -109,6 +120,9 @@ pub struct Config {
 
     #[serde(default = "default_disable_phone")]
     pub disable_phone: bool,
+
+    #[serde(default = "default_disable_email")]
+    pub disable_email: bool,
 
     pub sms: Option<SMSConfig>,
 
@@ -164,6 +178,33 @@ fn complete(c: Config) -> Config {
         }
     }
 
+    if config.confirmation_email_template_path.is_some() {
+        config.mailer_template_confirmation = match fs::read_to_string(Path::new(&config.confirmation_email_template_path.clone().unwrap())) {
+            Ok(key) => Some(key),
+            Err(err) => {
+                panic!("unable to read confirmation template file: {}", err);
+            }
+        }
+    }
+
+    if config.change_email_template_path.is_some() {
+        config.mailer_template_change = match fs::read_to_string(Path::new(&config.change_email_template_path.clone().unwrap())) {
+            Ok(key) => Some(key),
+            Err(err) => {
+                panic!("unable to read change email template file: {}", err);
+            }
+        }
+    }
+
+    if config.recovery_email_template_path.is_some() {
+        config.mailer_template_recovery = match fs::read_to_string(Path::new(&config.recovery_email_template_path.clone().unwrap())) {
+            Ok(key) => Some(key),
+            Err(err) => {
+                panic!("unable to read recovery email template file: {}", err);
+            }
+        }
+    }
+
     if config.google_enabled {
         assert_eq!(config.google_client_id.is_some(), true, "expected \"google_client_id\" to be set if google provider is enabled");
 
@@ -190,7 +231,9 @@ fn complete(c: Config) -> Config {
         panic!("expected \"sms\" to be set if phone is enabled");
     }
 
-    println!("{:?}", config);
+    if config.disable_email && config.disable_phone {
+        panic!("can't disable phone and email at the same time");
+    }
 
     return config;
 }
@@ -254,6 +297,54 @@ impl Config {
         }
         return self.jwt_secret;
     }
+
+    pub fn get_confirmation_email_template(self) -> String {
+        if self.mailer_template_confirmation.is_none() {
+            return "<h2>Confirm your email</h2><p>Follow this link to confirm your email</p><p><a href='{{ site_url }}?confirmation_token={{ confirmation_token }}'>Confirm</a></p>".to_string();
+        }
+
+        return self.mailer_template_confirmation.unwrap();
+    }
+
+    pub fn get_recovery_email_template(self) -> String {
+        if self.mailer_template_recovery.is_none() {
+            return "<h2>Recover Your Account</h2><p>Follow this link to recover you account</p><p><a href='{{ site_url }}?recovery_token={{ recovery_token }}'>Recover</a></p>".to_string();
+        }
+
+        return self.mailer_template_recovery.unwrap();
+    }
+
+    pub fn get_change_email_template(self) -> String {
+        if self.mailer_template_change.is_none() {
+            return "<h2>Change Your Email Address<h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?change_email_token={{ change_email_token }}'>Confirm</a></p>".to_string();
+        }
+
+        return self.mailer_template_change.unwrap();
+    }
+
+    pub fn get_confirmation_sms_template(self) -> String {
+        if self.confirmation_sms_template.is_none() {
+            return "Phone confirmation code - {{ confirmation_token }}".to_string();
+        }
+
+        return self.confirmation_sms_template.unwrap();
+    }
+
+    pub fn get_recovery_sms_template(self) -> String {
+        if self.recovery_sms_template.is_none() {
+            return "Phone recovery code - {{ recovery_token }}".to_string();
+        }
+
+        return self.recovery_sms_template.unwrap();
+    }
+
+    pub fn get_change_phone_sms_template(self) -> String {
+        if self.change_phone_sms_template.is_none() {
+            return "Phone change code -  {{ phone_number_change_token }}".to_string();
+        }
+
+        return self.change_phone_sms_template.unwrap();
+    }
 }
 
 fn default_disable_signup() -> bool {
@@ -293,6 +384,10 @@ fn default_social_enabled() -> bool {
 }
 
 fn default_disable_phone() -> bool {
+    false
+}
+
+fn default_disable_email() -> bool {
     false
 }
 

@@ -12,9 +12,9 @@ use rocket::{
     local::Client,
 };
 use serde_json::{Map, Value};
-use std::{env, thread, time};
+use std::{thread, time};
 use testcontainers::*;
-use trust::{config::Config, handlers, mailer::EmailTemplates, models::user::get_by_email, sms::SMSTemplates};
+use trust::{config::Config, handlers, models::user::get_by_email};
 
 embed_migrations!("./migrations");
 
@@ -66,11 +66,7 @@ fn end_users_test() {
 
     embedded_migrations::run(&connection).expect("expected migrations to run");
 
-    let email_templates = EmailTemplates::new(config.clone());
-
-    let sms_templates = SMSTemplates::new(config.clone());
-
-    let rocket = rocket::ignite().manage(config).manage(pool).manage(email_templates).manage(sms_templates).mount(
+    let rocket = rocket::ignite().manage(config).manage(pool).mount(
         "/",
         routes![
             handlers::users::signup::signup,

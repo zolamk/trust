@@ -1,11 +1,4 @@
-use crate::{
-    config::Config,
-    crypto::secure_token,
-    handlers::Error,
-    mailer::{send_email, EmailTemplates},
-    models::user::get_by_email_or_phone_number,
-    sms::{send_sms, SMSTemplates},
-};
+use crate::{config::Config, crypto::secure_token, handlers::Error, mailer::send_email, models::user::get_by_email_or_phone_number, sms::send_sms};
 use chrono::Utc;
 use diesel::{
     pg::PgConnection,
@@ -20,13 +13,7 @@ pub struct ResetForm {
     pub username: String,
 }
 
-pub fn reset(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    email_templates: &EmailTemplates,
-    sms_templates: &SMSTemplates,
-    reset_form: ResetForm,
-) -> Result<(), Error> {
+pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, reset_form: ResetForm) -> Result<(), Error> {
     if !config.email_rule.is_match(&reset_form.username) && !config.phone_rule.is_match(&reset_form.username) {
         return Err(Error::new(
             422,
@@ -53,7 +40,7 @@ pub fn reset(
                 return Ok(());
             }
 
-            let template = email_templates.clone().recovery_email_template();
+            let template = config.clone().get_recovery_email_template();
 
             user.recovery_token = Some(secure_token(100));
 
@@ -67,10 +54,8 @@ pub fn reset(
 
             let user = user.unwrap();
 
-            let recovery_url = format!("{}/recovery?recovery_token={}", config.site_url, user.recovery_token.clone().unwrap());
-
             let data = json!({
-                "recovery_url": recovery_url,
+                "recovery_token": user.recovery_token.clone().unwrap(),
                 "site_url": config.site_url,
                 "email": user.email
             });
@@ -99,10 +84,10 @@ pub fn reset(
 
             let user = user.unwrap();
 
-            let template = sms_templates.clone().recovery_sms_template();
+            let template = config.clone().get_recovery_sms_template();
 
             let data = json!({
-                "recovery_code": user.recovery_token.clone().unwrap(),
+                "recovery_token": user.recovery_token.clone().unwrap(),
                 "site_url": config.site_url,
                 "phone_number": user.phone_number
             });

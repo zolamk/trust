@@ -98,5 +98,6 @@ pub fn refresh(config: &Config, connection: &PooledConnection<ConnectionManager<
     return Ok(LoginResponse {
         access_token: jwt,
         refresh_token: refresh_token.token,
+        id: user.id,
     });
 }

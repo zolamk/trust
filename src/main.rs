@@ -37,8 +37,6 @@ use diesel::{
 };
 use dotenv::dotenv;
 use log::info;
-use mailer::EmailTemplates;
-use sms::SMSTemplates;
 use std::str::FromStr;
 
 fn run() {
@@ -49,10 +47,6 @@ fn run() {
     let log_level = config.log_level.clone();
 
     simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
-
-    let email_templates = EmailTemplates::new(config.clone());
-
-    let sms_templates = SMSTemplates::new(config.clone());
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
 
@@ -101,8 +95,6 @@ fn run() {
     )
     .manage(config)
     .manage(connection_pool)
-    .manage(email_templates)
-    .manage(sms_templates)
     .manage(create_schema())
     .launch();
 }

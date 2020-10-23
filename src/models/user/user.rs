@@ -162,11 +162,11 @@ impl User {
         }
     }
 
-    pub fn update_last_sign_in(&mut self, connection: &PgConnection) -> Result<usize, Error> {
+    pub fn update_last_sign_in(&mut self, connection: &PgConnection) -> Result<User, Error> {
         let now = Some(Utc::now().naive_utc());
 
-        match update(users.filter(id.eq(self.id.clone()))).set(last_signin_at.eq(now)).execute(connection) {
-            Ok(affected_rows) => Ok(affected_rows),
+        match update(users.filter(id.eq(self.id.clone()))).set(last_signin_at.eq(now)).get_result(connection) {
+            Ok(user) => Ok(user),
             Err(err) => Err(Error::from(err)),
         }
     }

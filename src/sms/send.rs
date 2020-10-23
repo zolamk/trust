@@ -1,5 +1,6 @@
 use crate::{config::Config, sms::Error};
 use handlebars::Handlebars;
+use log::error;
 use reqwest::{
     self,
     header::{HeaderMap, HeaderName, HeaderValue},
@@ -46,10 +47,18 @@ pub fn send_sms(template: String, data: Value, to: String, config: &Config) -> R
 
     body.insert(sms_config.mapping.destination, to);
 
+    for (key, value) in sms_config.extra {
+        body.insert(key, value);
+    }
+
     let res = client.json(&body).send();
 
     if res.is_err() {
-        return Err(Error::from(res.err().unwrap()));
+        let err = res.err().unwrap();
+
+        error!("{:?}", err);
+
+        return Err(Error::from(err));
     }
 
     let res = res.unwrap();
@@ -60,5 +69,7 @@ pub fn send_sms(template: String, data: Value, to: String, config: &Config) -> R
         return Ok(());
     }
 
-    return Err(Error::SMSResponseError);
+    let res = res.text().unwrap_or(String::from("SMS Response Error"));
+
+    return Err(Error::SMSResponseError(res));
 }

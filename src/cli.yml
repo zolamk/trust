@@ -37,11 +37,12 @@ subcommands:
               args:
                 - email:
                     help: user email
-                - phone_number:
-                    help: user phone number
+                    required: true
                 - password:
                     help: user password
                     required: true
+                - phone_number:
+                    help: user phone number
                 - admin:
                     short: a
                     long: admin

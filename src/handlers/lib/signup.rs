@@ -3,13 +3,13 @@ use crate::{
     crypto::secure_token,
     handlers::Error,
     hook::{HookEvent, Webhook},
-    mailer::{send_email, EmailTemplates},
+    mailer::send_email,
     models::{
         user::{get_by_email, get_by_phone_number, NewUser, User},
         Error as ModelError,
     },
     operator_signature::OperatorSignature,
-    sms::{send_sms, SMSTemplates},
+    sms::send_sms,
 };
 use chrono::Utc;
 use diesel::{
@@ -31,14 +31,7 @@ pub struct SignUpForm {
     pub password: String,
 }
 
-pub fn signup(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    operator_signature: OperatorSignature,
-    email_templates: &EmailTemplates,
-    sms_templates: &SMSTemplates,
-    signup_form: SignUpForm,
-) -> Result<User, Error> {
+pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: OperatorSignature, signup_form: SignUpForm) -> Result<User, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     if config.disable_signup {
@@ -65,18 +58,6 @@ pub fn signup(
     user.name = signup_form.name.clone();
 
     user.avatar = signup_form.avatar;
-
-    user.email_confirmed = config.auto_confirm;
-
-    user.email_confirmation_token = if config.auto_confirm { None } else { Some(secure_token(100)) };
-
-    user.email_confirmation_token_sent_at = if config.auto_confirm { None } else { Some(Utc::now().naive_utc()) };
-
-    user.phone_confirmed = config.auto_confirm;
-
-    user.phone_confirmation_token = if config.auto_confirm { None } else { Some(secure_token(6)) };
-
-    user.phone_confirmation_token_sent_at = if config.auto_confirm { None } else { Some(Utc::now().naive_utc()) };
 
     user.hash_password();
 
@@ -126,7 +107,7 @@ pub fn signup(
         }
     }
 
-    if user.phone_number.is_some() {
+    if user.phone_number.is_some() && !config.disable_phone {
         // if the user is signing up with phone number and
         // if user exists and is confirmed return conflict error
         // if not delete the unconfirmed user and proceed with the normal flow
@@ -186,59 +167,114 @@ pub fn signup(
             return Err(internal_error);
         }
 
-        let user = user.unwrap();
+        let mut user = user.unwrap();
 
-        let payload = json!({
-            "event": HookEvent::Signup,
-            "provider": "email",
-            "user": user,
-        });
+        if user.email.is_some() && !config.disable_email {
+            if config.auto_confirm {
+                let u = user.confirm_email(connection);
 
-        let hook = Webhook::new(HookEvent::Signup, payload, config.clone(), operator_signature);
+                if u.is_err() {
+                    let err = u.err().unwrap();
+                    error!("{:?}", err);
+                    return Err(Error::from(err));
+                }
 
-        let hook_response = hook.trigger();
+                user = u.unwrap();
+            } else {
+                user.email_confirmation_token = Some(secure_token(100));
 
-        if hook_response.is_err() {
-            return Err(Error::from(hook_response.err().unwrap()));
-        }
+                user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
 
-        if !user.email_confirmed && user.email.is_some() {
-            let template = email_templates.clone().confirmation_email_template();
+                let u = user.save(connection);
 
-            let data = json!({
-                "confirmation_url": format!("{}/confirm?confirmation_token={}", config.site_url, user.email_confirmation_token.clone().unwrap()),
-                "email": user.email,
-                "site_url": config.site_url
-            });
+                if u.is_err() {
+                    let err = u.err().unwrap();
+                    error!("{:?}", err);
+                    return Err(Error::from(err));
+                }
 
-            let email = send_email(template, data, user.email.clone().unwrap(), &config);
+                user = u.unwrap();
 
-            if email.is_err() {
-                let err = email.err().unwrap();
+                let template = config.clone().get_confirmation_email_template();
 
-                error!("{:?}", err);
+                let data = json!({
+                    "confirmation_token": user.email_confirmation_token.clone().unwrap(),
+                    "email": user.email,
+                    "site_url": config.site_url
+                });
 
-                return Err(Error::from(err));
+                let email = send_email(template, data, user.email.clone().unwrap(), &config);
+
+                if email.is_err() {
+                    let err = email.err().unwrap();
+
+                    error!("{:?}", err);
+
+                    return Err(Error::from(err));
+                }
             }
         }
 
-        if !user.phone_confirmed && user.phone_number.is_some() && !config.disable_phone {
-            let template = sms_templates.clone().confirmation_sms_template();
+        if user.phone_number.is_some() && !config.disable_phone {
+            if config.auto_confirm {
+                let u = user.confirm_phone(connection);
 
-            let data = json!({
-                "confirmation_code": user.phone_confirmation_token.clone().unwrap(),
-                "phone_number": user.phone_number,
-                "site_url": config.site_url
+                if u.is_err() {
+                    let err = u.err().unwrap();
+                    error!("{:?}", err);
+                    return Err(Error::from(err));
+                }
+
+                user = u.unwrap();
+            } else {
+                user.phone_confirmation_token = Some(secure_token(6));
+
+                user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+
+                let u = user.save(connection);
+
+                if u.is_err() {
+                    let err = u.err().unwrap();
+                    error!("{:?}", err);
+                    return Err(Error::from(err));
+                }
+
+                user = u.unwrap();
+
+                let template = config.clone().get_confirmation_sms_template();
+
+                let data = json!({
+                    "confirmation_token": user.phone_confirmation_token.clone().unwrap(),
+                    "phone_number": user.phone_number,
+                    "site_url": config.site_url
+                });
+
+                let sms = send_sms(template, data, user.phone_number.clone().unwrap(), &config);
+
+                if sms.is_err() {
+                    let err = sms.err().unwrap();
+
+                    error!("{:?}", err);
+
+                    return Err(Error::from(err));
+                }
+            }
+        }
+
+        // trigger signup hook only if the user has confirmed
+        if user.phone_confirmed || user.email_confirmed {
+            let payload = json!({
+                "event": HookEvent::Signup,
+                "provider": "email",
+                "user": user,
             });
 
-            let sms = send_sms(template, data, user.phone_number.clone().unwrap(), &config);
+            let hook = Webhook::new(HookEvent::Signup, payload, config.clone(), operator_signature);
 
-            if sms.is_err() {
-                let err = sms.err().unwrap();
+            let hook_response = hook.trigger();
 
-                error!("{:?}", err);
-
-                return Err(Error::from(err));
+            if hook_response.is_err() {
+                return Err(Error::from(hook_response.err().unwrap()));
             }
         }
 

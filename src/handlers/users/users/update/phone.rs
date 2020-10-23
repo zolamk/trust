@@ -3,7 +3,6 @@ use crate::{
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::users::update::phone, Error},
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
-    sms::SMSTemplates,
 };
 use diesel::{
     pg::PgConnection,
@@ -16,7 +15,6 @@ use rocket_contrib::json::{Json, JsonValue};
 #[patch("/users/<id>/phone", data = "<update_form>")]
 pub fn update_phone(
     config: State<Config>,
-    sms_templates: State<SMSTemplates>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
     update_form: Json<phone::UpdateForm>,
@@ -50,7 +48,7 @@ pub fn update_phone(
         }
     };
 
-    let user = phone::update_phone(config.inner(), &connection, sms_templates.inner(), &token, update_form.into_inner(), id);
+    let user = phone::update_phone(config.inner(), &connection, &token, update_form.into_inner(), id);
 
     if user.is_err() {
         return Err(user.err().unwrap());

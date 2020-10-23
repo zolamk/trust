@@ -2,7 +2,7 @@
 pub enum Error {
     TemplateError(handlebars::TemplateRenderError),
     SMSError(reqwest::Error),
-    SMSResponseError,
+    SMSResponseError(String),
     InvalidMethodError(http::method::InvalidMethod),
 }
 

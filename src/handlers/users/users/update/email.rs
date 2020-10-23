@@ -2,7 +2,6 @@ use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::users::update::email, Error},
-    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -16,7 +15,6 @@ use rocket_contrib::json::{Json, JsonValue};
 #[patch("/users/<id>/email", data = "<update_form>")]
 pub fn update_email(
     config: State<Config>,
-    email_templates: State<EmailTemplates>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
     update_form: Json<email::UpdateForm>,
@@ -50,7 +48,7 @@ pub fn update_email(
         }
     };
 
-    let user = email::update_email(config.inner(), &connection, email_templates.inner(), &token, update_form.into_inner(), id);
+    let user = email::update_email(config.inner(), &connection, &token, update_form.into_inner(), id);
 
     if user.is_err() {
         return Err(user.err().unwrap());

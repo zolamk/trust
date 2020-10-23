@@ -6,6 +6,7 @@ use crate::{
     },
     models::user::User,
 };
+use log::debug;
 
 #[derive(Debug)]
 pub struct Query {}
@@ -17,6 +18,8 @@ impl Query {
 
         if token.is_err() {
             let err = token.err().unwrap();
+
+            debug!("{:?}", err);
 
             return Err(HandlerError::from(err));
         }
@@ -38,6 +41,8 @@ impl Query {
         if token.is_err() {
             let err = token.err().unwrap();
 
+            debug!("{:?}", err);
+
             return Err(HandlerError::from(err));
         }
 
@@ -57,6 +62,8 @@ impl Query {
 
         if token.is_err() {
             let err = token.err().unwrap();
+
+            debug!("{:?}", err);
 
             return Err(HandlerError::from(err));
         }

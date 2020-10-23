@@ -1,9 +1,7 @@
 use crate::{
     config::Config,
     handlers::{lib::signup, Error},
-    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
-    sms::SMSTemplates,
 };
 use diesel::{
     pg::PgConnection,
@@ -17,8 +15,6 @@ use rocket_contrib::json::{Json, JsonValue};
 pub fn signup(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    email_templates: State<EmailTemplates>,
-    sms_templates: State<SMSTemplates>,
     signup_form: Json<signup::SignUpForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
 ) -> Result<JsonValue, Error> {
@@ -47,14 +43,7 @@ pub fn signup(
         }
     };
 
-    let user = signup::signup(
-        config.inner(),
-        &connection,
-        operator_signature,
-        email_templates.inner(),
-        sms_templates.inner(),
-        signup_form.into_inner(),
-    );
+    let user = signup::signup(config.inner(), &connection, operator_signature, signup_form.into_inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());

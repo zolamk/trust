@@ -2,9 +2,7 @@ use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::users::create, Error},
-    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
-    sms::SMSTemplates,
 };
 use diesel::{
     pg::PgConnection,
@@ -18,8 +16,6 @@ use rocket_contrib::json::{Json, JsonValue};
 pub fn create(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    email_templates: State<EmailTemplates>,
-    sms_templates: State<SMSTemplates>,
     create_form: Json<create::CreateForm>,
     token: Result<JWT, CryptoError>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
@@ -51,7 +47,7 @@ pub fn create(
         }
     };
 
-    let user = create::create(config.inner(), &connection, email_templates.inner(), sms_templates.inner(), &token, create_form.into_inner());
+    let user = create::create(config.inner(), &connection, &token, create_form.into_inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());

@@ -3,12 +3,12 @@ use crate::{
     crypto::{jwt::JWT, secure_token},
     diesel::Connection,
     handlers::Error,
-    mailer::{send_email, EmailTemplates},
+    mailer::send_email,
     models::{
         user::{get_by_email, get_by_phone_number, NewUser, User},
         Error as ModelError,
     },
-    sms::{send_sms, SMSTemplates},
+    sms::send_sms,
 };
 use chrono::Utc;
 use diesel::{
@@ -33,14 +33,7 @@ pub struct CreateForm {
     pub confirm: Option<bool>,
 }
 
-pub fn create(
-    config: &Config,
-    connection: &PooledConnection<ConnectionManager<PgConnection>>,
-    email_templates: &EmailTemplates,
-    sms_templates: &SMSTemplates,
-    token: &JWT,
-    create_form: CreateForm,
-) -> Result<User, Error> {
+pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, create_form: CreateForm) -> Result<User, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     if !token.is_admin(&connection) {
@@ -190,10 +183,10 @@ pub fn create(
         let user = user.unwrap();
 
         if user.email.is_some() && !user.email_confirmed {
-            let template = email_templates.clone().confirmation_email_template();
+            let template = config.clone().get_confirmation_email_template();
 
             let data = json!({
-                "confirmation_url": format!("{}/confirmation_token={}", config.site_url, user.email_confirmation_token.clone().unwrap()),
+                "confirmation_token": user.email_confirmation_token.clone().unwrap(),
                 "email": user.email,
                 "site_url": config.site_url
             });
@@ -210,7 +203,7 @@ pub fn create(
         }
 
         if user.phone_number.is_some() && !user.phone_confirmed {
-            let template = sms_templates.clone().confirmation_sms_template();
+            let template = config.clone().get_confirmation_sms_template();
 
             let data = json!({
                 "confirmation_code": user.phone_confirmation_token.clone().unwrap(),

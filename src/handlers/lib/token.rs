@@ -26,6 +26,7 @@ pub struct LoginResponse {
     pub access_token: String,
     #[graphql(name = "refresh_token")]
     pub refresh_token: String,
+    pub id: String,
 }
 
 pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: OperatorSignature, form: LoginForm) -> Result<LoginResponse, Error> {
@@ -121,5 +122,11 @@ pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
         return Err(Error::from(err));
     }
 
-    return Ok(LoginResponse { access_token: jwt, refresh_token });
+    let user = user.unwrap();
+
+    return Ok(LoginResponse {
+        access_token: jwt,
+        refresh_token,
+        id: user.id,
+    });
 }

@@ -2,7 +2,6 @@ use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::user::change_email, Error},
-    mailer::EmailTemplates,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use diesel::{
@@ -17,7 +16,6 @@ use rocket_contrib::json::{Json, JsonValue};
 pub fn change_email(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
-    email_templates: State<EmailTemplates>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     change_email_form: Json<change_email::ChangeEmailFrom>,
     token: Result<JWT, CryptoError>,
@@ -49,7 +47,7 @@ pub fn change_email(
         }
     };
 
-    let user = change_email::change_email(config.inner(), &connection, email_templates.inner(), &token, change_email_form.into_inner());
+    let user = change_email::change_email(config.inner(), &connection, &token, change_email_form.into_inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());
