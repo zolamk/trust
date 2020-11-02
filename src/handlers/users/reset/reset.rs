@@ -79,7 +79,7 @@ pub fn reset(
             "email": user.email
         });
 
-        let email = send_email(template, data, user.email.unwrap(), config.inner());
+        let email = send_email(template, data, user.email.unwrap(), config.clone().get_recovery_email_subject(), config.inner());
 
         if email.is_err() {
             let err = email.err().unwrap();

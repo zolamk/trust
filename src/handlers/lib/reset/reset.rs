@@ -60,7 +60,7 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
                 "email": user.email
             });
 
-            let email = send_email(template, data, user.email.unwrap(), config);
+            let email = send_email(template, data, user.email.unwrap(), config.clone().get_recovery_email_subject(), config);
 
             if email.is_err() {
                 let err = email.err().unwrap();

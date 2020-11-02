@@ -79,6 +79,12 @@ pub struct Config {
 
     pub change_email_template_path: Option<String>,
 
+    pub confirmation_email_subject: Option<String>,
+
+    pub recovery_email_subject: Option<String>,
+
+    pub change_email_subject: Option<String>,
+
     mailer_template_confirmation: Option<String>,
 
     mailer_template_recovery: Option<String>,
@@ -306,6 +312,14 @@ impl Config {
         return self.mailer_template_confirmation.unwrap();
     }
 
+    pub fn get_confirmation_email_subject(self) -> String {
+        if self.confirmation_email_subject.is_none() {
+            return "Confirm Your Account".to_string();
+        }
+
+        return self.confirmation_email_subject.unwrap();
+    }
+
     pub fn get_recovery_email_template(self) -> String {
         if self.mailer_template_recovery.is_none() {
             return "<h2>Recover Your Account</h2><p>Follow this link to recover you account</p><p><a href='{{ site_url }}?recovery_token={{ recovery_token }}'>Recover</a></p>".to_string();
@@ -314,12 +328,28 @@ impl Config {
         return self.mailer_template_recovery.unwrap();
     }
 
+    pub fn get_recovery_email_subject(self) -> String {
+        if self.recovery_email_subject.is_none() {
+            return "Recover Your Account".to_string();
+        }
+
+        return self.recovery_email_subject.unwrap();
+    }
+
     pub fn get_change_email_template(self) -> String {
         if self.mailer_template_change.is_none() {
             return "<h2>Change Your Email Address<h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?change_email_token={{ change_email_token }}'>Confirm</a></p>".to_string();
         }
 
         return self.mailer_template_change.unwrap();
+    }
+
+    pub fn get_change_email_subject(self) -> String {
+        if self.change_email_subject.is_none() {
+            return "Confirm Email Change".to_string();
+        }
+
+        return self.change_email_subject.unwrap();
     }
 
     pub fn get_confirmation_sms_template(self) -> String {

@@ -303,7 +303,7 @@ pub fn callback(
                     "email": user.email
                 });
 
-                let email = send_email(template, data, user.email.unwrap(), &config);
+                let email = send_email(template, data, user.email.unwrap(), config.clone().get_confirmation_email_subject(), &config);
 
                 if email.is_err() {
                     let redirect_url = format!("{}?error=unable_to_send_confirmation_email", operator_signature.site_url);

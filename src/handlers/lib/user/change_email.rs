@@ -119,7 +119,7 @@ pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionMan
         "site_url": config.site_url
     });
 
-    let email = send_email(template, data, user.new_email.clone().unwrap(), &config);
+    let email = send_email(template, data, user.new_email.clone().unwrap(), config.clone().get_change_email_subject(), config);
 
     if email.is_err() {
         let err = email.err().unwrap();

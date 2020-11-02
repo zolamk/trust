@@ -22,7 +22,7 @@ use diesel::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, GraphQLInputObject)]
+#[derive(Deserialize, Serialize, GraphQLInputObject, Clone, Debug)]
 pub struct CreateForm {
     pub email: Option<String>,
     #[graphql(name = "phone_number")]
@@ -46,10 +46,6 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
     let mut user = NewUser::default();
 
-    user.email_confirmed = config.auto_confirm || (create_form.confirm.is_some() && create_form.confirm.unwrap());
-
-    user.phone_confirmed = user.email_confirmed;
-
     user.email = create_form.email.clone();
 
     user.phone_number = create_form.phone_number.clone();
@@ -58,7 +54,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
     user.avatar = create_form.avatar.clone();
 
-    user.password = Some(create_form.password);
+    user.password = Some(create_form.clone().password);
 
     if user.email.is_some() {
         // if the user is signing up with email and
@@ -104,11 +100,6 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 }
             },
         }
-
-        if !user.email_confirmed {
-            user.email_confirmation_token = Some(secure_token(100));
-            user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
-        }
     }
 
     if user.phone_number.is_some() {
@@ -151,11 +142,6 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 }
             },
         }
-
-        if !user.phone_confirmed {
-            user.phone_confirmation_token = Some(secure_token(6));
-            user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
-        }
     }
 
     let transaction = connection.transaction::<User, Error, _>(|| {
@@ -180,9 +166,25 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
             return Err(internal_error);
         }
 
-        let user = user.unwrap();
+        let mut user = user.unwrap();
 
-        if user.email.is_some() && !user.email_confirmed {
+        if user.email.is_some() && !config.auto_confirm && !(create_form.confirm.is_some() && create_form.confirm.unwrap()) {
+            user.email_confirmation_token = Some(secure_token(100));
+
+            user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+
+            let u = user.save(connection);
+
+            if u.is_err() {
+                let err = u.err().unwrap();
+
+                error!("{:?}", err);
+
+                return Err(Error::from(err));
+            }
+
+            user = u.unwrap();
+
             let template = config.clone().get_confirmation_email_template();
 
             let data = json!({
@@ -191,7 +193,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 "site_url": config.site_url
             });
 
-            let email = send_email(template, data, user.email.clone().unwrap(), &config);
+            let email = send_email(template, data, user.email.clone().unwrap(), config.clone().get_confirmation_email_subject(), config);
 
             if email.is_err() {
                 let err = email.err().unwrap();
@@ -200,13 +202,39 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
                 return Err(Error::from(err));
             }
+        } else {
+            let user = user.confirm_email(connection);
+
+            if user.is_err() {
+                let err = user.err().unwrap();
+
+                error!("{:?}", err);
+
+                return Err(Error::from(err));
+            }
         }
 
-        if user.phone_number.is_some() && !user.phone_confirmed {
+        if user.phone_number.is_some() && !config.auto_confirm && !(create_form.confirm.is_some() && create_form.confirm.unwrap()) {
+            user.phone_confirmation_token = Some(secure_token(6));
+
+            user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+
+            let u = user.save(connection);
+
+            if u.is_err() {
+                let err = u.err().unwrap();
+
+                error!("{:?}", err);
+
+                return Err(Error::from(err));
+            }
+
+            user = u.unwrap();
+
             let template = config.clone().get_confirmation_sms_template();
 
             let data = json!({
-                "confirmation_code": user.phone_confirmation_token.clone().unwrap(),
+                "confirmation_token": user.phone_confirmation_token.clone().unwrap(),
                 "phone_number": user.phone_number,
                 "site_url": config.site_url
             });
@@ -215,6 +243,16 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
             if sms.is_err() {
                 let err = sms.err().unwrap();
+
+                error!("{:?}", err);
+
+                return Err(Error::from(err));
+            }
+        } else {
+            let user = user.confirm_phone(connection);
+
+            if user.is_err() {
+                let err = user.err().unwrap();
 
                 error!("{:?}", err);
 

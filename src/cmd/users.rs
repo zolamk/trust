@@ -72,7 +72,7 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
                     "email": user.email
                 });
 
-                let email = send_email(template, data, user.email.clone().unwrap(), &config);
+                let email = send_email(template, data, user.email.clone().unwrap(), config.clone().get_confirmation_email_subject(), &config);
 
                 if email.is_err() {
                     let err = email.err().unwrap();
