@@ -44,17 +44,13 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         return Err(Error::new(400, json!({"code": "invalid_password_format"}), "Invalid Password Format".to_string()));
     }
 
-    let mut user = NewUser::default();
-
-    user.email = create_form.email.clone();
-
-    user.phone_number = create_form.phone_number.clone();
-
-    user.name = create_form.name.clone();
-
-    user.avatar = create_form.avatar.clone();
-
-    user.password = Some(create_form.clone().password);
+    let mut user = NewUser {
+        email: create_form.email.clone(),
+        phone_number: create_form.phone_number.clone(),
+        name: create_form.name.clone(),
+        password: Some(create_form.clone().password),
+        ..Default::default()
+    };
 
     if user.email.is_some() {
         // if the user is signing up with email and
