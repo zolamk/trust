@@ -11,7 +11,7 @@ use lettre_email::Email;
 use native_tls::TlsConnector;
 use serde_json::Value;
 
-pub fn send_email(template: String, data: Value, to: String, subject: String, config: &Config) -> Result<(), Error> {
+pub fn send_email(template: &str, data: Value, to: &str, subject: &str, config: &Config) -> Result<(), Error> {
     let tls_connector = TlsConnector::builder().build().unwrap();
 
     let tls_parameters = ClientTlsParameters::new(config.smtp_host.to_string(), tls_connector);

@@ -1,8 +1,8 @@
 use crate::{
     config::Config,
     crypto::{jwt::JWT, secure_token},
-    handlers::users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderState},
-    hook::{HookEvent, Webhook},
+    handlers::rest::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderState},
+    hook::{trigger_hook, HookEvent},
     mailer::send_email,
     models::{
         refresh_token::NewRefreshToken,
@@ -178,10 +178,8 @@ pub fn callback(
         return Redirect::to(redirect_url);
     }
 
-    let email = user_data.email.clone().unwrap();
-
     let transaction = connection.transaction::<Redirect, CallbackError, _>(|| {
-        let u = get_by_email(email.clone(), &connection);
+        let u = get_by_email(&user_data.email.unwrap(), &connection);
 
         let mut user: User;
 
@@ -198,9 +196,7 @@ pub fn callback(
                 "user": user,
             });
 
-            let hook = Webhook::new(HookEvent::Login, hook_payload, config.clone(), operator_signature.clone());
-
-            let hr = hook.trigger();
+            let hr = trigger_hook(HookEvent::Login, hook_payload, &config, &operator_signature);
 
             if hr.is_err() {
                 let redirect_url = format!("{}?error=login_hook_error", operator_signature.site_url);
@@ -221,7 +217,7 @@ pub fn callback(
                 }
 
                 let new_user = NewUser {
-                    email: Some(email),
+                    email: Some(user_data.email.unwrap()),
                     phone_number: None,
                     phone_confirmed: false,
                     email_confirmed: user_data.verified || config.auto_confirm,
@@ -259,9 +255,7 @@ pub fn callback(
                     "user": user,
                 });
 
-                let hook = Webhook::new(HookEvent::Signup, hook_payload, config.clone(), operator_signature.clone());
-
-                let hr = hook.trigger();
+                let hr = trigger_hook(HookEvent::Signup, hook_payload, &config, &operator_signature);
 
                 if hr.is_err() {
                     let redirect_url = format!("{}?error=signup_hook_error", operator_signature.site_url);
@@ -295,15 +289,19 @@ pub fn callback(
 
                 let user = user.unwrap();
 
-                let template = config.clone().get_confirmation_email_template();
+                let template = &config.get_confirmation_email_template();
+
+                let email = &user.email.unwrap();
+
+                let subject = &config.get_confirmation_email_subject();
 
                 let data = json!({
-                    "confirmation_token": user.email_confirmation_token.clone().unwrap(),
+                    "confirmation_token": user.email_confirmation_token.unwrap(),
                     "site_url": config.site_url,
                     "email": user.email
                 });
 
-                let email = send_email(template, data, user.email.unwrap(), config.clone().get_confirmation_email_subject(), &config);
+                let email = send_email(template, data, email, subject, &config);
 
                 if email.is_err() {
                     let redirect_url = format!("{}?error=unable_to_send_confirmation_email", operator_signature.site_url);

@@ -78,7 +78,11 @@ pub fn update_email(config: &Config, connection: &PooledConnection<ConnectionMan
 
         let user = user.unwrap();
 
-        let template = config.clone().get_change_email_template();
+        let template = &config.get_change_email_template();
+
+        let to = &user.new_email.unwrap();
+
+        let subject = &config.get_confirmation_email_subject();
 
         let data = json!({
             "change_email_token": user.email_change_token.clone().unwrap(),
@@ -87,7 +91,7 @@ pub fn update_email(config: &Config, connection: &PooledConnection<ConnectionMan
             "site_url": config.site_url
         });
 
-        let email = send_email(template, data, user.new_email.clone().unwrap(), config.clone().get_confirmation_email_subject(), config);
+        let email = send_email(template, data, to, subject, config);
 
         if email.is_err() {
             let err = email.err().unwrap();

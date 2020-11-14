@@ -57,7 +57,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         // if user exists and is confirmed return conflict error
         // if not delete the unconfirmed user and proceed with the normal flow
         // if the error is user not found proceed with the normal flow
-        match get_by_email(user.email.clone().unwrap(), &connection) {
+        match get_by_email(&user.email.unwrap(), &connection) {
             Ok(mut user) => {
                 if user.email_confirmed {
                     return Err(Error::new(
@@ -181,7 +181,11 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
             user = u.unwrap();
 
-            let template = config.clone().get_confirmation_email_template();
+            let template = &config.get_confirmation_email_template();
+
+            let to = &user.email.unwrap();
+
+            let subject = &config.get_confirmation_email_subject();
 
             let data = json!({
                 "confirmation_token": user.email_confirmation_token.clone().unwrap(),
@@ -189,7 +193,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 "site_url": config.site_url
             });
 
-            let email = send_email(template, data, user.email.clone().unwrap(), config.clone().get_confirmation_email_subject(), config);
+            let email = send_email(template, data, to, subject, config);
 
             if email.is_err() {
                 let err = email.err().unwrap();

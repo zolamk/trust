@@ -3,7 +3,10 @@ use crate::{
     crypto::{jwt::JWT, secure_token},
     handlers::Error,
     mailer::send_email,
-    models::{user::User, Error as ModelError},
+    models::{
+        user::{get_by_email, User},
+        Error as ModelError,
+    },
 };
 use chrono::Utc;
 use diesel::{
@@ -38,7 +41,7 @@ pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionMan
 
     let mut user = user.unwrap();
 
-    match crate::models::user::get_by_email(change_email_form.email.clone(), &connection) {
+    match get_by_email(&change_email_form.email, &connection) {
         Ok(mut user) => {
             if user.email_confirmed {
                 return Err(conflict_error);
@@ -110,16 +113,20 @@ pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionMan
 
     let user = user.unwrap();
 
-    let template = config.clone().get_change_email_template();
+    let template = &config.get_change_email_template();
+
+    let to = &user.new_email.unwrap();
+
+    let subject = &config.get_change_email_subject();
 
     let data = json!({
-        "change_email_token": user.email_change_token.clone().unwrap(),
+        "change_email_token": user.email_change_token.unwrap(),
         "email": user.email,
         "new_email": user.new_email,
         "site_url": config.site_url
     });
 
-    let email = send_email(template, data, user.new_email.clone().unwrap(), config.clone().get_change_email_subject(), config);
+    let email = send_email(template, data, to, subject, config);
 
     if email.is_err() {
         let err = email.err().unwrap();

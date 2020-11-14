@@ -1,10 +1,8 @@
 use crate::{
     config::Config,
-    handlers::Error,
+    handlers::{lib::refresh, Error},
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
-
-use crate::handlers::lib::token;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
@@ -13,9 +11,9 @@ use log::error;
 use rocket::State;
 use rocket_contrib::json::{Json, JsonValue};
 
-#[post("/token", data = "<login_form>")]
-pub fn token(
-    login_form: Json<token::LoginForm>,
+#[post("/refresh", data = "<refresh_form>")]
+pub fn refresh(
+    refresh_form: Json<refresh::RefreshForm>,
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
@@ -30,7 +28,7 @@ pub fn token(
 
     let operator_signature = operator_signature.unwrap();
 
-    let internal_error = Error::new(500, json!({"code": "internal_server_error"}), "Internal Server Error".to_string());
+    let internal_error = Error::new(500, json!({ "code": "internal_error" }), "Internal Server Error".to_string());
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -40,7 +38,7 @@ pub fn token(
         }
     };
 
-    let token = token::token(config.inner(), &connection, operator_signature, login_form.into_inner());
+    let token = refresh::refresh(config.inner(), &connection, &operator_signature, refresh_form.into_inner());
 
     if token.is_err() {
         return Err(token.err().unwrap());

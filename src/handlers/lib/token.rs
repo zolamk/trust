@@ -2,7 +2,7 @@ use crate::{
     config::Config,
     crypto::jwt::JWT,
     handlers::Error,
-    hook::{HookEvent, Webhook},
+    hook::{trigger_hook, HookEvent},
     models::{refresh_token::NewRefreshToken, user::get_by_email_or_phone_number, Error as ModelError},
     operator_signature::OperatorSignature,
 };
@@ -29,7 +29,7 @@ pub struct LoginResponse {
     pub id: String,
 }
 
-pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: OperatorSignature, form: LoginForm) -> Result<LoginResponse, Error> {
+pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: &OperatorSignature, form: LoginForm) -> Result<LoginResponse, Error> {
     if !config.email_rule.is_match(&form.username) && !config.phone_rule.is_match(&form.username) {
         return Err(Error::new(
             422,
@@ -42,7 +42,7 @@ pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
 
     let invalid_username_or_password = Error::new(401, json!({"code": "invalid_username_or_password"}), "Invalid Username or Password".to_string());
 
-    let user = get_by_email_or_phone_number(form.username.clone(), form.username.clone(), &connection);
+    let user = get_by_email_or_phone_number(&form.username, &form.username, &connection);
 
     if user.is_err() {
         let err = user.err().unwrap();
@@ -60,11 +60,11 @@ pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
 
     let mut user = user.unwrap();
 
-    if config.email_rule.is_match(form.username.as_ref()) && !user.email_confirmed {
+    if config.email_rule.is_match(&form.username) && !user.email_confirmed {
         return Err(Error::new(412, json!({"code": "email_not_confirmed"}), "Email Hasn't Been Confirmed".to_string()));
     }
 
-    if config.phone_rule.is_match(form.username.as_ref()) && !user.phone_confirmed {
+    if config.phone_rule.is_match(&form.username) && !user.phone_confirmed {
         return Err(Error::new(412, json!({"code": "phone_not_confirmed"}), "Phone Number Hasn't Been Confirmed".to_string()));
     }
 
@@ -78,9 +78,7 @@ pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
         "user": user,
     });
 
-    let hook = Webhook::new(HookEvent::Login, payload, config.clone(), operator_signature);
-
-    let hook_response = hook.trigger();
+    let hook_response = trigger_hook(HookEvent::Login, payload, config, operator_signature);
 
     if hook_response.is_err() {
         return Err(Error::from(hook_response.err().unwrap()));

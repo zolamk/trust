@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     handlers::{
-        users::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderResponse, ProviderState},
+        rest::provider::{FacebookProvider, GithubProvider, GoogleProvider, Provider, ProviderResponse, ProviderState},
         Error,
     },
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},

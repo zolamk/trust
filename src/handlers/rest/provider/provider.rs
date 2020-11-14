@@ -1,4 +1,4 @@
-use crate::handlers::users::provider::user_data::UserProvidedData;
+use crate::handlers::rest::provider::user_data::UserProvidedData;
 use reqwest::Error;
 
 pub trait Provider {

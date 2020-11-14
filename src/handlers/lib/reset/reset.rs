@@ -14,7 +14,9 @@ pub struct ResetForm {
 }
 
 pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, reset_form: ResetForm) -> Result<(), Error> {
-    if !config.email_rule.is_match(&reset_form.username) && !config.phone_rule.is_match(&reset_form.username) {
+    let username = &reset_form.username;
+
+    if !config.email_rule.is_match(username) && !config.phone_rule.is_match(username) {
         return Err(Error::new(
             422,
             json!({"code": "email_or_phone_number_required"}),
@@ -23,7 +25,7 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
     }
 
     let transaction = connection.transaction::<_, Error, _>(|| {
-        let user = get_by_email_or_phone_number(reset_form.username.clone(), reset_form.username.clone(), connection);
+        let user = get_by_email_or_phone_number(username, username, connection);
 
         if user.is_err() {
             let err = user.err().unwrap();
@@ -40,7 +42,11 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
                 return Ok(());
             }
 
-            let template = config.clone().get_recovery_email_template();
+            let template = &config.get_recovery_email_template();
+
+            let email = &user.email.unwrap();
+
+            let subject = &config.get_recovery_email_subject();
 
             user.recovery_token = Some(secure_token(100));
 
@@ -60,7 +66,7 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
                 "email": user.email
             });
 
-            let email = send_email(template, data, user.email.unwrap(), config.clone().get_recovery_email_subject(), config);
+            let email = send_email(template, data, email, subject, config);
 
             if email.is_err() {
                 let err = email.err().unwrap();

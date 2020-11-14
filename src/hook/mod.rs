@@ -4,4 +4,4 @@ mod webhook;
 
 pub use error::{Error, HookError};
 pub use event::HookEvent;
-pub use webhook::Webhook;
+pub use webhook::trigger_hook;

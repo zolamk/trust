@@ -11,7 +11,7 @@ pub fn get(offset: i64, limit: i64, connection: &PgConnection) -> Result<Vec<Use
     }
 }
 
-pub fn get_by_email(e: String, connection: &PgConnection) -> Result<User, Error> {
+pub fn get_by_email(e: &str, connection: &PgConnection) -> Result<User, Error> {
     match users.filter(email.eq(e)).first(connection) {
         Ok(user) => Ok(user),
         Err(err) => Err(Error::from(err)),
@@ -25,7 +25,7 @@ pub fn get_by_phone_number(p: String, connection: &PgConnection) -> Result<User,
     }
 }
 
-pub fn get_by_email_or_phone_number(e: String, p: String, connection: &PgConnection) -> Result<User, Error> {
+pub fn get_by_email_or_phone_number(e: &str, p: &str, connection: &PgConnection) -> Result<User, Error> {
     match users.filter(email.eq(e)).or_filter(phone_number.eq(p)).first(connection) {
         Ok(user) => Ok(user),
         Err(err) => Err(Error::from(err)),

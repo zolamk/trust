@@ -1,6 +1,6 @@
 use crate::{
     config::Config,
-    handlers::users::provider::{Provider, UserProvidedData},
+    handlers::rest::provider::{Provider, UserProvidedData},
 };
 use reqwest::{blocking::Client, Error};
 use serde::Deserialize;
