@@ -69,15 +69,15 @@ fn end_users_test() {
     let rocket = rocket::ignite().manage(config).manage(pool).mount(
         "/",
         routes![
-            handlers::users::signup::signup,
-            handlers::users::token::token,
-            handlers::users::confirm_email::confirm,
-            handlers::users::user::get::get,
-            handlers::users::user::change_password::change_password,
-            handlers::users::user::change_email::change_email,
-            handlers::users::user::change_email_confirm::change_email_confirm,
-            handlers::users::reset::reset::reset,
-            handlers::users::reset::confirm_reset::confirm_reset,
+            handlers::rest::signup::signup,
+            handlers::rest::token::token,
+            handlers::rest::confirm_email::confirm,
+            handlers::rest::user::get::get,
+            handlers::rest::user::change_password::change_password,
+            handlers::rest::user::change_email::change_email,
+            handlers::rest::user::change_email_confirm::change_email_confirm,
+            handlers::rest::reset::reset::reset,
+            handlers::rest::reset::confirm_reset::confirm_reset,
         ],
     );
 
@@ -110,7 +110,7 @@ fn end_users_test() {
 
     assert_eq!(res.status(), Status::PreconditionFailed);
 
-    let user = get_by_email("zola@programmer.net".to_string(), &connection).expect("expected to find user");
+    let user = get_by_email("zola@programmer.net", &connection).expect("expected to find user");
 
     let req = client
         .post("/confirm/email")
@@ -121,7 +121,7 @@ fn end_users_test() {
 
     assert_eq!(res.status(), Status::Ok);
 
-    let user = get_by_email("admin@zelalem.me".to_string(), &connection).expect("expected to find user");
+    let user = get_by_email("admin@zelalem.me", &connection).expect("expected to find user");
 
     let req = client
         .post("/confirm/email")
@@ -242,7 +242,7 @@ fn end_users_test() {
 
     assert_eq!(res.status(), Status::Ok);
 
-    let user = get_by_email("zola@programmer.net".to_string(), &connection).expect("expected to find user");
+    let user = get_by_email("zola@programmer.net", &connection).expect("expected to find user");
 
     let req = client
         .patch("/user/email/confirm")
@@ -262,17 +262,9 @@ fn end_users_test() {
 
     assert_eq!(res.status(), Status::Ok);
 
-    get_by_email("zola@zelalem.me".to_string(), &connection).expect("expected to find user");
+    get_by_email("zola@zelalem.me", &connection).expect("expected to find user");
 
-    let req = client.post("/reset").header(signature.clone()).body(r#"{ "email": "non@existent.email"}"#);
-
-    let res = req.dispatch();
-
-    assert_eq!(res.status(), Status::Accepted);
-
-    thread::sleep(second);
-
-    let req = client.post("/reset").header(signature.clone()).body(r#"{ "email": "zola@zelalem.me"}"#);
+    let req = client.post("/reset").header(signature.clone()).body(r#"{ "username": "non@existent.email"}"#);
 
     let res = req.dispatch();
 
@@ -280,7 +272,15 @@ fn end_users_test() {
 
     thread::sleep(second);
 
-    let user = get_by_email("zola@zelalem.me".to_string(), &connection).expect("expected to find user");
+    let req = client.post("/reset").header(signature.clone()).body(r#"{ "username": "zola@zelalem.me"}"#);
+
+    let res = req.dispatch();
+
+    assert_eq!(res.status(), Status::Accepted);
+
+    thread::sleep(second);
+
+    let user = get_by_email("zola@zelalem.me", &connection).expect("expected to find user");
 
     let req = client
         .post("/reset/confirm")

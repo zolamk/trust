@@ -57,7 +57,7 @@ impl OperatorSignature {
         return Ok(operator_signature);
     }
 
-    pub fn get_hook_url_for_event(self, event: HookEvent) -> Option<String> {
+    pub fn get_hook_url_for_event(&self, event: HookEvent) -> Option<String> {
         if event == HookEvent::Login {
             return match self.function_hooks.get("login") {
                 Some(hook) => Some(hook.as_str().unwrap().to_string()),

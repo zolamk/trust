@@ -24,9 +24,9 @@ pub fn trigger_hook(event: HookEvent, payload: Value, config: &Config, operator_
         "issuer": "trust"
     });
 
-    let payload = json!({});
+    let p = json!({});
 
-    let signature = encode(header, &config.jwt_secret, &payload, Algorithm::HS256);
+    let signature = encode(header, &config.jwt_secret, &p, Algorithm::HS256);
 
     if signature.is_err() {
         let err = signature.err().unwrap();

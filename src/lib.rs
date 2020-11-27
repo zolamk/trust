@@ -1,5 +1,7 @@
 #![allow(clippy::needless_return, clippy::module_inception, clippy::new_without_default, clippy::too_many_arguments)]
 #![feature(proc_macro_hygiene, decl_macro)]
+#![recursion_limit = "256"]
+
 #[macro_use]
 extern crate rocket;
 #[macro_use]

@@ -1,16 +1,11 @@
 use crate::{
     config::Config,
-    crypto::secure_token,
     handlers::{lib::reset::reset, Error},
-    mailer::send_email,
-    models::user::get_by_email,
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
-use chrono::Utc;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, Pool},
-    Connection,
 };
 use log::error;
 use rocket::{http::Status, response::status, State};
@@ -40,5 +35,12 @@ pub fn reset(
         }
     };
 
-    reset::reset(&config, &connection, reset_form.into_inner());
+    let res = reset::reset(&config, &connection, reset_form.into_inner());
+
+    if res.is_err() {
+        let err = res.err().unwrap();
+        error!("{:?}", err);
+    }
+
+    return Ok(status::Custom(Status::Accepted, JsonValue(json!({"code": "accepted"}))));
 }

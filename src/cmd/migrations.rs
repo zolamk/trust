@@ -12,7 +12,12 @@ pub fn migrations() {
 
     let log_level = config.log_level.clone();
 
-    simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
+    let logger = simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap()).init();
+
+    if logger.is_err() {
+        let err = logger.err().unwrap();
+        panic!("{}", err);
+    }
 
     let manager = ConnectionManager::<PgConnection>::new(config.database_url);
 

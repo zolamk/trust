@@ -42,12 +42,6 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
                 return Ok(());
             }
 
-            let template = &config.get_recovery_email_template();
-
-            let email = &user.email.unwrap();
-
-            let subject = &config.get_recovery_email_subject();
-
             user.recovery_token = Some(secure_token(100));
 
             let user = user.save(&connection);
@@ -59,6 +53,12 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
             }
 
             let user = user.unwrap();
+
+            let template = &config.get_recovery_email_template();
+
+            let email = &user.email.clone().unwrap();
+
+            let subject = &config.get_recovery_email_subject();
 
             let data = json!({
                 "recovery_token": user.recovery_token.clone().unwrap(),

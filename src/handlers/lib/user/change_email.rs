@@ -115,12 +115,12 @@ pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionMan
 
     let template = &config.get_change_email_template();
 
-    let to = &user.new_email.unwrap();
+    let to = &user.new_email.clone().unwrap();
 
     let subject = &config.get_change_email_subject();
 
     let data = json!({
-        "change_email_token": user.email_change_token.unwrap(),
+        "change_email_token": user.email_change_token.clone().unwrap(),
         "email": user.email,
         "new_email": user.new_email,
         "site_url": config.site_url

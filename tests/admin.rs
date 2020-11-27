@@ -69,17 +69,17 @@ fn admin_user_test() {
     let rocket = rocket::ignite().manage(config).manage(pool).mount(
         "/",
         routes![
-            handlers::users::users::create::create,
-            handlers::users::users::update::update::update,
-            handlers::users::users::update::email::update_email,
-            handlers::users::users::delete::delete,
-            handlers::users::user::change_email_confirm::change_email_confirm,
-            handlers::users::user::get::get,
-            handlers::users::signup::signup,
-            handlers::users::token::token,
-            handlers::users::confirm_email::confirm,
-            handlers::users::users::user::user,
-            handlers::users::users::users::users,
+            handlers::rest::users::create::create,
+            handlers::rest::users::update::update::update,
+            handlers::rest::users::update::email::update_email,
+            handlers::rest::users::delete::delete,
+            handlers::rest::user::change_email_confirm::change_email_confirm,
+            handlers::rest::user::get::get,
+            handlers::rest::signup::signup,
+            handlers::rest::token::token,
+            handlers::rest::confirm_email::confirm,
+            handlers::rest::users::user::user,
+            handlers::rest::users::users::users,
         ],
     );
 
@@ -97,7 +97,7 @@ fn admin_user_test() {
 
     assert_eq!(res.status(), Status::Ok);
 
-    let user = get_by_email("zola@programmer.net".to_string(), &connection).expect("expected to find user");
+    let user = get_by_email("zola@programmer.net", &connection).expect("expected to find user");
 
     let req = client
         .post("/confirm/email")
@@ -108,7 +108,7 @@ fn admin_user_test() {
 
     assert_eq!(res.status(), Status::Ok);
 
-    let mut user = get_by_email("zola@programmer.net".to_string(), &connection).expect("expected to find user");
+    let mut user = get_by_email("zola@programmer.net", &connection).expect("expected to find user");
 
     user.is_admin = true;
 
@@ -160,7 +160,7 @@ fn admin_user_test() {
 
     assert_eq!(res.status(), Status::PreconditionFailed);
 
-    let user = get_by_email("admin@zelalem.me".to_string(), &connection).expect("expected to find user");
+    let user = get_by_email("admin@zelalem.me", &connection).expect("expected to find user");
 
     let req = client
         .post("/confirm/email")
@@ -230,7 +230,7 @@ fn admin_user_test() {
 
     thread::sleep(second);
 
-    let james = get_by_email("admin@zelalem.me".to_string(), &connection).expect("expected to find james");
+    let james = get_by_email("admin@zelalem.me", &connection).expect("expected to find james");
 
     let req = client
         .patch("/user/email/confirm")

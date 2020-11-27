@@ -69,7 +69,7 @@ pub fn send_sms(template: String, data: Value, to: String, config: &Config) -> R
         return Ok(());
     }
 
-    let res = res.text().unwrap_or(String::from("SMS Response Error"));
+    let res = res.text().unwrap_or_else(|_| String::from("SMS Response Error"));
 
     return Err(Error::SMSResponseError(res));
 }

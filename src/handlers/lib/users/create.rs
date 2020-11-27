@@ -27,7 +27,7 @@ pub struct CreateForm {
     pub email: Option<String>,
     #[graphql(name = "phone_number")]
     pub phone_number: Option<String>,
-    pub password: String,
+    pub password: Option<String>,
     pub name: Option<String>,
     pub avatar: Option<String>,
     pub confirm: Option<bool>,
@@ -40,7 +40,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         return Err(Error::new(403, json!({"code": "only_admin_can_create"}), "Only Admin Can Create Users".to_string()));
     }
 
-    if !config.password_rule.is_match(create_form.password.as_ref()) {
+    if create_form.password.is_some() && !config.password_rule.is_match(create_form.password.clone().unwrap().as_ref()) {
         return Err(Error::new(400, json!({"code": "invalid_password_format"}), "Invalid Password Format".to_string()));
     }
 
@@ -48,7 +48,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         email: create_form.email.clone(),
         phone_number: create_form.phone_number.clone(),
         name: create_form.name.clone(),
-        password: Some(create_form.clone().password),
+        password: create_form.password.clone(),
         ..Default::default()
     };
 
@@ -57,7 +57,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         // if user exists and is confirmed return conflict error
         // if not delete the unconfirmed user and proceed with the normal flow
         // if the error is user not found proceed with the normal flow
-        match get_by_email(&user.email.unwrap(), &connection) {
+        match get_by_email(&user.email.clone().unwrap(), &connection) {
             Ok(mut user) => {
                 if user.email_confirmed {
                     return Err(Error::new(
@@ -183,7 +183,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
             let template = &config.get_confirmation_email_template();
 
-            let to = &user.email.unwrap();
+            let to = &user.email.clone().unwrap();
 
             let subject = &config.get_confirmation_email_subject();
 
@@ -203,15 +203,17 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 return Err(Error::from(err));
             }
         } else {
-            let user = user.confirm_email(connection);
+            let u = user.confirm_email(connection);
 
-            if user.is_err() {
-                let err = user.err().unwrap();
+            if u.is_err() {
+                let err = u.err().unwrap();
 
                 error!("{:?}", err);
 
                 return Err(Error::from(err));
             }
+
+            user = u.unwrap()
         }
 
         if user.phone_number.is_some() && !config.auto_confirm && !(create_form.confirm.is_some() && create_form.confirm.unwrap()) {
@@ -249,15 +251,17 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 return Err(Error::from(err));
             }
         } else {
-            let user = user.confirm_phone(connection);
+            let u = user.confirm_phone(connection);
 
-            if user.is_err() {
-                let err = user.err().unwrap();
+            if u.is_err() {
+                let err = u.err().unwrap();
 
                 error!("{:?}", err);
 
                 return Err(Error::from(err));
             }
+
+            user = u.unwrap()
         }
 
         return Ok(user);

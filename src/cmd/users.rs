@@ -18,18 +18,18 @@ use diesel::{
 use log::error;
 use std::str::FromStr;
 
-fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: Config) {
+fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: &Config) {
     let matches = matches.unwrap();
 
     let phone_number = matches.value_of("phone_number");
 
     let email = matches.value_of("email");
 
-    let mut user = NewUser::default();
-
-    user.password = Some(matches.value_of("password").unwrap().to_string());
-
-    user.is_admin = matches.is_present("admin");
+    let mut user = NewUser {
+        password: Some(matches.value_of("password").unwrap().to_string()),
+        is_admin: matches.is_present("admin"),
+        ..Default::default()
+    };
 
     if let Some(email) = email {
         user.email = Some(email.to_string());
@@ -64,7 +64,11 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
                 user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
 
-                let template = config.clone().get_confirmation_email_template();
+                let template = &config.get_confirmation_email_template();
+
+                let to = &user.email.clone().unwrap();
+
+                let subject = &config.get_confirmation_email_subject();
 
                 let data = json!({
                     "confirmation_token": user.email_confirmation_token.clone().unwrap(),
@@ -72,7 +76,7 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
                     "email": user.email
                 });
 
-                let email = send_email(template, data, user.email.clone().unwrap(), config.clone().get_confirmation_email_subject(), &config);
+                let email = send_email(template, data, to, subject, &config);
 
                 if email.is_err() {
                     let err = email.err().unwrap();
@@ -148,7 +152,12 @@ pub fn users(matches: Option<&ArgMatches>) {
 
     let log_level = config.log_level.clone();
 
-    simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
+    let logger = simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap()).init();
+
+    if logger.is_err() {
+        let err = logger.err().unwrap();
+        panic!("{}", err);
+    }
 
     let database_url = config.database_url.clone();
 
@@ -165,7 +174,7 @@ pub fn users(matches: Option<&ArgMatches>) {
     let connection_pool = connection_pool.unwrap();
 
     match matches.subcommand() {
-        ("create", sub_m) => new_user(sub_m, connection_pool, config),
+        ("create", sub_m) => new_user(sub_m, connection_pool, &config),
         ("remove", sub_m) => remove_user(sub_m, connection_pool),
         _ => {}
     }

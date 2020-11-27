@@ -1,6 +1,7 @@
 #![allow(clippy::needless_return, clippy::module_inception, clippy::new_without_default, clippy::too_many_arguments)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #![feature(type_ascription)]
+#![recursion_limit = "256"]
 
 #[macro_use]
 extern crate rocket;
@@ -46,7 +47,12 @@ fn run() {
 
     let log_level = config.log_level.clone();
 
-    simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap());
+    let logger = simple_logger::SimpleLogger::new().with_level(log::LevelFilter::from_str(&log_level).unwrap()).init();
+
+    if logger.is_err() {
+        let err = logger.err().unwrap();
+        panic!("{}", err);
+    }
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
 

@@ -59,7 +59,8 @@ pub fn create(
         "code": "success",
         "email_confirmation_required": !user.email_confirmed,
         "phone_confirmation_required": !user.phone_confirmed,
-        "message": "user has been successfully created"
+        "message": "user has been successfully created",
+        "user": user,
     });
 
     return Ok(status::Custom(Status::Ok, JsonValue(body)));

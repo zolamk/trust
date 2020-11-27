@@ -80,7 +80,7 @@ pub fn update_email(config: &Config, connection: &PooledConnection<ConnectionMan
 
         let template = &config.get_change_email_template();
 
-        let to = &user.new_email.unwrap();
+        let to = &user.new_email.clone().unwrap();
 
         let subject = &config.get_confirmation_email_subject();
 

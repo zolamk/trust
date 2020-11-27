@@ -304,76 +304,76 @@ impl Config {
         return self.jwt_secret;
     }
 
-    pub fn get_confirmation_email_template(self) -> String {
+    pub fn get_confirmation_email_template(&self) -> String {
         if self.mailer_template_confirmation.is_none() {
             return "<h2>Confirm your email</h2><p>Follow this link to confirm your email</p><p><a href='{{ site_url }}?confirmation_token={{ confirmation_token }}'>Confirm</a></p>".to_string();
         }
 
-        return self.mailer_template_confirmation.unwrap();
+        return self.mailer_template_confirmation.clone().unwrap();
     }
 
-    pub fn get_confirmation_email_subject(self) -> String {
+    pub fn get_confirmation_email_subject(&self) -> String {
         if self.confirmation_email_subject.is_none() {
             return "Confirm Your Account".to_string();
         }
 
-        return self.confirmation_email_subject.unwrap();
+        return self.confirmation_email_subject.clone().unwrap();
     }
 
-    pub fn get_recovery_email_template(self) -> String {
+    pub fn get_recovery_email_template(&self) -> String {
         if self.mailer_template_recovery.is_none() {
             return "<h2>Recover Your Account</h2><p>Follow this link to recover you account</p><p><a href='{{ site_url }}?recovery_token={{ recovery_token }}'>Recover</a></p>".to_string();
         }
 
-        return self.mailer_template_recovery.unwrap();
+        return self.mailer_template_recovery.clone().unwrap();
     }
 
-    pub fn get_recovery_email_subject(self) -> String {
+    pub fn get_recovery_email_subject(&self) -> String {
         if self.recovery_email_subject.is_none() {
             return "Recover Your Account".to_string();
         }
 
-        return self.recovery_email_subject.unwrap();
+        return self.recovery_email_subject.clone().unwrap();
     }
 
-    pub fn get_change_email_template(self) -> String {
+    pub fn get_change_email_template(&self) -> String {
         if self.mailer_template_change.is_none() {
             return "<h2>Change Your Email Address<h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?change_email_token={{ change_email_token }}'>Confirm</a></p>".to_string();
         }
 
-        return self.mailer_template_change.unwrap();
+        return self.mailer_template_change.clone().unwrap();
     }
 
-    pub fn get_change_email_subject(self) -> String {
+    pub fn get_change_email_subject(&self) -> String {
         if self.change_email_subject.is_none() {
             return "Confirm Email Change".to_string();
         }
 
-        return self.change_email_subject.unwrap();
+        return self.change_email_subject.clone().unwrap();
     }
 
-    pub fn get_confirmation_sms_template(self) -> String {
+    pub fn get_confirmation_sms_template(&self) -> String {
         if self.confirmation_sms_template.is_none() {
             return "Phone confirmation code - {{ confirmation_token }}".to_string();
         }
 
-        return self.confirmation_sms_template.unwrap();
+        return self.confirmation_sms_template.clone().unwrap();
     }
 
-    pub fn get_recovery_sms_template(self) -> String {
+    pub fn get_recovery_sms_template(&self) -> String {
         if self.recovery_sms_template.is_none() {
             return "Phone recovery code - {{ recovery_token }}".to_string();
         }
 
-        return self.recovery_sms_template.unwrap();
+        return self.recovery_sms_template.clone().unwrap();
     }
 
-    pub fn get_change_phone_sms_template(self) -> String {
+    pub fn get_change_phone_sms_template(&self) -> String {
         if self.change_phone_sms_template.is_none() {
             return "Phone change code -  {{ phone_number_change_token }}".to_string();
         }
 
-        return self.change_phone_sms_template.unwrap();
+        return self.change_phone_sms_template.clone().unwrap();
     }
 }
 

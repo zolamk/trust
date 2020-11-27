@@ -179,7 +179,7 @@ pub fn callback(
     }
 
     let transaction = connection.transaction::<Redirect, CallbackError, _>(|| {
-        let u = get_by_email(&user_data.email.unwrap(), &connection);
+        let u = get_by_email(&user_data.email.clone().unwrap(), &connection);
 
         let mut user: User;
 
@@ -217,7 +217,7 @@ pub fn callback(
                 }
 
                 let new_user = NewUser {
-                    email: Some(user_data.email.unwrap()),
+                    email: user_data.email,
                     phone_number: None,
                     phone_confirmed: false,
                     email_confirmed: user_data.verified || config.auto_confirm,
@@ -291,7 +291,7 @@ pub fn callback(
 
                 let template = &config.get_confirmation_email_template();
 
-                let email = &user.email.unwrap();
+                let email = &user.email.clone().unwrap();
 
                 let subject = &config.get_confirmation_email_subject();
 

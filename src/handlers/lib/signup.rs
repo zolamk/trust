@@ -61,7 +61,7 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
         // if user exists and is confirmed return conflict error
         // if not delete the unconfirmed user and proceed with the normal flow
         // if the error is user not found proceed with the normal flow
-        match get_by_email(&user.email.unwrap(), &connection) {
+        match get_by_email(&user.email.clone().unwrap(), &connection) {
             Ok(mut user) => {
                 if user.email_confirmed {
                     return Err(Error::new(
@@ -194,7 +194,7 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
                 let template = &config.get_confirmation_email_template();
 
-                let to = &user.email.unwrap();
+                let to = &user.email.clone().unwrap();
 
                 let subject = &config.get_confirmation_email_subject();
 
