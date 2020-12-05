@@ -140,6 +140,9 @@ pub struct Config {
 
     #[serde(skip_serializing, skip_deserializing)]
     jwt_type: String,
+
+    #[serde(default = "default_id_charset")]
+    pub id_charset: String,
 }
 
 fn complete(c: Config) -> Config {
@@ -245,6 +248,7 @@ fn complete(c: Config) -> Config {
 }
 
 impl Config {
+    #[allow(dead_code)]
     pub fn new_from_string(s: String) -> Config {
         let h = HoconLoader::new().load_str(s.as_ref());
 
@@ -423,4 +427,8 @@ fn default_disable_email() -> bool {
 
 fn default_log_level() -> String {
     "error".to_string()
+}
+
+fn default_id_charset() -> String {
+    "QRBCF123JKLO45GHIJKLOSTU08MNVW67XAPYZ9".to_string()
 }

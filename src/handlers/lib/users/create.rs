@@ -14,10 +14,7 @@ use chrono::Utc;
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, PooledConnection},
-    result::{
-        DatabaseErrorKind,
-        Error::{DatabaseError, NotFound},
-    },
+    result::Error::NotFound,
 };
 use log::error;
 use serde::{Deserialize, Serialize};
@@ -147,15 +144,6 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
         if user.is_err() {
             let err = user.err().unwrap();
-
-            if let ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) = err {
-                let err = Error::new(
-                    409,
-                    json!({"code": "email_already_registered"}),
-                    "A user with this email address has already been registered".to_string(),
-                );
-                return Err(err);
-            }
 
             error!("{:?}", err);
 

@@ -1,10 +1,11 @@
 use crate::{
     config::Config,
+    crypto::get_algorithm,
     hook::{Error, HookError, HookEvent},
     operator_signature::OperatorSignature,
 };
 use chrono::Utc;
-use frank_jwt::{encode, Algorithm};
+use frank_jwt::encode;
 use reqwest::header::AUTHORIZATION;
 use serde_json::{json, Value};
 
@@ -26,7 +27,9 @@ pub fn trigger_hook(event: HookEvent, payload: Value, config: &Config, operator_
 
     let p = json!({});
 
-    let signature = encode(header, &config.jwt_secret, &p, Algorithm::HS256);
+    let signing_key = config.clone().get_signing_key();
+
+    let signature = encode(header, &signing_key, &p, get_algorithm(&config.jwt_algorithm));
 
     if signature.is_err() {
         let err = signature.err().unwrap();

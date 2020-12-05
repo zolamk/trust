@@ -50,10 +50,19 @@ BEGIN
     RETURN output;
 END $function$;
 
-CREATE SEQUENCE users_id_seq AS INT INCREMENT 1 START 1;
+CREATE SEQUENCE id AS BIGINT INCREMENT 1 START 0;
+
+CREATE OR REPLACE FUNCTION public.id(n int)
+    RETURNS text
+    LANGUAGE plpgsql
+    IMMUTABLE STRICT
+AS $function$
+BEGIN
+    RETURN public.int_to_string(public.feistel_crypt(n));
+END $function$;
 
 create table users (
-    id varchar primary key default int_to_string(feistel_crypt(nextval('users_id_seq')::int)),
+    id varchar primary key default id(nextval('users_id_seq')::int)),
     email email constraint uq_email unique,
     phone_number phone_number constraint uq_phone_number unique,
     name varchar,
