@@ -68,7 +68,7 @@ pub struct Config {
 
     pub jwt_public_key_path: Option<String>,
 
-    pub jwt_secret: String,
+    pub jwt_secret: Option<String>,
 
     #[serde(default = "default_log_level")]
     pub log_level: String,
@@ -130,6 +130,9 @@ pub struct Config {
     #[serde(default = "default_disable_email")]
     pub disable_email: bool,
 
+    #[serde(default = "default_password_hash_cost")]
+    pub password_hash_cost: u32,
+
     pub sms: Option<SMSConfig>,
 
     #[serde(skip_serializing, skip_deserializing)]
@@ -179,6 +182,10 @@ fn complete(c: Config) -> Config {
             config.jwt_type = String::from("assymetric");
         }
         "HS256" | "HS384" | "HS512" => {
+            if config.jwt_secret.is_none() {
+                panic!("JWT_SECRET env variable not set");
+            }
+
             config.jwt_type = String::from("symmetric");
         }
         other => {
@@ -298,14 +305,14 @@ impl Config {
         if self.jwt_type.eq("assymetric") {
             return self.get_private_key();
         }
-        return self.jwt_secret;
+        return self.jwt_secret.unwrap();
     }
 
     pub fn get_decoding_key(self) -> String {
         if self.jwt_type.eq("assymetric") {
             return self.get_public_key();
         }
-        return self.jwt_secret;
+        return self.jwt_secret.unwrap();
     }
 
     pub fn get_confirmation_email_template(&self) -> String {
@@ -431,4 +438,8 @@ fn default_log_level() -> String {
 
 fn default_id_charset() -> String {
     "QRBCF123JKLO45GHIJKLOSTU08MNVW67XAPYZ9".to_string()
+}
+
+fn default_password_hash_cost() -> u32 {
+    10
 }

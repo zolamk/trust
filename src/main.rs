@@ -34,10 +34,10 @@ use clap::App;
 use config::Config;
 use diesel::{
     r2d2::{ConnectionManager, Pool},
-    sql_query, PgConnection,
+    PgConnection,
 };
 use dotenv::dotenv;
-use log::{error, info};
+use log::info;
 use std::str::FromStr;
 
 fn run() {
@@ -57,16 +57,6 @@ fn run() {
     let manager = ConnectionManager::<PgConnection>::new(database_url);
 
     let connection_pool = Pool::new(manager).unwrap();
-
-    let connection = connection_pool.get();
-
-    if connection.is_err() {
-        let err = connection.err().unwrap();
-        error!("{:?}", err);
-        return;
-    }
-
-    let connection = connection.unwrap();
 
     let host = config.host.clone();
 

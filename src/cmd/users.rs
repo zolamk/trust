@@ -47,7 +47,7 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
         }
     }
 
-    user.hash_password();
+    user.hash_password(config.password_hash_cost);
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,

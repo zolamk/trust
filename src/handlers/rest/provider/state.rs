@@ -1,6 +1,6 @@
-use crate::{config::Config, handlers::Error};
+use crate::{config::Config, crypto::get_algorithm, handlers::Error};
 use chrono::{Duration, Utc};
-use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
+use frank_jwt::{decode, encode, ValidationOptions};
 use log::error;
 use serde::Deserialize;
 
@@ -27,11 +27,15 @@ impl ProviderState {
             "provider": self.provider,
         });
 
-        return encode(header, &config.jwt_secret, &payload, Algorithm::HS512);
+        let signing_key = &config.clone().get_signing_key();
+
+        return encode(header, signing_key, &payload, get_algorithm(&config.jwt_algorithm));
     }
 
     pub fn verify(state: String, config: &Config) -> Result<ProviderState, Error> {
-        let state = decode(state.as_str(), &config.jwt_secret, Algorithm::HS512, &ValidationOptions::default());
+        let decoding_key = &config.clone().get_decoding_key();
+
+        let state = decode(state.as_str(), decoding_key, get_algorithm(&config.jwt_algorithm), &ValidationOptions::default());
 
         if state.is_err() {
             let err = state.err().unwrap();

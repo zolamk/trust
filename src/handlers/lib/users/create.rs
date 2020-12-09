@@ -138,7 +138,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
     }
 
     let transaction = connection.transaction::<User, Error, _>(|| {
-        user.hash_password();
+        user.hash_password(config.password_hash_cost);
 
         let user = user.save(&connection);
 

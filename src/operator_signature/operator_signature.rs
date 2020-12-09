@@ -20,7 +20,7 @@ impl OperatorSignature {
         return OperatorSignature { site_url, function_hooks };
     }
 
-    pub fn encode(self, jwt_secret: &str) -> Result<String, Error> {
+    pub fn encode(self, signing_key: &str) -> Result<String, Error> {
         let header = json!({});
 
         let payload = serde_json::to_value(self);
@@ -31,14 +31,14 @@ impl OperatorSignature {
 
         let payload = payload.unwrap();
 
-        match encode(header, &jwt_secret.to_string(), &payload, Algorithm::HS256) {
+        match encode(header, &signing_key.to_string(), &payload, Algorithm::HS256) {
             Ok(token) => Ok(token),
             Err(err) => Err(Error::from(err)),
         }
     }
 
-    pub fn decode(operator_signature: &str, jwt_secret: &str) -> Result<OperatorSignature, Error> {
-        let decoded_token = decode(operator_signature, &jwt_secret.to_string(), Algorithm::HS256, &ValidationOptions::dangerous());
+    pub fn decode(operator_signature: &str, decoding_key: &str) -> Result<OperatorSignature, Error> {
+        let decoded_token = decode(operator_signature, &decoding_key.to_string(), Algorithm::HS256, &ValidationOptions::dangerous());
 
         if decoded_token.is_err() {
             return Err(Error::from(decoded_token.err().unwrap()));
@@ -92,7 +92,9 @@ impl<'a, 'r> FromRequest<'a, 'r> for OperatorSignature {
 
         let operator_signature = operator_signature.unwrap();
 
-        let operator_signature = OperatorSignature::decode(operator_signature, config.jwt_secret.as_ref());
+        let decoding_key = &config.clone().get_decoding_key();
+
+        let operator_signature = OperatorSignature::decode(operator_signature, decoding_key);
 
         if operator_signature.is_err() {
             return Outcome::Failure((Status::BadRequest, operator_signature.err().unwrap()));
