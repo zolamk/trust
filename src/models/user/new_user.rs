@@ -2,7 +2,7 @@ use crate::{
     models::{user::User, Error},
     schema::{users, users::dsl::*},
 };
-use bcrypt::{hash, DEFAULT_COST};
+use bcrypt::hash;
 use chrono::NaiveDateTime;
 use diesel::{insert_into, PgConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
@@ -28,7 +28,7 @@ pub struct NewUser {
 impl NewUser {
     pub fn hash_password(&mut self, cost: u32) {
         match &self.password {
-            Some(v) => self.password = Some(hash(v, DEFAULT_COST).unwrap()),
+            Some(v) => self.password = Some(hash(v, cost).unwrap()),
             None => self.password = None,
         }
     }
