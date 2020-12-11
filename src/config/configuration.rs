@@ -133,6 +133,9 @@ pub struct Config {
     #[serde(default = "default_password_hash_cost")]
     pub password_hash_cost: u32,
 
+    #[serde(default = "max_connection_pool_size")]
+    pub max_connection_pool_size: u32,
+
     pub sms: Option<SMSConfig>,
 
     #[serde(skip_serializing, skip_deserializing)]
@@ -279,7 +282,14 @@ impl Config {
     }
 
     pub fn new() -> Config {
-        let h = HoconLoader::new().load_file(".conf").expect("expected to find \".conf\" configuration file");
+        let h = HoconLoader::new().load_file(".conf");
+
+        if h.is_err() {
+            let err = h.err().unwrap();
+            panic!("{:?}", err);
+        }
+
+        let h = h.unwrap();
 
         let config = h.resolve();
 
@@ -441,5 +451,9 @@ fn default_id_charset() -> String {
 }
 
 fn default_password_hash_cost() -> u32 {
+    10
+}
+
+fn max_connection_pool_size() -> u32 {
     10
 }

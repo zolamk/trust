@@ -56,7 +56,7 @@ fn run() {
 
     let manager = ConnectionManager::<PgConnection>::new(database_url);
 
-    let connection_pool = Pool::new(manager).unwrap();
+    let connection_pool = Pool::builder().max_size(config.max_connection_pool_size).build(manager).unwrap();
 
     let host = config.host.clone();
 

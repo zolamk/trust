@@ -43,9 +43,9 @@ fn new_signuature(matches: Option<&ArgMatches>, config: Config) {
 
     let operator_signature = OperatorSignature::new(site_url, function_hooks);
 
-    let signing_key = &config.get_decoding_key();
+    let signing_key = config.clone().get_signing_key();
 
-    let operator_signature = operator_signature.encode(signing_key);
+    let operator_signature = operator_signature.encode(&signing_key, config.jwt_algorithm.as_ref());
 
     if operator_signature.is_err() {
         println!("{:?}", operator_signature.err().unwrap());

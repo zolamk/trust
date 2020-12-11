@@ -1,5 +1,5 @@
-use crate::{config::Config, hook::HookEvent, operator_signature::Error};
-use frank_jwt::{decode, encode, Algorithm, ValidationOptions};
+use crate::{config::Config, crypto::get_algorithm, hook::HookEvent, operator_signature::Error};
+use frank_jwt::{decode, encode, ValidationOptions};
 use rocket::{
     http::Status,
     request::{self, FromRequest, Request},
@@ -20,7 +20,7 @@ impl OperatorSignature {
         return OperatorSignature { site_url, function_hooks };
     }
 
-    pub fn encode(self, signing_key: &str) -> Result<String, Error> {
+    pub fn encode(self, signing_key: &str, alg: &str) -> Result<String, Error> {
         let header = json!({});
 
         let payload = serde_json::to_value(self);
@@ -31,14 +31,14 @@ impl OperatorSignature {
 
         let payload = payload.unwrap();
 
-        match encode(header, &signing_key.to_string(), &payload, Algorithm::HS256) {
+        match encode(header, &signing_key.to_string(), &payload, get_algorithm(alg)) {
             Ok(token) => Ok(token),
             Err(err) => Err(Error::from(err)),
         }
     }
 
-    pub fn decode(operator_signature: &str, decoding_key: &str) -> Result<OperatorSignature, Error> {
-        let decoded_token = decode(operator_signature, &decoding_key.to_string(), Algorithm::HS256, &ValidationOptions::dangerous());
+    pub fn decode(operator_signature: &str, decoding_key: &str, alg: &str) -> Result<OperatorSignature, Error> {
+        let decoded_token = decode(operator_signature, &decoding_key.to_string(), get_algorithm(alg), &ValidationOptions::dangerous());
 
         if decoded_token.is_err() {
             return Err(Error::from(decoded_token.err().unwrap()));
@@ -94,7 +94,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for OperatorSignature {
 
         let decoding_key = &config.clone().get_decoding_key();
 
-        let operator_signature = OperatorSignature::decode(operator_signature, decoding_key);
+        let operator_signature = OperatorSignature::decode(operator_signature, decoding_key, config.jwt_algorithm.as_ref());
 
         if operator_signature.is_err() {
             return Outcome::Failure((Status::BadRequest, operator_signature.err().unwrap()));
