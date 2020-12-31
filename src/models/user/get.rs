@@ -18,15 +18,15 @@ pub fn get_by_email(e: &str, connection: &PgConnection) -> Result<User, Error> {
     }
 }
 
-pub fn get_by_phone_number(p: String, connection: &PgConnection) -> Result<User, Error> {
-    match users.filter(phone_number.eq(p)).first(connection) {
+pub fn get_by_phone(p: String, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(phone.eq(p)).first(connection) {
         Ok(user) => Ok(user),
         Err(err) => Err(Error::from(err)),
     }
 }
 
-pub fn get_by_email_or_phone_number(e: &str, p: &str, connection: &PgConnection) -> Result<User, Error> {
-    match users.filter(email.eq(e)).or_filter(phone_number.eq(p)).first(connection) {
+pub fn get_by_email_or_phone(e: &str, p: &str, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(email.eq(e)).or_filter(phone.eq(p)).first(connection) {
         Ok(user) => Ok(user),
         Err(err) => Err(Error::from(err)),
     }
@@ -60,8 +60,8 @@ pub fn get_by_email_change_token(token: String, connection: &PgConnection) -> Re
     }
 }
 
-pub fn get_by_phone_number_change_token(token: String, connection: &PgConnection) -> Result<User, Error> {
-    match users.filter(phone_number_change_token.eq(token)).first(connection) {
+pub fn get_by_phone_change_token(token: String, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(phone_change_token.eq(token)).first(connection) {
         Ok(user) => Ok(user),
         Err(err) => Err(Error::from(err)),
     }

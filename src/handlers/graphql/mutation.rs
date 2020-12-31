@@ -143,7 +143,7 @@ impl Mutation {
     }
 
     #[graphql(name = "update_phone")]
-    fn update_phone(context: &Context, id: String, confirm: Option<bool>, phone_number: String) -> Result<User, HandlerError> {
+    fn update_phone(context: &Context, id: String, confirm: Option<bool>, phone: String) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -154,7 +154,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = phone::update_phone(&context.config, &context.connection, token, phone::UpdateForm { phone_number, confirm }, id);
+        let user = phone::update_phone(&context.config, &context.connection, token, phone::UpdateForm { phone, confirm }, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -227,7 +227,7 @@ impl Mutation {
     }
 
     #[graphql(name = "change_phone")]
-    fn change_phone(context: &Context, phone_number: String) -> Result<User, HandlerError> {
+    fn change_phone(context: &Context, phone: String) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -238,7 +238,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = change_phone::change_phone(&context.config, &context.connection, token, change_phone::ChangePhoneForm { phone_number });
+        let user = change_phone::change_phone(&context.config, &context.connection, token, change_phone::ChangePhoneForm { phone });
 
         if user.is_err() {
             return Err(user.err().unwrap());

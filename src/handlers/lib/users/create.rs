@@ -5,7 +5,7 @@ use crate::{
     handlers::Error,
     mailer::send_email,
     models::{
-        user::{get_by_email, get_by_phone_number, NewUser, User},
+        user::{get_by_email, get_by_phone, NewUser, User},
         Error as ModelError,
     },
     sms::send_sms,
@@ -22,8 +22,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, GraphQLInputObject, Clone, Debug)]
 pub struct CreateForm {
     pub email: Option<String>,
-    #[graphql(name = "phone_number")]
-    pub phone_number: Option<String>,
+    pub phone: Option<String>,
     pub password: Option<String>,
     pub name: Option<String>,
     pub avatar: Option<String>,
@@ -43,7 +42,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
     let mut user = NewUser {
         email: create_form.email.clone(),
-        phone_number: create_form.phone_number.clone(),
+        phone: create_form.phone.clone(),
         name: create_form.name.clone(),
         password: create_form.password.clone(),
         ..Default::default()
@@ -95,12 +94,12 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
         }
     }
 
-    if user.phone_number.is_some() {
+    if user.phone.is_some() {
         // if the user is signing up with phone number and
         // if user exists and is confirmed return conflict error
         // if not delete the unconfirmed user and proceed with the normal flow
         // if the error is user not found proceed with the normal flow
-        match get_by_phone_number(user.phone_number.clone().unwrap(), &connection) {
+        match get_by_phone(user.phone.clone().unwrap(), &connection) {
             Ok(mut user) => {
                 if user.phone_confirmed {
                     return Err(Error::new(
@@ -111,7 +110,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 }
 
                 let result = if user.email_confirmed {
-                    user.phone_number = None;
+                    user.phone = None;
 
                     user.save(&connection)
                 } else {
@@ -204,7 +203,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
             user = u.unwrap()
         }
 
-        if user.phone_number.is_some() && !config.auto_confirm && !(create_form.confirm.is_some() && create_form.confirm.unwrap()) {
+        if user.phone.is_some() && !config.auto_confirm && !(create_form.confirm.is_some() && create_form.confirm.unwrap()) {
             user.phone_confirmation_token = Some(secure_token(6));
 
             user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
@@ -225,11 +224,11 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
             let data = json!({
                 "confirmation_token": user.phone_confirmation_token.clone().unwrap(),
-                "phone_number": user.phone_number,
+                "phone": user.phone,
                 "site_url": config.site_url
             });
 
-            let sms = send_sms(template, data, user.phone_number.clone().unwrap(), &config);
+            let sms = send_sms(template, data, user.phone.clone().unwrap(), &config);
 
             if sms.is_err() {
                 let err = sms.err().unwrap();

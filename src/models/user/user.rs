@@ -15,9 +15,9 @@ pub struct User {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 
-    #[graphql(name = "phone_number")]
+    #[graphql(name = "phone")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone_number: Option<String>,
+    pub phone: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -85,15 +85,15 @@ pub struct User {
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
-    pub new_phone_number: Option<String>,
+    pub new_phone: Option<String>,
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
-    pub phone_number_change_token: Option<String>,
+    pub phone_change_token: Option<String>,
 
-    #[graphql(name = "phone_number_change_token_sent_at")]
+    #[graphql(name = "phone_change_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone_number_change_token_sent_at: Option<NaiveDateTime>,
+    pub phone_change_token_sent_at: Option<NaiveDateTime>,
 
     #[graphql(name = "last_signin_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -182,14 +182,10 @@ impl User {
         }
     }
 
-    pub fn confirm_phone_number_change(&mut self, connection: &PgConnection) -> Result<User, Error> {
+    pub fn confirm_phone_change(&mut self, connection: &PgConnection) -> Result<User, Error> {
         let n: Option<String> = None;
         match update(users.filter(id.eq(self.id.clone())))
-            .set((
-                phone_number_change_token.eq(n.clone()),
-                new_phone_number.eq(n),
-                phone_number.eq(self.new_phone_number.as_ref().unwrap()),
-            ))
+            .set((phone_change_token.eq(n.clone()), new_phone.eq(n), phone.eq(self.new_phone.as_ref().unwrap())))
             .get_result(connection)
         {
             Ok(user) => Ok(user),

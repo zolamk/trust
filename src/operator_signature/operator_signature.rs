@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 
 #[derive(Deserialize, Serialize, Clone)]
-
 pub struct OperatorSignature {
     pub site_url: String,
     pub function_hooks: Map<String, Value>,

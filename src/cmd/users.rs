@@ -21,7 +21,7 @@ use std::str::FromStr;
 fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManager<PgConnection>>, config: &Config) {
     let matches = matches.unwrap();
 
-    let phone_number = matches.value_of("phone_number");
+    let phone = matches.value_of("phone");
 
     let email = matches.value_of("email");
 
@@ -39,9 +39,9 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
         }
     }
 
-    if let Some(phone_number) = phone_number {
-        user.phone_number = Some(phone_number.to_string());
-        if !config.phone_rule.is_match(user.phone_number.clone().unwrap().as_ref()) {
+    if let Some(phone) = phone {
+        user.phone = Some(phone.to_string());
+        if !config.phone_rule.is_match(user.phone.clone().unwrap().as_ref()) {
             error!("phone number doesn't match phone number rule");
             std::process::exit(1);
         }
@@ -99,7 +99,7 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
             let mut user = user.unwrap();
 
-            if user.phone_number.is_some() && !config.auto_confirm && !matches.is_present("confirm") {
+            if user.phone.is_some() && !config.auto_confirm && !matches.is_present("confirm") {
                 user.phone_confirmation_token = Some(secure_token(6));
 
                 user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
@@ -108,11 +108,11 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
 
                 let data = json!({
                     "confirmation_token": user.phone_confirmation_token.clone().unwrap(),
-                    "phone_number": user.phone_number,
+                    "phone": user.phone,
                     "site_url": config.site_url
                 });
 
-                let sms = send_sms(template, data, user.phone_number.clone().unwrap(), &config);
+                let sms = send_sms(template, data, user.phone.clone().unwrap(), &config);
 
                 if sms.is_err() {
                     let err = sms.err().unwrap();

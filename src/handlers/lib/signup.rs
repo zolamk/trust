@@ -5,7 +5,7 @@ use crate::{
     hook::{trigger_hook, HookEvent},
     mailer::send_email,
     models::{
-        user::{get_by_email, get_by_phone_number, NewUser, User},
+        user::{get_by_email, get_by_phone, NewUser, User},
         Error as ModelError,
     },
     operator_signature::OperatorSignature,
@@ -26,8 +26,7 @@ pub struct SignUpForm {
     pub name: Option<String>,
     pub avatar: Option<String>,
     pub email: Option<String>,
-    #[graphql(name = "phone_number")]
-    pub phone_number: Option<String>,
+    pub phone: Option<String>,
     pub password: String,
 }
 
@@ -39,8 +38,8 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
         return Err(err);
     }
 
-    if signup_form.email.is_none() && signup_form.phone_number.is_none() {
-        return Err(Error::new(409, json!({"code": "email_or_phone_number_required"}), "Signup Requires Email Or Phone Number".to_string()));
+    if signup_form.email.is_none() && signup_form.phone.is_none() {
+        return Err(Error::new(409, json!({"code": "email_or_phone_required"}), "Signup Requires Email Or Phone Number".to_string()));
     }
 
     if !config.password_rule.is_match(signup_form.password.as_ref()) {
@@ -49,7 +48,7 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
     let mut user = NewUser {
         email: signup_form.email,
-        phone_number: signup_form.phone_number,
+        phone: signup_form.phone,
         password: Some(signup_form.password),
         name: signup_form.name.clone(),
         avatar: signup_form.avatar,
@@ -102,12 +101,12 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
         }
     }
 
-    if user.phone_number.is_some() && !config.disable_phone {
+    if user.phone.is_some() && !config.disable_phone {
         // if the user is signing up with phone number and
         // if user exists and is confirmed return conflict error
         // if not delete the unconfirmed user and proceed with the normal flow
         // if the error is user not found proceed with the normal flow
-        match get_by_phone_number(user.phone_number.clone().unwrap(), &connection) {
+        match get_by_phone(user.phone.clone().unwrap(), &connection) {
             Ok(mut user) => {
                 if user.phone_confirmed {
                     return Err(Error::new(
@@ -118,8 +117,8 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 }
 
                 let result = if user.email_confirmed {
-                    user.phone_number = None;
-                    println!("{:?}", user.phone_number);
+                    user.phone = None;
+                    println!("{:?}", user.phone);
                     user.save(&connection)
                 } else {
                     user.delete(&connection)
@@ -216,7 +215,7 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
             }
         }
 
-        if user.phone_number.is_some() && !config.disable_phone {
+        if user.phone.is_some() && !config.disable_phone {
             if config.auto_confirm {
                 let u = user.confirm_phone(connection);
 
@@ -246,11 +245,11 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
                 let data = json!({
                     "confirmation_token": user.phone_confirmation_token.clone().unwrap(),
-                    "phone_number": user.phone_number,
+                    "phone": user.phone,
                     "site_url": config.site_url
                 });
 
-                let sms = send_sms(template, data, user.phone_number.clone().unwrap(), &config);
+                let sms = send_sms(template, data, user.phone.clone().unwrap(), &config);
 
                 if sms.is_err() {
                     let err = sms.err().unwrap();

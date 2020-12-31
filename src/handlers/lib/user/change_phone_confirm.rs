@@ -1,7 +1,7 @@
 use crate::{
     handlers::Error,
     models::{
-        user::{get_by_phone_number_change_token, User},
+        user::{get_by_phone_change_token, User},
         Error as ModelError,
     },
 };
@@ -19,7 +19,7 @@ pub struct ConfirmPhoneChangeForm {
 }
 
 pub fn change_phone_confirm(connection: &PooledConnection<ConnectionManager<PgConnection>>, confirm_change_phone_form: ConfirmPhoneChangeForm) -> Result<User, Error> {
-    let user = get_by_phone_number_change_token(confirm_change_phone_form.phone_change_token, connection);
+    let user = get_by_phone_change_token(confirm_change_phone_form.phone_change_token, connection);
 
     if user.is_err() {
         let err = user.err().unwrap();
@@ -34,7 +34,7 @@ pub fn change_phone_confirm(connection: &PooledConnection<ConnectionManager<PgCo
 
     let mut user = user.unwrap();
 
-    let user = user.confirm_phone_number_change(connection);
+    let user = user.confirm_phone_change(connection);
 
     if user.is_err() {
         let err = user.err().unwrap();

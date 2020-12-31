@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
 pub struct ChangePhoneForm {
-    pub phone_number: String,
+    pub phone: String,
 }
 
 pub fn change_phone(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, change_phone_form: ChangePhoneForm) -> Result<User, Error> {
@@ -38,7 +38,7 @@ pub fn change_phone(config: &Config, connection: &PooledConnection<ConnectionMan
 
     let mut user = user.unwrap();
 
-    match crate::models::user::get_by_phone_number(change_phone_form.phone_number.clone(), &connection) {
+    match crate::models::user::get_by_phone(change_phone_form.phone.clone(), &connection) {
         Ok(mut user) => {
             if user.phone_confirmed {
                 return Err(conflict_error);
@@ -49,7 +49,7 @@ pub fn change_phone(config: &Config, connection: &PooledConnection<ConnectionMan
             // clear the accounts email otherwise
             // delete the account since neither the phone number or email have been confirmed
             let result = if user.email_confirmed {
-                user.phone_number = None;
+                user.phone = None;
                 user.save(&connection)
             } else {
                 user.delete(&connection)
@@ -74,9 +74,9 @@ pub fn change_phone(config: &Config, connection: &PooledConnection<ConnectionMan
     }
 
     if config.auto_confirm {
-        user.new_phone_number = user.phone_number.clone(); // store the old phone number in new phone number in case we ever need to revert it
+        user.new_phone = user.phone.clone(); // store the old phone number in new phone number in case we ever need to revert it
 
-        user.phone_number = Some(change_phone_form.phone_number);
+        user.phone = Some(change_phone_form.phone);
 
         let user = user.save(&connection);
 
@@ -91,11 +91,11 @@ pub fn change_phone(config: &Config, connection: &PooledConnection<ConnectionMan
         return Ok(user.unwrap());
     }
 
-    user.new_phone_number = Some(change_phone_form.phone_number);
+    user.new_phone = Some(change_phone_form.phone);
 
-    user.phone_number_change_token = Some(secure_token(6));
+    user.phone_change_token = Some(secure_token(6));
 
-    user.phone_number_change_token_sent_at = Some(Utc::now().naive_utc());
+    user.phone_change_token_sent_at = Some(Utc::now().naive_utc());
 
     let user = user.save(&connection);
 
@@ -112,13 +112,13 @@ pub fn change_phone(config: &Config, connection: &PooledConnection<ConnectionMan
     let template = config.clone().get_change_phone_sms_template();
 
     let data = json!({
-        "phone_number_change_token": user.phone_number_change_token.clone().unwrap(),
-        "phone_number": user.phone_number,
-        "new_phone_number": user.new_phone_number,
+        "phone_change_token": user.phone_change_token.clone().unwrap(),
+        "phone": user.phone,
+        "new_phone": user.new_phone,
         "site_url": config.site_url
     });
 
-    let sms = send_sms(template, data, user.new_phone_number.clone().unwrap(), &config);
+    let sms = send_sms(template, data, user.new_phone.clone().unwrap(), &config);
 
     if sms.is_err() {
         let err = sms.err().unwrap();

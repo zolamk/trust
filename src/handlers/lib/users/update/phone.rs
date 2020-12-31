@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct UpdateForm {
-    pub phone_number: String,
+    pub phone: String,
     pub confirm: Option<bool>,
 }
 
@@ -42,7 +42,7 @@ pub fn update_phone(config: &Config, connection: &PooledConnection<ConnectionMan
     }
 
     if config.auto_confirm || update_form.confirm.is_some() && update_form.confirm.unwrap() {
-        user.phone_number = Some(update_form.phone_number);
+        user.phone = Some(update_form.phone);
 
         let user = user.save(connection);
 
@@ -58,11 +58,11 @@ pub fn update_phone(config: &Config, connection: &PooledConnection<ConnectionMan
     }
 
     let transaction = connection.transaction::<User, Error, _>(|| {
-        user.new_phone_number = Some(update_form.phone_number.clone());
+        user.new_phone = Some(update_form.phone.clone());
 
-        user.phone_number_change_token = Some(secure_token(6));
+        user.phone_change_token = Some(secure_token(6));
 
-        user.phone_number_change_token_sent_at = Some(Utc::now().naive_utc());
+        user.phone_change_token_sent_at = Some(Utc::now().naive_utc());
 
         let user = user.save(&connection);
 
@@ -79,13 +79,13 @@ pub fn update_phone(config: &Config, connection: &PooledConnection<ConnectionMan
         let template = config.clone().get_change_phone_sms_template();
 
         let data = json!({
-            "phone_number_change_token": user.phone_number_change_token,
-            "phone_number": user.phone_number,
-            "new_phone_number": user.new_phone_number,
+            "phone_change_token": user.phone_change_token,
+            "phone": user.phone,
+            "new_phone": user.new_phone,
             "site_url": config.site_url
         });
 
-        let sms = send_sms(template, data, user.new_phone_number.clone().unwrap(), config);
+        let sms = send_sms(template, data, user.new_phone.clone().unwrap(), config);
 
         if sms.is_err() {
             let err = sms.err().unwrap();

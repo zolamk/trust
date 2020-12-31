@@ -1,4 +1,4 @@
-use crate::{config::Config, crypto::secure_token, handlers::Error, mailer::send_email, models::user::get_by_email_or_phone_number, sms::send_sms};
+use crate::{config::Config, crypto::secure_token, handlers::Error, mailer::send_email, models::user::get_by_email_or_phone, sms::send_sms};
 use chrono::Utc;
 use diesel::{
     pg::PgConnection,
@@ -19,13 +19,13 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
     if !config.email_rule.is_match(username) && !config.phone_rule.is_match(username) {
         return Err(Error::new(
             422,
-            json!({"code": "email_or_phone_number_required"}),
+            json!({"code": "email_or_phone_required"}),
             "Email or Phone Number Is Required To Recover Account".to_string(),
         ));
     }
 
     let transaction = connection.transaction::<_, Error, _>(|| {
-        let user = get_by_email_or_phone_number(username, username, connection);
+        let user = get_by_email_or_phone(username, username, connection);
 
         if user.is_err() {
             let err = user.err().unwrap();
@@ -77,7 +77,7 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
             }
 
             return Ok(());
-        } else if config.phone_rule.is_match(&reset_form.username) && user.phone_number.is_some() && user.phone_confirmed {
+        } else if config.phone_rule.is_match(&reset_form.username) && user.phone.is_some() && user.phone_confirmed {
             user.recovery_token = Some(secure_token(6));
 
             let user = user.save(&connection);
@@ -95,10 +95,10 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
             let data = json!({
                 "recovery_token": user.recovery_token.clone().unwrap(),
                 "site_url": config.site_url,
-                "phone_number": user.phone_number
+                "phone": user.phone
             });
 
-            let sms = send_sms(template, data, user.phone_number.unwrap(), config);
+            let sms = send_sms(template, data, user.phone.unwrap(), config);
 
             if sms.is_err() {
                 let err = sms.err().unwrap();

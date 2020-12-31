@@ -64,7 +64,7 @@ END $function$;
 create table users (
     id varchar primary key default id(nextval('users_id_seq')::int),
     email email constraint uq_email unique,
-    phone_number phone_number constraint uq_phone_number unique,
+    phone phone_number constraint uq_phone unique,
     name varchar,
     avatar varchar,
     is_admin boolean not null default false,
@@ -82,13 +82,13 @@ create table users (
     email_change_token varchar(250),
     new_email citext,
     email_change_token_sent_at timestamp,
-    new_phone_number phone_number,
-    phone_number_change_token varchar(250),
-    phone_number_change_token_sent_at timestamp,
+    new_phone phone_number,
+    phone_change_token varchar(250),
+    phone_change_token_sent_at timestamp,
     last_signin_at timestamp,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null,
-    constraint chk_email_or_phone_not_null check (email is not null or phone_number is not null),
+    constraint chk_email_or_phone_not_null check (email is not null or phone is not null),
     constraint chk_email_confirm check (email_confirmed = false or email_confirmed_at is not null),
     constraint chk_phone_confirm check (phone_confirmed = false or phone_confirmed_at is not null)
 );

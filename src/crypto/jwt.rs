@@ -20,7 +20,7 @@ pub struct JWT {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone_number: Option<String>,
+    pub phone: Option<String>,
     pub aud: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exp: Option<i64>,
@@ -35,7 +35,7 @@ impl JWT {
             exp: None,
             aud,
             email: if user.email_confirmed { user.email.clone() } else { None },
-            phone_number: if user.phone_confirmed { user.phone_number.clone() } else { None },
+            phone: if user.phone_confirmed { user.phone.clone() } else { None },
             metadata,
         };
     }

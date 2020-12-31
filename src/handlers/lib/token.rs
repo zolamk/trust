@@ -3,7 +3,7 @@ use crate::{
     crypto::jwt::JWT,
     handlers::Error,
     hook::{trigger_hook, HookEvent},
-    models::{refresh_token::NewRefreshToken, user::get_by_email_or_phone_number, Error as ModelError},
+    models::{refresh_token::NewRefreshToken, user::get_by_email_or_phone, Error as ModelError},
     operator_signature::OperatorSignature,
 };
 use diesel::{
@@ -42,7 +42,7 @@ pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
 
     let invalid_username_or_password = Error::new(401, json!({"code": "invalid_username_or_password"}), "Invalid Username or Password".to_string());
 
-    let user = get_by_email_or_phone_number(&form.username, &form.username, &connection);
+    let user = get_by_email_or_phone(&form.username, &form.username, &connection);
 
     if user.is_err() {
         let err = user.err().unwrap();

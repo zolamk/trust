@@ -391,7 +391,7 @@ impl Config {
 
     pub fn get_change_phone_sms_template(&self) -> String {
         if self.change_phone_sms_template.is_none() {
-            return "Phone change code -  {{ phone_number_change_token }}".to_string();
+            return "Phone change code -  {{ phone_change_token }}".to_string();
         }
 
         return self.change_phone_sms_template.clone().unwrap();

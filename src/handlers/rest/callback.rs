@@ -218,7 +218,7 @@ pub fn callback(
 
                 let new_user = NewUser {
                     email: user_data.email,
-                    phone_number: None,
+                    phone: None,
                     phone_confirmed: false,
                     email_confirmed: user_data.verified || config.auto_confirm,
                     name: user_data.name,

@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 #[table_name = "users"]
 pub struct NewUser {
     pub email: Option<String>,
-    pub phone_number: Option<String>,
+    pub phone: Option<String>,
     pub name: Option<String>,
     pub avatar: Option<String>,
     pub is_admin: bool,

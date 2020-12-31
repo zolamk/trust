@@ -41,7 +41,7 @@ subcommands:
                 - password:
                     help: user password
                     required: true
-                - phone_number:
+                - phone:
                     help: user phone number
                 - admin:
                     short: a
