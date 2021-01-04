@@ -28,6 +28,7 @@ mod models;
 mod operator_signature;
 mod schema;
 mod sms;
+mod cors;
 
 use crate::handlers::graphql::create_schema;
 use clap::App;
@@ -101,7 +102,7 @@ fn run() {
     )
     .manage(config)
     .manage(connection_pool)
-    .manage(create_schema())
+    .manage(create_schema()).attach(cors::CORS)
     .launch();
 }
 
