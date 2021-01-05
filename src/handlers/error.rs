@@ -257,7 +257,25 @@ impl From<diesel::result::Error> for Error {
 
 impl juniper::IntoFieldError for Error {
     fn into_field_error(self) -> juniper::FieldError {
-        // TODO: pass the error body to graphql
+        let body = self.body.as_object();
+        if body.is_some() {
+            let body = body.unwrap();
+            let mut code = String::new();
+            let mut id = String::new();
+
+            if body.contains_key("code") {
+                code = body.get("code").unwrap().as_str().unwrap().to_string();
+            }
+
+            if body.contains_key("id") {
+                id = body.get("id").unwrap().as_str().unwrap().to_string();
+            }
+
+            return juniper::FieldError::new(self.message, graphql_value!({
+                "code": code,
+                "id": id,
+            }))
+        }
         return juniper::FieldError::new(self.message, juniper::Value::null());
     }
 }

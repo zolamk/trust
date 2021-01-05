@@ -58,7 +58,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 if user.email_confirmed {
                     return Err(Error::new(
                         409,
-                        json!({"code": "email_registered"}),
+                        json!({"code": "email_registered", "id": user.id.clone() }),
                         "A user with this email address has already been registered".to_string(),
                     ));
                 }
@@ -104,7 +104,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
                 if user.phone_confirmed {
                     return Err(Error::new(
                         409,
-                        json!({"code": "phone_registered"}),
+                        json!({"code": "phone_registered", "id": user.id.clone() }),
                         "A user with this phone number has already been registered".to_string(),
                     ));
                 }

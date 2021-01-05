@@ -26,8 +26,14 @@ struct ResetResponse {
 
 #[juniper::object(Context = Context)]
 impl Mutation {
-    fn signup(context: &Context, user: signup::SignUpForm) -> Result<User, HandlerError> {
-        let user = signup::signup(&context.config, &context.connection, context.operator_signature.clone(), user);
+    fn signup(context: &Context, name: Option<String>, avatar: Option<String>, email: Option<String>, phone: Option<String>, password: String) -> Result<User, HandlerError> {
+        let user = signup::signup(&context.config, &context.connection, context.operator_signature.clone(), signup::SignUpForm {
+            name,
+            avatar,
+            email,
+            phone,
+            password
+        });
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -59,7 +65,7 @@ impl Mutation {
     }
 
     #[graphql(name = "create_user")]
-    fn create_user(context: &Context, user: create::CreateForm) -> Result<User, HandlerError> {
+    fn create_user(context: &Context, email: Option<String>, phone: Option<String>, password: Option<String>, name: Option<String>, avatar: Option<String>, confirm: Option<bool>) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -70,7 +76,14 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = create::create(&context.config, &context.connection, token, user);
+        let user = create::create(&context.config, &context.connection, token, create::CreateForm{
+            email,
+            phone,
+            password,
+            name,
+            avatar,
+            confirm
+        });
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -80,7 +93,7 @@ impl Mutation {
     }
 
     #[graphql(name = "update_user")]
-    fn update_user(context: &Context, id: String, user: update::UpdateForm) -> Result<User, HandlerError> {
+    fn update_user(context: &Context, id: String, name: Option<String>, avatar: Option<String>) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -91,7 +104,10 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = update::update(&context.connection, token, user, id);
+        let user = update::update(&context.connection, token, update::UpdateForm {
+            name,
+            avatar
+        }, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
