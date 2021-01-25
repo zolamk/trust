@@ -43,7 +43,7 @@ pub fn confirm_reset(config: &Config, connection: &PooledConnection<ConnectionMa
 
     user.password = Some(reset_form.new_password);
 
-    user.hash_password();
+    user.hash_password(config.password_hash_cost);
 
     let user = user.save(&connection);
 

@@ -48,7 +48,7 @@ pub fn change_password(config: &Config, connection: &PooledConnection<Connection
 
     user.password = Some(change_password_form.new_password);
 
-    user.hash_password();
+    user.hash_password(config.password_hash_cost);
 
     let user = user.save(&connection);
 

@@ -121,9 +121,9 @@ impl User {
         }
     }
 
-    pub fn hash_password(&mut self) {
+    pub fn hash_password(&mut self, cost: u32) {
         match &self.password {
-            Some(v) => self.password = Some(hash(v, DEFAULT_COST).unwrap()),
+            Some(v) => self.password = Some(hash(v, cost).unwrap()),
             None => self.password = None,
         }
     }
