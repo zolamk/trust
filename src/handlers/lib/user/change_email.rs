@@ -99,7 +99,7 @@ pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionMan
 
     user.email_change_token = Some(secure_token(100));
 
-    user.email_change_token_sent_at = Some(Utc::now().naive_utc());
+    user.email_change_token_sent_at = Some(Utc::now());
 
     let user = user.save(&connection);
 

@@ -35,7 +35,7 @@ pub fn reset(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
 
         let mut user = user.unwrap();
 
-        user.recovery_token_sent_at = Some(Utc::now().naive_utc());
+        user.recovery_token_sent_at = Some(Utc::now());
 
         if config.email_rule.is_match(&reset_form.username) && user.email.is_some() && user.email_confirmed {
             if !user.email_confirmed {

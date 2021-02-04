@@ -260,21 +260,24 @@ impl juniper::IntoFieldError for Error {
         let body = self.body.as_object();
         if body.is_some() {
             let body = body.unwrap();
-            let mut code = String::new();
-            let mut id = String::new();
+            let mut code: Option<String> = None;
+            let mut id: Option<String> = None;
 
-            if body.contains_key("code") {
-                code = body.get("code").unwrap().as_str().unwrap().to_string();
+            if body.contains_key("code") && body.get("code").unwrap().as_str().is_some() {
+                code = Some(body.get("code").unwrap().as_str().unwrap().to_string());
             }
 
-            if body.contains_key("id") {
-                id = body.get("id").unwrap().as_str().unwrap().to_string();
+            if body.contains_key("id") && body.get("code").unwrap().as_str().is_some() {
+                id = Some(body.get("id").unwrap().as_str().unwrap().to_string());
             }
 
-            return juniper::FieldError::new(self.message, graphql_value!({
-                "code": code,
-                "id": id,
-            }))
+            return juniper::FieldError::new(
+                self.message,
+                graphql_value!({
+                    "code": code,
+                    "id": id,
+                }),
+            );
         }
         return juniper::FieldError::new(self.message, juniper::Value::null());
     }

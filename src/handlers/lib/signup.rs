@@ -56,39 +56,13 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
     };
 
     if user.email.is_some() {
-        // if the user is signing up with email and
-        // if user exists and is confirmed return conflict error
-        // if not delete the unconfirmed user and proceed with the normal flow
-        // if the error is user not found proceed with the normal flow
         match get_by_email(&user.email.clone().unwrap(), &connection) {
-            Ok(mut user) => {
-                if user.email_confirmed {
-                    return Err(Error::new(
-                        409,
-                        json!({"code": "email_registered"}),
-                        "A user with this email address has already been registered".to_string(),
-                    ));
-                }
-
-                // if the user has a phone number confirmed
-                // even though the email is not confirmed
-                // clear the accounts email otherwise
-                // delete the account since neither the phone number or email have been confirmed
-                let result = if user.phone_confirmed {
-                    user.email = None;
-
-                    user.save(&connection)
-                } else {
-                    user.delete(&connection)
-                };
-
-                if result.is_err() {
-                    let err = result.err().unwrap();
-
-                    error!("{:?}", err);
-
-                    return Err(Error::from(err));
-                }
+            Ok(_) => {
+                return Err(Error::new(
+                    409,
+                    json!({"code": "email_registered"}),
+                    "A user with this email address has already been registered".to_string(),
+                ));
             }
             Err(err) => match err {
                 ModelError::DatabaseError(NotFound) => {}
@@ -107,32 +81,12 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
         // if not delete the unconfirmed user and proceed with the normal flow
         // if the error is user not found proceed with the normal flow
         match get_by_phone(user.phone.clone().unwrap(), &connection) {
-            Ok(mut user) => {
-                if user.phone_confirmed {
-                    return Err(Error::new(
-                        409,
-                        json!({"code": "phone_registered"}),
-                        "A user with this phone number has already been registered".to_string(),
-                    ));
-                }
-
-                let result = if user.email_confirmed {
-                    user.phone = None;
-                    println!("{:?}", user.phone);
-                    user.save(&connection)
-                } else {
-                    user.delete(&connection)
-                };
-
-                if result.is_err() {
-                    let err = result.err().unwrap();
-
-                    error!("{:?}", err);
-
-                    return Err(Error::from(err));
-                }
-
-                println!("{:?}", result.unwrap());
+            Ok(_) => {
+                return Err(Error::new(
+                    409,
+                    json!({"code": "phone_registered"}),
+                    "A user with this phone number has already been registered".to_string(),
+                ));
             }
             Err(err) => match err {
                 ModelError::DatabaseError(NotFound) => {}
@@ -179,7 +133,7 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
             } else {
                 user.email_confirmation_token = Some(secure_token(100));
 
-                user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+                user.email_confirmation_token_sent_at = Some(Utc::now());
 
                 let u = user.save(connection);
 
@@ -229,7 +183,7 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
             } else {
                 user.phone_confirmation_token = Some(secure_token(6));
 
-                user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+                user.phone_confirmation_token_sent_at = Some(Utc::now());
 
                 let u = user.save(connection);
 

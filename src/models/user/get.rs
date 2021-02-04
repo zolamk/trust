@@ -2,7 +2,7 @@ use crate::{
     models::{user::User, Error},
     schema::users::dsl::{is_admin as admin, *},
 };
-use diesel::{result::QueryResult, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
+use diesel::{result::QueryResult, BoolExpressionMethods, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 
 pub fn get(offset: i64, limit: i64, connection: &PgConnection) -> Result<Vec<User>, Error> {
     match users.offset(offset).limit(limit).load::<User>(connection) {
@@ -69,6 +69,13 @@ pub fn get_by_phone_change_token(token: String, connection: &PgConnection) -> Re
 
 pub fn get_by_recovery_token(token: String, connection: &PgConnection) -> Result<User, Error> {
     match users.filter(recovery_token.eq(token)).first(connection) {
+        Ok(user) => Ok(user),
+        Err(err) => Err(Error::from(err)),
+    }
+}
+
+pub fn get_by_invitation_token(token: String, connection: &PgConnection) -> Result<User, Error> {
+    match users.filter(email_invitation_token.eq(token.clone()).or(phone_invitation_token.eq(token))).first(connection) {
         Ok(user) => Ok(user),
         Err(err) => Err(Error::from(err)),
     }

@@ -62,7 +62,7 @@ pub fn update_phone(config: &Config, connection: &PooledConnection<ConnectionMan
 
         user.phone_change_token = Some(secure_token(6));
 
-        user.phone_change_token_sent_at = Some(Utc::now().naive_utc());
+        user.phone_change_token_sent_at = Some(Utc::now());
 
         let user = user.save(&connection);
 

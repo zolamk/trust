@@ -62,7 +62,7 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
             if user.email.is_some() && !config.auto_confirm && !matches.is_present("confirm") {
                 user.email_confirmation_token = Some(secure_token(100));
 
-                user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+                user.email_confirmation_token_sent_at = Some(Utc::now());
 
                 let template = &config.get_confirmation_email_template();
 
@@ -102,7 +102,7 @@ fn new_user(matches: Option<&ArgMatches>, connection_pool: Pool<ConnectionManage
             if user.phone.is_some() && !config.auto_confirm && !matches.is_present("confirm") {
                 user.phone_confirmation_token = Some(secure_token(6));
 
-                user.phone_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+                user.phone_confirmation_token_sent_at = Some(Utc::now());
 
                 let template = config.clone().get_confirmation_sms_template();
 

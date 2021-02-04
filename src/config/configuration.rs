@@ -79,11 +79,15 @@ pub struct Config {
 
     pub change_email_template_path: Option<String>,
 
+    pub invitation_email_template_path: Option<String>,
+
     pub confirmation_email_subject: Option<String>,
 
     pub recovery_email_subject: Option<String>,
 
     pub change_email_subject: Option<String>,
+
+    pub invitation_email_subect: Option<String>,
 
     mailer_template_confirmation: Option<String>,
 
@@ -91,11 +95,15 @@ pub struct Config {
 
     mailer_template_change: Option<String>,
 
+    mailer_template_invite: Option<String>,
+
     pub confirmation_sms_template: Option<String>,
 
     pub recovery_sms_template: Option<String>,
 
     pub change_phone_sms_template: Option<String>,
+
+    pub invitation_sms_template: Option<String>,
 
     #[serde(default = "default_port")]
     pub port: u16,
@@ -224,6 +232,15 @@ fn complete(c: Config) -> Config {
         }
     }
 
+    if config.invitation_email_template_path.is_some() {
+        config.mailer_template_invite = match fs::read_to_string(Path::new(&config.invitation_email_template_path.clone().unwrap())) {
+            Ok(key) => Some(key),
+            Err(err) => {
+                panic!("unable to read invitation email template file: {}", err);
+            }
+        }
+    }
+
     if config.google_enabled {
         assert_eq!(config.google_client_id.is_some(), true, "expected \"google_client_id\" to be set if google provider is enabled");
 
@@ -333,6 +350,23 @@ impl Config {
         return self.mailer_template_confirmation.clone().unwrap();
     }
 
+    pub fn get_invitation_email_template(&self) -> String {
+        if self.mailer_template_invite.is_none() {
+            return "<h2>You have been invited</h2><p>Follow this link to accept your invitation</p><p><a href='{{ site_url }}?invitation_token={{ invitation_token }}'>Accept Invite</a></p>"
+                .to_string();
+        }
+
+        return self.mailer_template_invite.clone().unwrap();
+    }
+
+    pub fn get_invitation_email_subject(&self) -> String {
+        if self.invitation_email_subect.is_none() {
+            return "You've been invited".to_string();
+        }
+
+        return self.invitation_email_subect.clone().unwrap();
+    }
+
     pub fn get_confirmation_email_subject(&self) -> String {
         if self.confirmation_email_subject.is_none() {
             return "Confirm Your Account".to_string();
@@ -371,6 +405,14 @@ impl Config {
         }
 
         return self.change_email_subject.clone().unwrap();
+    }
+
+    pub fn get_invitation_sms_template(&self) -> String {
+        if self.invitation_sms_template.is_none() {
+            return "Invitation acceptance code - {{ invitation_token }}".to_string();
+        }
+
+        return self.invitation_sms_template.clone().unwrap();
     }
 
     pub fn get_confirmation_sms_template(&self) -> String {

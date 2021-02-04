@@ -275,7 +275,7 @@ pub fn callback(
             if !user_data.verified && !config.auto_confirm {
                 user.email_confirmation_token = Some(secure_token(100));
 
-                user.email_confirmation_token_sent_at = Some(Utc::now().naive_utc());
+                user.email_confirmation_token_sent_at = Some(Utc::now());
 
                 let user = user.save(&connection);
 

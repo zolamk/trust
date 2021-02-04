@@ -2,12 +2,12 @@ use crate::{
     models::Error,
     schema::{users, users::dsl::*},
 };
-use bcrypt::{hash, verify, DEFAULT_COST};
-use chrono::{NaiveDateTime, Utc};
+use bcrypt::{hash, verify};
+use chrono::{DateTime, Utc};
 use diesel::{delete, update, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, AsChangeset, Serialize, Identifiable, Debug, Clone, GraphQLObject)]
+#[derive(Queryable, AsChangeset, Serialize, Deserialize, Identifiable, Debug, Clone, GraphQLObject)]
 #[changeset_options(treat_none_as_null = "true")]
 pub struct User {
     pub id: String,
@@ -42,11 +42,11 @@ pub struct User {
 
     #[graphql(name = "email_confirmation_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_confirmation_token_sent_at: Option<NaiveDateTime>,
+    pub email_confirmation_token_sent_at: Option<DateTime<Utc>>,
 
     #[graphql(name = "email_confirmed_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_confirmed_at: Option<NaiveDateTime>,
+    pub email_confirmed_at: Option<DateTime<Utc>>,
 
     #[graphql(name = "phone_confirmed")]
     pub phone_confirmed: bool,
@@ -57,11 +57,11 @@ pub struct User {
 
     #[graphql(name = "phone_confirmation_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone_confirmation_token_sent_at: Option<NaiveDateTime>,
+    pub phone_confirmation_token_sent_at: Option<DateTime<Utc>>,
 
     #[graphql(name = "phone_confirmed_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone_confirmed_at: Option<NaiveDateTime>,
+    pub phone_confirmed_at: Option<DateTime<Utc>>,
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
@@ -69,7 +69,7 @@ pub struct User {
 
     #[graphql(name = "recovery_token_sent_at")]
     #[serde(skip_serializing)]
-    pub recovery_token_sent_at: Option<NaiveDateTime>,
+    pub recovery_token_sent_at: Option<DateTime<Utc>>,
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
@@ -81,7 +81,7 @@ pub struct User {
 
     #[graphql(name = "email_change_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub email_change_token_sent_at: Option<NaiveDateTime>,
+    pub email_change_token_sent_at: Option<DateTime<Utc>>,
 
     #[graphql(skip)]
     #[serde(skip_serializing)]
@@ -93,17 +93,33 @@ pub struct User {
 
     #[graphql(name = "phone_change_token_sent_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub phone_change_token_sent_at: Option<NaiveDateTime>,
+    pub phone_change_token_sent_at: Option<DateTime<Utc>>,
 
     #[graphql(name = "last_signin_at")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub last_signin_at: Option<NaiveDateTime>,
+    pub last_signin_at: Option<DateTime<Utc>>,
 
     #[graphql(name = "created_at")]
-    pub created_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
 
     #[graphql(name = "updated_at")]
-    pub updated_at: NaiveDateTime,
+    pub updated_at: DateTime<Utc>,
+
+    #[graphql(skip)]
+    #[serde(skip_serializing)]
+    pub email_invitation_token: Option<String>,
+
+    #[graphql(skip)]
+    #[serde(skip_serializing)]
+    pub phone_invitation_token: Option<String>,
+
+    #[graphql(name = "invitation_token_sent_at")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invitation_token_sent_at: Option<DateTime<Utc>>,
+
+    #[graphql(name = "invitation_accepted_at")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub invitation_accepted_at: Option<DateTime<Utc>>,
 }
 
 impl User {
@@ -138,13 +154,27 @@ impl User {
     pub fn confirm_email(&mut self, connection: &PgConnection) -> Result<User, Error> {
         let n: Option<String> = None;
 
-        let now = Some(Utc::now().naive_utc());
+        let now = Some(Utc::now());
 
         match update(users.filter(id.eq(self.id.clone())))
             .set((email_confirmed.eq(true), email_confirmation_token.eq(n), email_confirmed_at.eq(now)))
             .get_result(connection)
         {
-            Ok(affected_rows) => Ok(affected_rows),
+            Ok(user) => Ok(user),
+            Err(err) => Err(Error::from(err)),
+        }
+    }
+
+    pub fn accept_invitation(&mut self, connection: &PgConnection) -> Result<User, Error> {
+        let n: Option<String> = None;
+
+        let now = Some(Utc::now());
+
+        match update(users.filter(id.eq(self.id.clone())))
+            .set((invitation_accepted_at.eq(now), email_invitation_token.eq(n.clone()), phone_invitation_token.eq(n)))
+            .get_result(connection)
+        {
+            Ok(user) => Ok(user),
             Err(err) => Err(Error::from(err)),
         }
     }

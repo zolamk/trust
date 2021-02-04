@@ -1,3 +1,4 @@
+pub mod accept_invite;
 pub mod confirm_email;
 pub mod confirm_phone;
 pub mod refresh;

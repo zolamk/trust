@@ -2,12 +2,12 @@ use crate::{
     handlers::{
         graphql::context::Context,
         lib::{
-            confirm_email, confirm_phone,
+            accept_invite, confirm_email, confirm_phone,
             reset::{confirm_reset, reset},
             signup,
             user::{change_email, change_email_confirm, change_password, change_phone, change_phone_confirm},
             users::{
-                create, delete,
+                create, delete, invite,
                 update::{email, password, phone, update},
             },
         },
@@ -27,13 +27,12 @@ struct ResetResponse {
 #[juniper::object(Context = Context)]
 impl Mutation {
     fn signup(context: &Context, name: Option<String>, avatar: Option<String>, email: Option<String>, phone: Option<String>, password: String) -> Result<User, HandlerError> {
-        let user = signup::signup(&context.config, &context.connection, context.operator_signature.clone(), signup::SignUpForm {
-            name,
-            avatar,
-            email,
-            phone,
-            password
-        });
+        let user = signup::signup(
+            &context.config,
+            &context.connection,
+            context.operator_signature.clone(),
+            signup::SignUpForm { name, avatar, email, phone, password },
+        );
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -64,8 +63,8 @@ impl Mutation {
         return Ok(user.unwrap());
     }
 
-    #[graphql(name = "create_user")]
-    fn create_user(context: &Context, email: Option<String>, phone: Option<String>, password: Option<String>, name: Option<String>, avatar: Option<String>, confirm: Option<bool>) -> Result<User, HandlerError> {
+    #[graphql(name = "invite_user")]
+    fn invite_user(context: &Context, name: Option<String>, email: Option<String>, phone: Option<String>) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -76,14 +75,59 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = create::create(&context.config, &context.connection, token, create::CreateForm{
-            email,
-            phone,
-            password,
-            name,
-            avatar,
-            confirm
-        });
+        let user = invite::invite(&context.config, &context.connection, invite::InviteForm { name, email, phone });
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(user.unwrap());
+    }
+
+    #[graphql(name = "accept_invite")]
+    fn accept_invite(context: &Context, object: accept_invite::AcceptForm) -> Result<User, HandlerError> {
+        let user = accept_invite::accept_invite(&context.config, &context.connection, object);
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(user.unwrap());
+    }
+
+    #[graphql(name = "create_user")]
+    fn create_user(
+        context: &Context,
+        email: Option<String>,
+        phone: Option<String>,
+        password: Option<String>,
+        name: Option<String>,
+        avatar: Option<String>,
+        confirm: Option<bool>,
+    ) -> Result<User, HandlerError> {
+        let token = context.token.as_ref();
+
+        if token.is_err() {
+            let err = token.err().unwrap();
+
+            return Err(HandlerError::from(err));
+        }
+
+        let token = token.unwrap();
+
+        let user = create::create(
+            &context.config,
+            &context.connection,
+            token,
+            create::CreateForm {
+                email,
+                phone,
+                password,
+                name,
+                avatar,
+                confirm,
+            },
+        );
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -104,10 +148,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = update::update(&context.connection, token, update::UpdateForm {
-            name,
-            avatar
-        }, id);
+        let user = update::update(&context.connection, token, update::UpdateForm { name, avatar }, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
