@@ -17,7 +17,7 @@ pub fn update_phone(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
-    update_form: Json<phone::UpdateForm>,
+    update_form: Json<phone::UpdatePhoneForm>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     id: String,
 ) -> Result<JsonValue, Error> {

@@ -18,7 +18,7 @@ pub fn change_password(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     token: Result<JWT, CryptoError>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-    update_form: Json<password::UpdateForm>,
+    update_form: Json<password::UpdatePasswordForm>,
     id: String,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {

@@ -8,7 +8,7 @@ use diesel::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct ResetForm {
     pub username: String,
 }

@@ -15,12 +15,12 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
-pub struct UpdateForm {
+pub struct UpdateEmailForm {
     pub email: String,
     pub confirm: Option<bool>,
 }
 
-pub fn update_email(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, update_form: UpdateForm, id: String) -> Result<User, Error> {
+pub fn update_email(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, update_form: UpdateEmailForm, id: String) -> Result<User, Error> {
     if !token.is_admin(connection) {
         return Err(Error::new(403, json!({"code": "only_admin_can_update"}), "Only Admin Can Update Users".to_string()));
     }

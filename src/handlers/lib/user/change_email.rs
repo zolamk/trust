@@ -17,12 +17,12 @@ use diesel::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
-pub struct ChangeEmailFrom {
+#[derive(Deserialize, Serialize, GraphQLInputObject)]
+pub struct ChangeEmailForm {
     pub email: String,
 }
 
-pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, change_email_form: ChangeEmailFrom) -> Result<User, Error> {
+pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, change_email_form: ChangeEmailForm) -> Result<User, Error> {
     let conflict_error = Error::new(409, json!({"code": "email_registered"}), "A user with this email address has already been registered".to_string());
 
     let user = crate::models::user::get_by_id(token.sub.clone(), &connection);
@@ -42,30 +42,8 @@ pub fn change_email(config: &Config, connection: &PooledConnection<ConnectionMan
     let mut user = user.unwrap();
 
     match get_by_email(&change_email_form.email, &connection) {
-        Ok(mut user) => {
-            if user.email_confirmed {
-                return Err(conflict_error);
-            }
-
-            // if the user has a phone number confirmed
-            // even though the email is not confirmed
-            // clear the accounts email otherwise
-            // delete the account since neither the phone number or email have been confirmed
-            let result = if user.phone_confirmed {
-                user.email = None;
-
-                user.save(&connection)
-            } else {
-                user.delete(&connection)
-            };
-
-            if result.is_err() {
-                let err = result.err().unwrap();
-
-                error!("{:?}", err);
-
-                return Err(Error::from(err));
-            }
+        Ok(_) => {
+            return Err(conflict_error);
         }
         Err(err) => match err {
             ModelError::DatabaseError(NotFound) => {}

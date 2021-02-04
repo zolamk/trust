@@ -6,12 +6,12 @@ use diesel::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
-pub struct UpdateForm {
+#[derive(Deserialize, Serialize, GraphQLInputObject)]
+pub struct UpdatePasswordForm {
     pub password: String,
 }
 
-pub fn update_password(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, update_form: UpdateForm, id: String) -> Result<User, Error> {
+pub fn update_password(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, update_form: UpdatePasswordForm, id: String) -> Result<User, Error> {
     if !token.is_admin(&connection) {
         return Err(Error::new(403, json!({"code": "only_admin_can_update"}), "Only Admin Can Update Users".to_string()));
     }

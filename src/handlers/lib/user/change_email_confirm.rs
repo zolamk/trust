@@ -13,8 +13,9 @@ use diesel::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct ConfirmChangeEmailForm {
+    #[graphql(name = "email_change_token")]
     pub email_change_token: String,
 }
 

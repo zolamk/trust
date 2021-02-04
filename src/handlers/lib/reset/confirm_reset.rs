@@ -14,9 +14,11 @@ use diesel::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct ConfirmResetForm {
+    #[graphql(name = "recovery_token")]
     pub recovery_token: String,
+    #[graphql(name = "new_password")]
     pub new_password: String,
 }
 

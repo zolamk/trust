@@ -15,9 +15,11 @@ use diesel::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct ChangePasswordForm {
+    #[graphql(name = "old_password")]
     pub old_password: String,
+    #[graphql(name = "new_password")]
     pub new_password: String,
 }
 

@@ -14,7 +14,7 @@ use diesel::{
 use log::error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, GraphQLInputObject)]
 pub struct ChangePhoneForm {
     pub phone: String,
 }
@@ -39,29 +39,8 @@ pub fn change_phone(config: &Config, connection: &PooledConnection<ConnectionMan
     let mut user = user.unwrap();
 
     match crate::models::user::get_by_phone(change_phone_form.phone.clone(), &connection) {
-        Ok(mut user) => {
-            if user.phone_confirmed {
-                return Err(conflict_error);
-            }
-
-            // if the user has a phone number confirmed
-            // even though the email is not confirmed
-            // clear the accounts email otherwise
-            // delete the account since neither the phone number or email have been confirmed
-            let result = if user.email_confirmed {
-                user.phone = None;
-                user.save(&connection)
-            } else {
-                user.delete(&connection)
-            };
-
-            if result.is_err() {
-                let err = result.err().unwrap();
-
-                error!("{:?}", err);
-
-                return Err(Error::from(err));
-            }
+        Ok(_) => {
+            return Err(conflict_error);
         }
         Err(err) => match err {
             ModelError::DatabaseError(NotFound) => {}

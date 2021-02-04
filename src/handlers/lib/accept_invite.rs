@@ -19,7 +19,6 @@ use serde::{Deserialize, Serialize};
 pub struct AcceptForm {
     #[graphql(name = "invitation_token")]
     pub invitation_token: String,
-    #[graphql(name = "password")]
     pub password: String,
 }
 

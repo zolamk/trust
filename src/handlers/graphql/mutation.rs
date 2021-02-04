@@ -26,13 +26,8 @@ struct ResetResponse {
 
 #[juniper::object(Context = Context)]
 impl Mutation {
-    fn signup(context: &Context, name: Option<String>, avatar: Option<String>, email: Option<String>, phone: Option<String>, password: String) -> Result<User, HandlerError> {
-        let user = signup::signup(
-            &context.config,
-            &context.connection,
-            context.operator_signature.clone(),
-            signup::SignUpForm { name, avatar, email, phone, password },
-        );
+    fn signup(context: &Context, object: signup::SignUpForm) -> Result<User, HandlerError> {
+        let user = signup::signup(&context.config, &context.connection, context.operator_signature.clone(), object);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -64,7 +59,7 @@ impl Mutation {
     }
 
     #[graphql(name = "invite_user")]
-    fn invite_user(context: &Context, name: Option<String>, email: Option<String>, phone: Option<String>) -> Result<User, HandlerError> {
+    fn invite_user(context: &Context, object: invite::InviteForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -75,7 +70,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = invite::invite(&context.config, &context.connection, invite::InviteForm { name, email, phone });
+        let user = invite::invite(&context.config, &context.connection, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -96,15 +91,7 @@ impl Mutation {
     }
 
     #[graphql(name = "create_user")]
-    fn create_user(
-        context: &Context,
-        email: Option<String>,
-        phone: Option<String>,
-        password: Option<String>,
-        name: Option<String>,
-        avatar: Option<String>,
-        confirm: Option<bool>,
-    ) -> Result<User, HandlerError> {
+    fn create_user(context: &Context, object: create::CreateForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -115,19 +102,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = create::create(
-            &context.config,
-            &context.connection,
-            token,
-            create::CreateForm {
-                email,
-                phone,
-                password,
-                name,
-                avatar,
-                confirm,
-            },
-        );
+        let user = create::create(&context.config, &context.connection, token, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -137,7 +112,7 @@ impl Mutation {
     }
 
     #[graphql(name = "update_user")]
-    fn update_user(context: &Context, id: String, name: Option<String>, avatar: Option<String>) -> Result<User, HandlerError> {
+    fn update_user(context: &Context, id: String, object: update::UpdateForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -148,7 +123,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = update::update(&context.connection, token, update::UpdateForm { name, avatar }, id);
+        let user = update::update(&context.connection, token, object, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -179,7 +154,7 @@ impl Mutation {
     }
 
     #[graphql(name = "update_email")]
-    fn update_email(context: &Context, id: String, confirm: Option<bool>, email: String) -> Result<User, HandlerError> {
+    fn update_email(context: &Context, id: String, object: email::UpdateEmailForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -190,7 +165,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = email::update_email(&context.config, &context.connection, token, email::UpdateForm { email, confirm }, id);
+        let user = email::update_email(&context.config, &context.connection, token, object, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -200,7 +175,7 @@ impl Mutation {
     }
 
     #[graphql(name = "update_phone")]
-    fn update_phone(context: &Context, id: String, confirm: Option<bool>, phone: String) -> Result<User, HandlerError> {
+    fn update_phone(context: &Context, id: String, object: phone::UpdatePhoneForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -211,7 +186,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = phone::update_phone(&context.config, &context.connection, token, phone::UpdateForm { phone, confirm }, id);
+        let user = phone::update_phone(&context.config, &context.connection, token, object, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -221,7 +196,7 @@ impl Mutation {
     }
 
     #[graphql(name = "update_password")]
-    fn update_password(context: &Context, id: String, password: String) -> Result<User, HandlerError> {
+    fn update_password(context: &Context, id: String, object: password::UpdatePasswordForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -232,7 +207,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = password::update_password(&context.config, &context.connection, token, password::UpdateForm { password }, id);
+        let user = password::update_password(&context.config, &context.connection, token, object, id);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -242,7 +217,7 @@ impl Mutation {
     }
 
     #[graphql(name = "change_password")]
-    fn change_password(context: &Context, old_password: String, new_password: String) -> Result<User, HandlerError> {
+    fn change_password(context: &Context, object: change_password::ChangePasswordForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -253,7 +228,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = change_password::change_password(&context.config, &context.connection, token, change_password::ChangePasswordForm { old_password, new_password });
+        let user = change_password::change_password(&context.config, &context.connection, token, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -263,7 +238,7 @@ impl Mutation {
     }
 
     #[graphql(name = "change_email")]
-    fn change_email(context: &Context, email: String) -> Result<User, HandlerError> {
+    fn change_email(context: &Context, object: change_email::ChangeEmailForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -274,7 +249,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = change_email::change_email(&context.config, &context.connection, token, change_email::ChangeEmailFrom { email });
+        let user = change_email::change_email(&context.config, &context.connection, token, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -284,7 +259,7 @@ impl Mutation {
     }
 
     #[graphql(name = "change_phone")]
-    fn change_phone(context: &Context, phone: String) -> Result<User, HandlerError> {
+    fn change_phone(context: &Context, object: change_phone::ChangePhoneForm) -> Result<User, HandlerError> {
         let token = context.token.as_ref();
 
         if token.is_err() {
@@ -295,7 +270,7 @@ impl Mutation {
 
         let token = token.unwrap();
 
-        let user = change_phone::change_phone(&context.config, &context.connection, token, change_phone::ChangePhoneForm { phone });
+        let user = change_phone::change_phone(&context.config, &context.connection, token, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -305,8 +280,8 @@ impl Mutation {
     }
 
     #[graphql(name = "confirm_phone_change")]
-    fn confirm_phone_change(context: &Context, token: String) -> Result<User, HandlerError> {
-        let user = change_phone_confirm::change_phone_confirm(&context.connection, change_phone_confirm::ConfirmPhoneChangeForm { phone_change_token: token });
+    fn confirm_phone_change(context: &Context, object: change_phone_confirm::ConfirmPhoneChangeForm) -> Result<User, HandlerError> {
+        let user = change_phone_confirm::change_phone_confirm(&context.connection, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -316,8 +291,8 @@ impl Mutation {
     }
 
     #[graphql(name = "confirm_email_change")]
-    fn confirm_email_change(context: &Context, token: String) -> Result<User, HandlerError> {
-        let user = change_email_confirm::change_email_confirm(&context.connection, change_email_confirm::ConfirmChangeEmailForm { email_change_token: token });
+    fn confirm_email_change(context: &Context, object: change_email_confirm::ConfirmChangeEmailForm) -> Result<User, HandlerError> {
+        let user = change_email_confirm::change_email_confirm(&context.connection, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());
@@ -326,8 +301,8 @@ impl Mutation {
         return Ok(user.unwrap());
     }
 
-    fn reset(context: &Context, username: String) -> Result<ResetResponse, HandlerError> {
-        let reset = reset::reset(&context.config, &context.connection, reset::ResetForm { username });
+    fn reset(context: &Context, object: reset::ResetForm) -> Result<ResetResponse, HandlerError> {
+        let reset = reset::reset(&context.config, &context.connection, object);
 
         if reset.is_err() {
             return Err(reset.err().unwrap());
@@ -337,15 +312,8 @@ impl Mutation {
     }
 
     #[graphql(name = "confirm_reset")]
-    fn confirm_reset(context: &Context, token: String, password: String) -> Result<User, HandlerError> {
-        let user = confirm_reset::confirm_reset(
-            &context.config,
-            &context.connection,
-            confirm_reset::ConfirmResetForm {
-                recovery_token: token,
-                new_password: password,
-            },
-        );
+    fn confirm_reset(context: &Context, object: confirm_reset::ConfirmResetForm) -> Result<User, HandlerError> {
+        let user = confirm_reset::confirm_reset(&context.config, &context.connection, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());

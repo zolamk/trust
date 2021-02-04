@@ -17,7 +17,7 @@ pub fn change_email(
     config: State<Config>,
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
-    change_email_form: Json<change_email::ChangeEmailFrom>,
+    change_email_form: Json<change_email::ChangeEmailForm>,
     token: Result<JWT, CryptoError>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
