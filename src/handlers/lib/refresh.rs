@@ -15,6 +15,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
+#[graphql(name = "refresh_form")]
 pub struct RefreshForm {
     #[graphql(name = "refresh_token")]
     pub refresh_token: String,

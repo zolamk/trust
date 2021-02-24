@@ -20,6 +20,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject, Clone, Debug)]
+#[graphql(name = "create_user_form")]
 pub struct CreateForm {
     pub email: Option<String>,
     pub phone: Option<String>,
@@ -57,7 +58,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
             Ok(user) => {
                 return Err(Error::new(
                     409,
-                    json!({"code": "email_registered", "id": user.id.clone() }),
+                    json!({"code": "email_registered", "id": user.id.clone(), "password_set": user.password.is_some() }),
                     "A user with this email address has already been registered".to_string(),
                 ));
             }
@@ -77,7 +78,7 @@ pub fn create(config: &Config, connection: &PooledConnection<ConnectionManager<P
             Ok(user) => {
                 return Err(Error::new(
                     409,
-                    json!({"code": "phone_registered", "id": user.id.clone() }),
+                    json!({"code": "phone_registered", "id": user.id.clone(), "password_set": user.password.is_some() }),
                     "A user with this phone number has already been registered".to_string(),
                 ));
             }

@@ -7,6 +7,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
+#[graphql(name = "update_password_form")]
 pub struct UpdatePasswordForm {
     pub password: String,
 }

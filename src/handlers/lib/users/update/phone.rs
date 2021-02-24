@@ -15,6 +15,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
+#[graphql(name = "update_phone_form")]
 pub struct UpdatePhoneForm {
     pub phone: String,
     pub confirm: Option<bool>,

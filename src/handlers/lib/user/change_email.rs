@@ -18,6 +18,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
+#[graphql(name = "change_email_form")]
 pub struct ChangeEmailForm {
     pub email: String,
 }

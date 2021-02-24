@@ -2,13 +2,11 @@ use crate::{
     config::Config,
     crypto::secure_token,
     handlers::Error,
-    hook::{trigger_hook, HookEvent},
     mailer::send_email,
     models::{
         user::{get_by_email, get_by_phone, NewUser, User},
         Error as ModelError,
     },
-    operator_signature::OperatorSignature,
     sms::send_sms,
 };
 use chrono::Utc;
@@ -22,6 +20,7 @@ use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, GraphQLInputObject)]
+#[graphql(name = "signup_form")]
 pub struct SignUpForm {
     pub name: Option<String>,
     pub avatar: Option<String>,
@@ -30,7 +29,7 @@ pub struct SignUpForm {
     pub password: String,
 }
 
-pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: OperatorSignature, signup_form: SignUpForm) -> Result<User, Error> {
+pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, signup_form: SignUpForm) -> Result<User, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_error"}), "Internal Server Error".to_string());
 
     if config.disable_signup {
@@ -212,21 +211,6 @@ pub fn signup(config: &Config, connection: &PooledConnection<ConnectionManager<P
 
                     return Err(Error::from(err));
                 }
-            }
-        }
-
-        // trigger signup hook only if the user has confirmed
-        if user.phone_confirmed || user.email_confirmed {
-            let payload = json!({
-                "event": HookEvent::Signup,
-                "provider": "email",
-                "user": user,
-            });
-
-            let hook_response = trigger_hook(HookEvent::Signup, payload, config, &operator_signature);
-
-            if hook_response.is_err() {
-                return Err(Error::from(hook_response.err().unwrap()));
             }
         }
 

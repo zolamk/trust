@@ -26,8 +26,6 @@ pub fn signup(
         return Err(Error::from(err));
     }
 
-    let operator_signature = operator_signature.unwrap();
-
     let internal_error = Error {
         code: 500,
         message: "Internal Server Error".to_string(),
@@ -43,7 +41,7 @@ pub fn signup(
         }
     };
 
-    let user = signup::signup(config.inner(), &connection, operator_signature, signup_form.into_inner());
+    let user = signup::signup(config.inner(), &connection, signup_form.into_inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());

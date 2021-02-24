@@ -1,12 +1,12 @@
-use crate::{crypto::jwt::JWT, handlers::Error, models::user::User};
+use crate::{config::Config, crypto::jwt::JWT, handlers::Error, models::user::User};
 use diesel::{
     pg::PgConnection,
     r2d2::{ConnectionManager, PooledConnection},
 };
 use log::error;
 
-pub fn get(connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, offset: i64, limit: i64) -> Result<Vec<User>, Error> {
-    if !token.is_admin(connection) {
+pub fn get(connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, offset: i64, limit: i64, config: &Config) -> Result<Vec<User>, Error> {
+    if config.admin_only_list && !token.is_admin(connection) {
         return Err(Error::new(403, json!({"code": "only_admin_can_get"}), "Only Admin Can Get Users".to_string()));
     }
 

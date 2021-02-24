@@ -27,7 +27,7 @@ struct ResetResponse {
 #[juniper::object(Context = Context)]
 impl Mutation {
     fn signup(context: &Context, object: signup::SignUpForm) -> Result<User, HandlerError> {
-        let user = signup::signup(&context.config, &context.connection, context.operator_signature.clone(), object);
+        let user = signup::signup(&context.config, &context.connection, object);
 
         if user.is_err() {
             return Err(user.err().unwrap());

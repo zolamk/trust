@@ -1,4 +1,5 @@
 use crate::{
+    config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
     handlers::{lib::users::get_by_id, Error},
     operator_signature::{Error as OperatorSignatureError, OperatorSignature},
@@ -17,6 +18,7 @@ pub fn user(
     token: Result<JWT, CryptoError>,
     operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     id: String,
+    config: State<Config>,
 ) -> Result<status::Custom<JsonValue>, Error> {
     if operator_signature.is_err() {
         let err = operator_signature.err().unwrap();
@@ -45,7 +47,7 @@ pub fn user(
         }
     };
 
-    let user = get_by_id::get_by_id(&connection, &token, id);
+    let user = get_by_id::get_by_id(&connection, &token, id, config.inner());
 
     if user.is_err() {
         return Err(user.err().unwrap());

@@ -155,8 +155,8 @@ pub struct Config {
     #[serde(skip_serializing, skip_deserializing)]
     jwt_type: String,
 
-    #[serde(default = "default_id_charset")]
-    pub id_charset: String,
+    #[serde(default = "default_admin_only_list")]
+    pub admin_only_list: bool,
 }
 
 fn complete(c: Config) -> Config {
@@ -484,12 +484,12 @@ fn default_disable_email() -> bool {
     false
 }
 
-fn default_log_level() -> String {
-    "error".to_string()
+fn default_admin_only_list() -> bool {
+    true
 }
 
-fn default_id_charset() -> String {
-    "QRBCF123JKLO45GHIJKLOSTU08MNVW67XAPYZ9".to_string()
+fn default_log_level() -> String {
+    "error".to_string()
 }
 
 fn default_password_hash_cost() -> u32 {

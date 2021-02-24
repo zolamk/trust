@@ -21,6 +21,7 @@ pub struct LoginForm {
 }
 
 #[derive(Deserialize, Serialize, GraphQLObject)]
+#[graphql(name = "login_response")]
 pub struct LoginResponse {
     #[graphql(name = "access_token")]
     pub access_token: String,

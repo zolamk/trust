@@ -1,4 +1,5 @@
 use crate::{
+    config::Config,
     crypto::jwt::JWT,
     handlers::Error,
     models::{user::User, Error as ModelError},
@@ -10,8 +11,8 @@ use diesel::{
 };
 use log::error;
 
-pub fn get_by_id(connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, id: String) -> Result<User, Error> {
-    if token.sub != id && !token.is_admin(connection) {
+pub fn get_by_id(connection: &PooledConnection<ConnectionManager<PgConnection>>, token: &JWT, id: String, config: &Config) -> Result<User, Error> {
+    if config.admin_only_list && token.sub != id && !token.is_admin(connection) {
         return Err(Error::new(403, json!({"code": "only_admin_can_get"}), "Only Admin Can Get Users".to_string()));
     }
 
