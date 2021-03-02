@@ -69,42 +69,12 @@ fn run() {
 
     info!("trust running on {:?}:{:?}", host, port);
 
-    app.mount(
-        "/",
-        routes![
-            handlers::health_check::health,
-            handlers::graphql::graphiql,
-            handlers::graphql::graphql,
-            handlers::rest::signup::signup,
-            handlers::rest::confirm_email::confirm,
-            handlers::rest::confirm_phone::confirm,
-            handlers::rest::token::token,
-            handlers::rest::refresh::refresh,
-            handlers::rest::authorize::authorize,
-            handlers::rest::callback::callback,
-            handlers::rest::reset::reset::reset,
-            handlers::rest::reset::confirm_reset::confirm_reset,
-            handlers::rest::users::create::create,
-            handlers::rest::users::delete::delete,
-            handlers::rest::user::get::get,
-            handlers::rest::users::update::update::update,
-            handlers::rest::users::update::email::update_email,
-            handlers::rest::users::update::phone::update_phone,
-            handlers::rest::users::update::password::change_password,
-            handlers::rest::user::change_password::change_password,
-            handlers::rest::user::change_email::change_email,
-            handlers::rest::user::change_phone::change_phone,
-            handlers::rest::user::change_email_confirm::change_email_confirm,
-            handlers::rest::user::change_phone_confirm::change_phone_confirm,
-            handlers::rest::users::user::user,
-            handlers::rest::users::users::users,
-        ],
-    )
-    .manage(config)
-    .manage(connection_pool)
-    .manage(create_schema())
-    .attach(cors::CORS)
-    .launch();
+    app.mount("/", routes![handlers::health_check::health, handlers::graphql::graphiql, handlers::graphql::graphql,])
+        .manage(config)
+        .manage(connection_pool)
+        .manage(create_schema())
+        .attach(cors::CORS)
+        .launch();
 }
 
 fn main() {
