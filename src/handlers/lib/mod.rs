@@ -7,3 +7,5 @@ pub mod signup;
 pub mod token;
 pub mod user;
 pub mod users;
+pub mod resend_phone;
+pub mod resend_email;

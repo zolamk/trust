@@ -25,7 +25,12 @@ pub fn trigger_hook(event: HookEvent, payload: Value, config: &Config, operator_
         "issuer": "trust"
     });
 
-    let p = json!({});
+    let p = json!({
+        "metadata": {
+            "roles": ["trust"]
+        },
+        "sub": "trust"
+    });
 
     let signing_key = config.clone().get_signing_key();
 
@@ -40,7 +45,7 @@ pub fn trigger_hook(event: HookEvent, payload: Value, config: &Config, operator_
 
     let client = reqwest::blocking::Client::new();
 
-    let res = client.post(url).header(AUTHORIZATION, signature).json(&payload).send();
+    let res = client.post(url).header(AUTHORIZATION, format!("Bearer {}", signature)).json(&payload).send();
 
     if res.is_err() {
         return Err(Error::from(res.err().unwrap()));
@@ -58,7 +63,11 @@ pub fn trigger_hook(event: HookEvent, payload: Value, config: &Config, operator_
     }
 
     match res.json() {
-        Ok(body) => return Err(Error::from(HookError { code: status.as_u16(), body })),
+        Ok(body) => {
+            return {
+                Err(Error::from(HookError { code: status.as_u16(), body }))
+            }
+        }
         Err(err) => return Err(Error::from(err)),
     };
 }

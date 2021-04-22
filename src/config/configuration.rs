@@ -157,6 +157,9 @@ pub struct Config {
 
     #[serde(default = "default_admin_only_list")]
     pub admin_only_list: bool,
+
+    #[serde(default = "default_minutes_between_resend")]
+    pub minutes_between_resend: i64
 }
 
 fn complete(c: Config) -> Config {
@@ -498,4 +501,8 @@ fn default_password_hash_cost() -> u32 {
 
 fn max_connection_pool_size() -> u32 {
     10
+}
+
+fn default_minutes_between_resend() -> i64 {
+    1
 }

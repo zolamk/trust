@@ -4,6 +4,8 @@ use crate::{
         lib::{
             accept_invite, confirm_email, confirm_phone,
             reset::{confirm_reset, reset},
+            resend_phone,
+            resend_email,
             signup,
             user::{change_email, change_email_confirm, change_password, change_phone, change_phone_confirm},
             users::{
@@ -301,14 +303,14 @@ impl Mutation {
         return Ok(user.unwrap());
     }
 
-    fn reset(context: &Context, object: reset::ResetForm) -> Result<ResetResponse, HandlerError> {
+    fn reset(context: &Context, object: reset::ResetForm) -> Result<bool, HandlerError> {
         let reset = reset::reset(&context.config, &context.connection, object);
 
         if reset.is_err() {
             return Err(reset.err().unwrap());
         }
 
-        return Ok(ResetResponse { accepted: true });
+        return Ok(true);
     }
 
     #[graphql(name = "confirm_reset")]
@@ -320,5 +322,27 @@ impl Mutation {
         }
 
         return Ok(user.unwrap());
+    }
+
+    #[graphql(name = "resend_phone_confirmation")]
+    fn resend_phone(context: &Context, object: resend_phone::ResendPhoneForm) -> Result<bool, HandlerError> {
+        let user = resend_phone::resend_phone(&context.config, &context.connection, object);
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(true);
+    }
+
+    #[graphql(name = "resend_email_confirmation")]
+    fn resend_email(context: &Context, object: resend_email::ResendEmailForm) -> Result<bool, HandlerError> {
+        let user = resend_email::resend_email(&context.config, &context.connection, object);
+
+        if user.is_err() {
+            return Err(user.err().unwrap());
+        }
+
+        return Ok(true);
     }
 }
