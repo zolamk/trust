@@ -10,13 +10,12 @@ use serde_json::{json, Map, Value};
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct OperatorSignature {
-    pub site_url: String,
     pub function_hooks: Map<String, Value>,
 }
 
 impl OperatorSignature {
-    pub fn new(site_url: String, function_hooks: Map<String, Value>) -> OperatorSignature {
-        return OperatorSignature { site_url, function_hooks };
+    pub fn new(function_hooks: Map<String, Value>) -> OperatorSignature {
+        return OperatorSignature { function_hooks };
     }
 
     pub fn encode(self, signing_key: &str, alg: &str) -> Result<String, Error> {

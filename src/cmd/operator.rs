@@ -23,25 +23,24 @@ pub fn operator(matches: Option<&ArgMatches>) {
 }
 
 fn new_signuature(matches: Option<&ArgMatches>, config: Config) {
+    
     let matches = matches.unwrap();
-
-    let site_url = matches.value_of("site_url").unwrap().to_string();
 
     let mut function_hooks = Map::with_capacity(2);
 
     let login_hook = matches.value_of("login_hook");
 
-    let signup_hook = matches.value_of("signup_hook");
+    let update_hook = matches.value_of("update_hook");
 
     if let Some(login_hook) = login_hook {
         function_hooks.insert("login".to_string(), Value::String(login_hook.to_string()));
     }
 
-    if let Some(signup_hook) = signup_hook {
-        function_hooks.insert("signup".to_string(), Value::String(signup_hook.to_string()));
+    if let Some(update_hook) = update_hook {
+        function_hooks.insert("update".to_string(), Value::String(update_hook.to_string()));
     }
 
-    let operator_signature = OperatorSignature::new(site_url, function_hooks);
+    let operator_signature = OperatorSignature::new(function_hooks);
 
     let signing_key = config.clone().get_signing_key();
 

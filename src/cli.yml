@@ -15,9 +15,6 @@ subcommands:
             - create-signature:
                 about: create operator signature
                 args:
-                  - site_url:
-                      help: Site URL
-                      required: true
                   - login_hook:
                       short: l
                       long: login_hook
@@ -25,7 +22,7 @@ subcommands:
                       takes_value: true
                   - signup_hook:
                       short: s
-                      long: signup_hook
+                      long: update_hook
                       help: Webhook for signup event
                       takes_value: true
 
