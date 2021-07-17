@@ -5,7 +5,6 @@ use serde::{Serialize, Serializer};
 #[derive(PartialEq, Copy, Clone)]
 pub enum HookEvent {
     Login,
-    Update,
 }
 
 impl Serialize for HookEvent {
