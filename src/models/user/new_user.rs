@@ -3,7 +3,7 @@ use crate::{
     schema::{users, users::dsl::*},
 };
 use bcrypt::hash;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use diesel::{insert_into, PgConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 
@@ -19,10 +19,11 @@ pub struct NewUser {
     pub password: Option<String>,
     pub email_confirmed: bool,
     pub email_confirmation_token: Option<String>,
-    pub email_confirmation_token_sent_at: Option<NaiveDateTime>,
+    pub email_confirmation_token_sent_at: Option<DateTime<Utc>>,
+    pub email_confirmed_at: Option<DateTime<Utc>>,
     pub phone_confirmed: bool,
     pub phone_confirmation_token: Option<String>,
-    pub phone_confirmation_token_sent_at: Option<NaiveDateTime>,
+    pub phone_confirmation_token_sent_at: Option<DateTime<Utc>>,
 }
 
 impl NewUser {

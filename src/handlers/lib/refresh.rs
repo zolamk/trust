@@ -5,7 +5,6 @@ use crate::{
     handlers::{lib::token::LoginResponse, Error},
     hook::{trigger_hook, HookEvent},
     models::{refresh_token::get_refresh_token_by_token, user},
-    operator_signature::OperatorSignature,
 };
 use diesel::{
     pg::PgConnection,
@@ -21,7 +20,7 @@ pub struct RefreshForm {
     pub refresh_token: String,
 }
 
-pub fn refresh(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: &OperatorSignature, refresh_form: RefreshForm) -> Result<LoginResponse, Error> {
+pub fn refresh(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, refresh_form: RefreshForm) -> Result<LoginResponse, Error> {
     let internal_error = Error::new(500, json!({"code": "internal_server_error"}), "Internal Server Error".to_string());
 
     let invalid_refresh_token = Error::new(400, json!({"code": "invalid_refresh_token"}), "Invalid Refresh Token".to_string());
@@ -72,7 +71,7 @@ pub fn refresh(config: &Config, connection: &PooledConnection<ConnectionManager<
         "user": user,
     });
 
-    let hook_response = trigger_hook(HookEvent::Login, payload, config, operator_signature);
+    let hook_response = trigger_hook(HookEvent::Login, payload, config);
 
     if hook_response.is_err() {
         return Err(Error::from(hook_response.err().unwrap()));

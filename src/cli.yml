@@ -4,53 +4,36 @@ author: Zelalem Mekonen <zola@programmer.net>
 about: trust is a user authentication & authorization microservice written in rust.
 subcommands:
     - run:
-        about: run trust
+          about: run trust
     - migrate:
-        about: run migrations
+          about: run migrations
     - version:
-        about: version
-    - operator:
-        about: utility commands for operators
-        subcommands:
-            - create-signature:
-                about: create operator signature
-                args:
-                  - login_hook:
-                      short: l
-                      long: login_hook
-                      help: Webhook for login event
-                      takes_value: true
-                  - signup_hook:
-                      short: s
-                      long: update_hook
-                      help: Webhook for signup event
-                      takes_value: true
-
+          about: version
     - users:
-        about: manage users
-        subcommands:
-          - create:
-              about: create user
-              args:
-                - email:
-                    help: user email
-                    required: true
-                - password:
-                    help: user password
-                    required: true
-                - phone:
-                    help: user phone number
-                - admin:
-                    short: a
-                    long: admin
-                    help: user is admin
-                - confirm:
-                    short: c
-                    long: confirm
-                    help: auto confirm user
-          - remove:
-              about: remove user
-              args:
-                - email:
-                    help: user email
-                    required: true
+          about: manage users
+          subcommands:
+              - create:
+                    about: create user
+                    args:
+                        - email:
+                              help: user email
+                              required: true
+                        - password:
+                              help: user password
+                              required: true
+                        - phone:
+                              help: user phone number
+                        - admin:
+                              short: a
+                              long: admin
+                              help: user is admin
+                        - confirm:
+                              short: c
+                              long: confirm
+                              help: auto confirm user
+              - remove:
+                    about: remove user
+                    args:
+                        - email:
+                              help: user email
+                              required: true

@@ -4,7 +4,6 @@ use crate::{
     handlers::Error,
     hook::{trigger_hook, HookEvent},
     models::{refresh_token::NewRefreshToken, user::get_by_email_or_phone, Error as ModelError},
-    operator_signature::OperatorSignature,
 };
 use diesel::{
     pg::PgConnection,
@@ -30,7 +29,7 @@ pub struct LoginResponse {
     pub id: String,
 }
 
-pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, operator_signature: &OperatorSignature, form: LoginForm) -> Result<LoginResponse, Error> {
+pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<PgConnection>>, form: LoginForm) -> Result<LoginResponse, Error> {
     if !config.email_rule.is_match(&form.username) && !config.phone_rule.is_match(&form.username) {
         return Err(Error::new(
             422,
@@ -79,7 +78,7 @@ pub fn token(config: &Config, connection: &PooledConnection<ConnectionManager<Pg
         "user": user,
     });
 
-    let hook_response = trigger_hook(HookEvent::Login, payload, config, operator_signature);
+    let hook_response = trigger_hook(HookEvent::Login, payload, config);
 
     if hook_response.is_err() {
         return Err(Error::from(hook_response.err().unwrap()));

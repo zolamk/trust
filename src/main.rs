@@ -26,7 +26,6 @@ mod handlers;
 mod hook;
 mod mailer;
 mod models;
-mod operator_signature;
 mod schema;
 mod sms;
 
@@ -69,12 +68,21 @@ fn run() {
 
     info!("trust running on {:?}:{:?}", host, port);
 
-    app.mount("/", routes![handlers::health_check::health, handlers::graphql::graphiql, handlers::graphql::graphql,])
-        .manage(config)
-        .manage(connection_pool)
-        .manage(create_schema())
-        .attach(cors::CORS)
-        .launch();
+    app.mount(
+        "/",
+        routes![
+            handlers::health_check::health,
+            handlers::graphql::graphiql,
+            handlers::graphql::graphql,
+            handlers::authorize::authorize,
+            handlers::callback::callback,
+        ],
+    )
+    .manage(config)
+    .manage(connection_pool)
+    .manage(create_schema())
+    .attach(cors::CORS)
+    .launch();
 }
 
 fn main() {
@@ -89,7 +97,6 @@ fn main() {
     match matches.subcommand() {
         ("run", _sub_m) => run(),
         ("users", sub_m) => cmd::users(sub_m),
-        ("operator", sub_m) => cmd::operator(sub_m),
         ("migrate", _sub_m) => cmd::migrations(),
         ("version", _sub_m) => cmd::version(),
         _ => {}

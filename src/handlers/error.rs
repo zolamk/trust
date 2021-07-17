@@ -1,6 +1,4 @@
-use crate::{
-    crypto::Error as CryptoError, hook::Error as HookError, mailer::Error as MailerError, models::Error as ModelError, operator_signature::Error as OperatorSignatureError, sms::Error as SMSError,
-};
+use crate::{crypto::Error as CryptoError, hook::Error as HookError, mailer::Error as MailerError, models::Error as ModelError, sms::Error as SMSError};
 use rocket::{
     http::{ContentType, Status},
     response::{self, Responder},
@@ -83,48 +81,6 @@ impl From<HookError> for Error {
 
 impl From<ModelError> for Error {
     fn from(_: ModelError) -> Self {
-        return Error::new(
-            500,
-            json!({
-                "code": "internal_error"
-            }),
-            "Internal Server Error".to_string(),
-        );
-    }
-}
-
-impl From<OperatorSignatureError> for Error {
-    fn from(e: OperatorSignatureError) -> Self {
-        if let OperatorSignatureError::SignatureMissing = e {
-            return Error::new(
-                400,
-                json!({
-                    "code": "operator_signature_missing"
-                }),
-                "Operator Signature Missing".to_string(),
-            );
-        }
-
-        if let OperatorSignatureError::JSONError(_) = e {
-            return Error::new(
-                500,
-                json!({
-                    "code": "operator_signature_json_error"
-                }),
-                "Operator Signature JSON Error".to_string(),
-            );
-        }
-
-        if let OperatorSignatureError::JWTError(_) = e {
-            return Error::new(
-                400,
-                json!({
-                    "code": "invalid_operator_signature"
-                }),
-                "Invalid Operator Signature".to_string(),
-            );
-        }
-
         return Error::new(
             500,
             json!({

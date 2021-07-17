@@ -2,15 +2,14 @@ use crate::{
     config::Config,
     crypto::get_algorithm,
     hook::{Error, HookError, HookEvent},
-    operator_signature::OperatorSignature,
 };
 use chrono::Utc;
 use frank_jwt::encode;
 use reqwest::header::AUTHORIZATION;
 use serde_json::{json, Value};
 
-pub fn trigger_hook(event: HookEvent, payload: Value, config: &Config, operator_signature: &OperatorSignature) -> Result<Option<Value>, Error> {
-    let url = operator_signature.get_hook_url_for_event(event);
+pub fn trigger_hook(_event: HookEvent, payload: Value, config: &Config) -> Result<Option<Value>, Error> {
+    let url = config.login_hook.clone();
 
     if url.is_none() {
         return Ok(None);
@@ -63,11 +62,7 @@ pub fn trigger_hook(event: HookEvent, payload: Value, config: &Config, operator_
     }
 
     match res.json() {
-        Ok(body) => {
-            return {
-                Err(Error::from(HookError { code: status.as_u16(), body }))
-            }
-        }
+        Ok(body) => return Err(Error::from(HookError { code: status.as_u16(), body })),
         Err(err) => return Err(Error::from(err)),
     };
 }

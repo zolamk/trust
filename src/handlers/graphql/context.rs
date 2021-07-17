@@ -1,7 +1,6 @@
 use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
-    operator_signature::OperatorSignature,
 };
 use diesel::{
     r2d2::{ConnectionManager, PooledConnection},
@@ -11,7 +10,6 @@ use diesel::{
 pub struct Context {
     pub connection: PooledConnection<ConnectionManager<PgConnection>>,
     pub config: Config,
-    pub operator_signature: OperatorSignature,
     pub token: Result<JWT, CryptoError>,
 }
 

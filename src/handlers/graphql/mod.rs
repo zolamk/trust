@@ -5,8 +5,6 @@ mod query;
 use crate::{
     config::Config,
     crypto::{jwt::JWT, Error as CryptoError},
-    handlers::Error as HandlerError,
-    operator_signature::{Error as OperatorSignatureError, OperatorSignature},
 };
 use juniper_rocket::{GraphQLRequest, GraphQLResponse};
 use mutation::*;
@@ -62,14 +60,8 @@ pub fn graphql(
     connection_pool: State<Pool<ConnectionManager<PgConnection>>>,
     config: State<Config>,
     schema: State<Schema>,
-    operator_signature: Result<OperatorSignature, OperatorSignatureError>,
     token: Result<JWT, CryptoError>,
 ) -> GraphQLResponse {
-    if operator_signature.is_err() {
-        let err = HandlerError::from(operator_signature.err().unwrap());
-        return GraphQLResponse::custom(Status::new(err.code, "error"), err.body);
-    }
-
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
         Err(_err) => {
@@ -87,7 +79,6 @@ pub fn graphql(
         &context::Context {
             connection,
             config: config.inner().clone(),
-            operator_signature: operator_signature.unwrap(),
             token,
         },
     );

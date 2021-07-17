@@ -159,7 +159,9 @@ pub struct Config {
     pub admin_only_list: bool,
 
     #[serde(default = "default_minutes_between_resend")]
-    pub minutes_between_resend: i64
+    pub minutes_between_resend: i64,
+
+    pub login_hook: Option<String>,
 }
 
 fn complete(c: Config) -> Config {

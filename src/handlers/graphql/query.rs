@@ -80,7 +80,7 @@ impl Query {
     }
 
     fn token(context: &Context, username: String, password: String) -> Result<token::LoginResponse, HandlerError> {
-        let token = token::token(&context.config, &context.connection, &context.operator_signature, token::LoginForm { username, password });
+        let token = token::token(&context.config, &context.connection, token::LoginForm { username, password });
 
         if token.is_err() {
             return Err(token.err().unwrap());
@@ -90,7 +90,7 @@ impl Query {
     }
 
     fn refresh(context: &Context, token: String) -> Result<token::LoginResponse, HandlerError> {
-        let token = refresh::refresh(&context.config, &context.connection, &context.operator_signature, refresh::RefreshForm { refresh_token: token });
+        let token = refresh::refresh(&context.config, &context.connection, refresh::RefreshForm { refresh_token: token });
 
         if token.is_err() {
             return Err(token.err().unwrap());
