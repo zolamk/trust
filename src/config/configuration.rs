@@ -162,6 +162,9 @@ pub struct Config {
     pub minutes_between_resend: i64,
 
     pub login_hook: Option<String>,
+
+    #[serde(default = "default_social_redirect")]
+    pub social_redirect_page: String,
 }
 
 fn complete(c: Config) -> Config {
@@ -491,6 +494,10 @@ fn default_disable_email() -> bool {
 
 fn default_admin_only_list() -> bool {
     true
+}
+
+fn default_social_redirect() -> String {
+    "social".to_string()
 }
 
 fn default_log_level() -> String {

@@ -33,16 +33,16 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
 
         error!("{:?}", err);
 
-        let redirect_url = format!("{}?error=invalid_oauth_state", config.site_url);
+        let redirect_url = format!("{}/{}?error=invalid_oauth_state", config.site_url, config.social_redirect_page);
 
         return Redirect::to(redirect_url);
     }
 
     let state = state.unwrap();
 
-    let provider_disabled = Redirect::to(format!("{}?error=provider_disabled", config.site_url));
+    let provider_disabled = Redirect::to(format!("{}/{}?error=provider_disabled", config.site_url, config.social_redirect_page));
 
-    let internal_error = Redirect::to(format!("{}?error=internal_error", config.site_url));
+    let internal_error = Redirect::to(format!("{}/{}?error=internal_error", config.site_url, config.social_redirect_page));
 
     let connection = match connection_pool.get() {
         Ok(connection) => connection,
@@ -73,7 +73,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
             Box::new(GithubProvider::new(config.inner().clone()))
         }
         _ => {
-            let redirect_url = format!("{}?error=invalid_provider", config.site_url);
+            let redirect_url = format!("{}/{}?error=invalid_provider", config.site_url, config.social_redirect_page);
 
             return Redirect::to(redirect_url);
         }
@@ -130,7 +130,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
 
         error!("{:?}", err);
 
-        let redirect_url = format!("{}?error=error_exchanging_code", config.site_url);
+        let redirect_url = format!("{}/{}?error=error_exchanging_code", config.site_url, config.social_redirect_page);
 
         return Redirect::to(redirect_url);
     }
@@ -146,7 +146,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
 
         error!("{:?}", err);
 
-        let redirect_url = format!("{}?error=error_getting_user_data", config.site_url);
+        let redirect_url = format!("{}/{}?error=error_getting_user_data", config.site_url, config.social_redirect_page);
 
         return Redirect::to(redirect_url);
     }
@@ -154,7 +154,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
     let user_data = user_data.unwrap();
 
     if user_data.email.is_none() {
-        let redirect_url = format!("{}?error=unable_to_find_email_with_provider", config.site_url);
+        let redirect_url = format!("{}/{}?error=unable_to_find_email_with_provider", config.site_url, config.social_redirect_page);
 
         return Redirect::to(redirect_url);
     }
@@ -166,7 +166,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
 
         let hook_response: Option<serde_json::Value>;
 
-        let internal_error_redirect_url = format!("{}?error=internal_error", config.site_url);
+        let internal_error_redirect_url = format!("{}/{}?error=internal_error", config.site_url, config.social_redirect_page);
 
         if let Ok(ur) = u {
             user = ur;
@@ -180,7 +180,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
             let hr = trigger_hook(HookEvent::Login, hook_payload, &config);
 
             if hr.is_err() {
-                let redirect_url = format!("{}?error=login_hook_error", config.site_url);
+                let redirect_url = format!("{}/{}?error=login_hook_error", config.site_url, config.social_redirect_page);
 
                 return Err(CallbackError::new(redirect_url));
             }
@@ -192,7 +192,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
             // if the error was the user doesn't exist
             if let ModelError::DatabaseError(NotFound) = err {
                 if config.disable_signup {
-                    let redirect_url = format!("{}?error=signup_disabled", config.site_url);
+                    let redirect_url = format!("{}/{}?error=signup_disabled", config.site_url, config.social_redirect_page);
 
                     return Err(CallbackError::new(redirect_url));
                 }
@@ -219,7 +219,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
                     let err = u.err().unwrap();
 
                     if let ModelError::DatabaseError(DatabaseError(DatabaseErrorKind::UniqueViolation, _info)) = err {
-                        let redirect_url = format!("{}?error=email_already_registered", config.site_url);
+                        let redirect_url = format!("{}/{}?error=email_already_registered", config.site_url, config.social_redirect_page);
 
                         return Err(CallbackError::new(redirect_url));
                     }
@@ -240,7 +240,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
                 let hr = trigger_hook(HookEvent::Login, hook_payload, &config);
 
                 if hr.is_err() {
-                    let redirect_url = format!("{}?error=signup_hook_error", config.site_url);
+                    let redirect_url = format!("{}/{}?error=login_hook_error", config.site_url, config.social_redirect_page);
 
                     return Err(CallbackError::new(redirect_url));
                 }
@@ -286,14 +286,12 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
                 let email = send_email(template, data, email, subject, &config);
 
                 if email.is_err() {
-                    let redirect_url = format!("{}?error=unable_to_send_confirmation_email", config.site_url);
-
                     error!("{:#?}", email.err().unwrap());
 
-                    return Err(CallbackError::new(redirect_url));
+                    return Err(CallbackError::new(internal_error_redirect_url));
                 }
 
-                let redirect_url = format!("{}?error=email_confirmation_required", config.site_url);
+                let redirect_url = format!("{}/{}?error=email_confirmation_required", config.site_url, config.social_redirect_page);
 
                 return Ok(Redirect::to(redirect_url));
             }
@@ -312,9 +310,7 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
 
             error!("{:#?}", err);
 
-            let redirect_url = format!("{}?error=unable_to_create_access_token", config.site_url);
-
-            return Err(CallbackError::new(redirect_url));
+            return Err(CallbackError::new(internal_error_redirect_url));
         }
 
         let jwt = jwt.unwrap();
@@ -328,14 +324,15 @@ pub fn callback(config: State<Config>, connection_pool: State<Pool<ConnectionMan
 
             error!("{:#?}", err);
 
-            let redirect_url = format!("{}?error=unable_to_create_refresh_token", config.site_url);
-
-            return Err(CallbackError::new(redirect_url));
+            return Err(CallbackError::new(internal_error_redirect_url));
         }
 
         let refresh_token = refresh_token.unwrap().token;
 
-        let redirect_url = format!("{}?access_token={}&type={}&refresh_token={}", config.site_url, jwt, "bearer", refresh_token);
+        let redirect_url = format!(
+            "{}/{}?access_token={}&type={}&refresh_token={}",
+            config.site_url, config.social_redirect_page, jwt, "bearer", refresh_token
+        );
 
         return Ok(Redirect::to(redirect_url));
     });
