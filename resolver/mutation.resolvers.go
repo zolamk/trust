@@ -21,7 +21,7 @@ func (r *mutationResolver) ConfirmEmail(ctx context.Context, token string) (*mod
 }
 
 func (r *mutationResolver) ConfirmPhone(ctx context.Context, token string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	return lib.ConfirmPhone(r.DB, r.Config, token)
 }
 
 func (r *mutationResolver) InviteUser(ctx context.Context, object model.InviteForm) (*model.User, error) {
@@ -84,12 +84,12 @@ func (r *mutationResolver) ConfirmReset(ctx context.Context, object model.Confir
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) ResendPhoneConfirmation(ctx context.Context, object model.ResendPhoneForm) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error) {
+	return lib.ResendPhone(r.DB, r.Config, phone)
 }
 
-func (r *mutationResolver) ResendEmailConfirmation(ctx context.Context, object model.ResendEmailForm) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) ResendEmailConfirmation(ctx context.Context, email string) (bool, error) {
+	return lib.ResendEmail(r.DB, r.Config, email)
 }
 
 // Mutation returns generated.MutationResolver implementation.

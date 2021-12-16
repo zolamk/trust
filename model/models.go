@@ -58,14 +58,6 @@ type LoginResponse struct {
 	ID           string `json:"id"`
 }
 
-type ResendEmailForm struct {
-	Email string `json:"email"`
-}
-
-type ResendPhoneForm struct {
-	Phone string `json:"phone"`
-}
-
 type SignupForm struct {
 	Name     *string `json:"name"`
 	Avatar   *string `json:"avatar"`

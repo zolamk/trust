@@ -1,4 +1,4 @@
-type User {
+type user {
   id: String!
   email: String
   phone: String

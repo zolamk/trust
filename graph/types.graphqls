@@ -57,10 +57,6 @@ input accept_invite_form {
   password: String!
 }
 
-input resend_phone_form {
-  phone: String!
-}
-
 input change_phone_form {
   phone: String!
 }
@@ -72,10 +68,6 @@ input confirm_change_email_form {
 input ConfirmResetForm {
   recovery_token: String!
   new_password: String!
-}
-
-input resend_email_form {
-  email: String!
 }
 
 input update_phone_form {

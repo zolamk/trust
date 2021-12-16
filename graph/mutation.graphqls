@@ -1,22 +1,22 @@
 type Mutation {
-  signup(object: signup_form!): User!
-  confirm_email(token: String!): User!
-  confirm_phone(token: String!): User!
-  invite_user(object: invite_form!): User!
-  accept_invite(object: accept_invite_form!): User!
-  create_user(object: create_user_form!): User!
-  update_user(id: String!, object: update_user_form!): User!
-  delete_user(id: String!): User!
-  update_email(id: String!, object: update_email_form!): User!
-  update_phone(id: String!, object: update_phone_form!): User!
-  update_password(id: String!, object: update_password_form!): User!
-  change_password(object: change_password_form!): User!
-  change_email(object: change_email_form!): User!
-  change_phone(object: change_phone_form!): User!
-  confirm_phone_change(object: confirm_phone_change_form!): User!
-  confirm_email_change(object: confirm_change_email_form!): User!
+  signup(object: signup_form!): user!
+  confirm_email(token: String!): user!
+  confirm_phone(token: String!): user!
+  invite_user(object: invite_form!): user!
+  accept_invite(object: accept_invite_form!): user!
+  create_user(object: create_user_form!): user!
+  update_user(id: String!, object: update_user_form!): user!
+  delete_user(id: String!): user!
+  update_email(id: String!, object: update_email_form!): user!
+  update_phone(id: String!, object: update_phone_form!): user!
+  update_password(id: String!, object: update_password_form!): user!
+  change_password(object: change_password_form!): user!
+  change_email(object: change_email_form!): user!
+  change_phone(object: change_phone_form!): user!
+  confirm_phone_change(object: confirm_phone_change_form!): user!
+  confirm_email_change(object: confirm_change_email_form!): user!
   reset(object: ResetForm!): Boolean!
-  confirm_reset(object: ConfirmResetForm!): User!
-  resend_phone_confirmation(object: resend_phone_form!): Boolean!
-  resend_email_confirmation(object: resend_email_form!): Boolean!
+  confirm_reset(object: ConfirmResetForm!): user!
+  resend_phone_confirmation(phone: String!): Boolean!
+  resend_email_confirmation(email: String!): Boolean!
 }

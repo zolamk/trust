@@ -44,7 +44,7 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
-  User:
+  user:
     model:
       - github.com/zolamk/trust/model.User
   ID:
