@@ -17,7 +17,7 @@ func (r *mutationResolver) Signup(ctx context.Context, object model.SignupForm) 
 }
 
 func (r *mutationResolver) ConfirmEmail(ctx context.Context, token string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	return lib.ConfirmEmail(r.DB, r.Config, token)
 }
 
 func (r *mutationResolver) ConfirmPhone(ctx context.Context, token string) (*model.User, error) {

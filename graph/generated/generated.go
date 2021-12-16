@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
@@ -37,7 +38,6 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
-	User() UserResolver
 }
 
 type DirectiveRoot struct {
@@ -132,21 +132,6 @@ type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	Token(ctx context.Context, username string, password string) (*model.LoginResponse, error)
 	Refresh(ctx context.Context, token string) (*model.LoginResponse, error)
-}
-type UserResolver interface {
-	EmailConfirmationTokenSentAt(ctx context.Context, obj *model.User) (*string, error)
-	EmailConfirmedAt(ctx context.Context, obj *model.User) (*string, error)
-
-	PhoneConfirmationTokenSentAt(ctx context.Context, obj *model.User) (*string, error)
-	PhoneConfirmedAt(ctx context.Context, obj *model.User) (*string, error)
-	RecoveryTokenSentAt(ctx context.Context, obj *model.User) (*string, error)
-	EmailChangeTokenSentAt(ctx context.Context, obj *model.User) (*string, error)
-	PhoneChangeTokenSentAt(ctx context.Context, obj *model.User) (*string, error)
-	LastSigninAt(ctx context.Context, obj *model.User) (*string, error)
-	CreatedAt(ctx context.Context, obj *model.User) (string, error)
-	UpdatedAt(ctx context.Context, obj *model.User) (string, error)
-	InvitationTokenSentAt(ctx context.Context, obj *model.User) (*string, error)
-	InvitationAcceptedAt(ctx context.Context, obj *model.User) (*string, error)
 }
 
 type executableSchema struct {
@@ -797,7 +782,7 @@ type login_response {
   id: String!
 }
 
-scalar timestamp`, BuiltIn: false},
+scalar Time`, BuiltIn: false},
 	{Name: "graph/user.graphqls", Input: `type User {
   id: String!
   email: String
@@ -805,19 +790,19 @@ scalar timestamp`, BuiltIn: false},
   name: String
   avatar: String
   email_confirmed: Boolean!
-  email_confirmation_token_sent_at: timestamp
-  email_confirmed_at: timestamp
+  email_confirmation_token_sent_at: Time
+  email_confirmed_at: Time
   phone_confirmed: Boolean!
-  phone_confirmation_token_sent_at: timestamp
-  phone_confirmed_at: timestamp
-  recovery_token_sent_at: timestamp
-  email_change_token_sent_at: timestamp
-  phone_change_token_sent_at: timestamp
-  last_signin_at: timestamp
-  created_at: timestamp!
-  updated_at: timestamp!
-  invitation_token_sent_at: timestamp
-  invitation_accepted_at: timestamp
+  phone_confirmation_token_sent_at: Time
+  phone_confirmed_at: Time
+  recovery_token_sent_at: Time
+  email_change_token_sent_at: Time
+  phone_change_token_sent_at: Time
+  last_signin_at: Time
+  created_at: Time!
+  updated_at: Time!
+  invitation_token_sent_at: Time
+  invitation_accepted_at: Time
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -2616,14 +2601,14 @@ func (ec *executionContext) _User_email_confirmation_token_sent_at(ctx context.C
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().EmailConfirmationTokenSentAt(rctx, obj)
+		return obj.EmailConfirmationTokenSentAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2632,9 +2617,9 @@ func (ec *executionContext) _User_email_confirmation_token_sent_at(ctx context.C
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_email_confirmed_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2648,14 +2633,14 @@ func (ec *executionContext) _User_email_confirmed_at(ctx context.Context, field 
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().EmailConfirmedAt(rctx, obj)
+		return obj.EmailConfirmedAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2664,9 +2649,9 @@ func (ec *executionContext) _User_email_confirmed_at(ctx context.Context, field 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_phone_confirmed(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2715,14 +2700,14 @@ func (ec *executionContext) _User_phone_confirmation_token_sent_at(ctx context.C
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().PhoneConfirmationTokenSentAt(rctx, obj)
+		return obj.PhoneConfirmationTokenSentAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2731,9 +2716,9 @@ func (ec *executionContext) _User_phone_confirmation_token_sent_at(ctx context.C
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_phone_confirmed_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2747,14 +2732,14 @@ func (ec *executionContext) _User_phone_confirmed_at(ctx context.Context, field 
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().PhoneConfirmedAt(rctx, obj)
+		return obj.PhoneConfirmedAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2763,9 +2748,9 @@ func (ec *executionContext) _User_phone_confirmed_at(ctx context.Context, field 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_recovery_token_sent_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2779,14 +2764,14 @@ func (ec *executionContext) _User_recovery_token_sent_at(ctx context.Context, fi
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().RecoveryTokenSentAt(rctx, obj)
+		return obj.RecoveryTokenSentAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2795,9 +2780,9 @@ func (ec *executionContext) _User_recovery_token_sent_at(ctx context.Context, fi
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_email_change_token_sent_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2811,14 +2796,14 @@ func (ec *executionContext) _User_email_change_token_sent_at(ctx context.Context
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().EmailChangeTokenSentAt(rctx, obj)
+		return obj.EmailChangeTokenSentAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2827,9 +2812,9 @@ func (ec *executionContext) _User_email_change_token_sent_at(ctx context.Context
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_phone_change_token_sent_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2843,14 +2828,14 @@ func (ec *executionContext) _User_phone_change_token_sent_at(ctx context.Context
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().PhoneChangeTokenSentAt(rctx, obj)
+		return obj.PhoneChangeTokenSentAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2859,9 +2844,9 @@ func (ec *executionContext) _User_phone_change_token_sent_at(ctx context.Context
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_last_signin_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2875,14 +2860,14 @@ func (ec *executionContext) _User_last_signin_at(ctx context.Context, field grap
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().LastSigninAt(rctx, obj)
+		return obj.LastSigninAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2891,9 +2876,9 @@ func (ec *executionContext) _User_last_signin_at(ctx context.Context, field grap
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2907,14 +2892,14 @@ func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().CreatedAt(rctx, obj)
+		return obj.CreatedAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2926,9 +2911,9 @@ func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(time.Time)
 	fc.Result = res
-	return ec.marshalNtimestamp2string(ctx, field.Selections, res)
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2942,14 +2927,14 @@ func (ec *executionContext) _User_updated_at(ctx context.Context, field graphql.
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().UpdatedAt(rctx, obj)
+		return obj.UpdatedAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2961,9 +2946,9 @@ func (ec *executionContext) _User_updated_at(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(time.Time)
 	fc.Result = res
-	return ec.marshalNtimestamp2string(ctx, field.Selections, res)
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_invitation_token_sent_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -2977,14 +2962,14 @@ func (ec *executionContext) _User_invitation_token_sent_at(ctx context.Context, 
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().InvitationTokenSentAt(rctx, obj)
+		return obj.InvitationTokenSentAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2993,9 +2978,9 @@ func (ec *executionContext) _User_invitation_token_sent_at(ctx context.Context, 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_invitation_accepted_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -3009,14 +2994,14 @@ func (ec *executionContext) _User_invitation_accepted_at(ctx context.Context, fi
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().InvitationAcceptedAt(rctx, obj)
+		return obj.InvitationAcceptedAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3025,9 +3010,9 @@ func (ec *executionContext) _User_invitation_accepted_at(ctx context.Context, fi
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalOtimestamp2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -5032,7 +5017,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
@@ -5045,151 +5030,43 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "email_confirmed":
 			out.Values[i] = ec._User_email_confirmed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "email_confirmation_token_sent_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_email_confirmation_token_sent_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_email_confirmation_token_sent_at(ctx, field, obj)
 		case "email_confirmed_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_email_confirmed_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_email_confirmed_at(ctx, field, obj)
 		case "phone_confirmed":
 			out.Values[i] = ec._User_phone_confirmed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "phone_confirmation_token_sent_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_phone_confirmation_token_sent_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_phone_confirmation_token_sent_at(ctx, field, obj)
 		case "phone_confirmed_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_phone_confirmed_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_phone_confirmed_at(ctx, field, obj)
 		case "recovery_token_sent_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_recovery_token_sent_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_recovery_token_sent_at(ctx, field, obj)
 		case "email_change_token_sent_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_email_change_token_sent_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_email_change_token_sent_at(ctx, field, obj)
 		case "phone_change_token_sent_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_phone_change_token_sent_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_phone_change_token_sent_at(ctx, field, obj)
 		case "last_signin_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_last_signin_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_last_signin_at(ctx, field, obj)
 		case "created_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_created_at(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._User_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "updated_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_updated_at(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._User_updated_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "invitation_token_sent_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_invitation_token_sent_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_invitation_token_sent_at(ctx, field, obj)
 		case "invitation_accepted_at":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_invitation_accepted_at(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._User_invitation_accepted_at(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5535,6 +5412,21 @@ func (ec *executionContext) unmarshalNString2string(ctx context.Context, v inter
 
 func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	res := graphql.MarshalTime(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5927,21 +5819,6 @@ func (ec *executionContext) unmarshalNsignup_form2githubᚗcomᚋzolamkᚋtrust�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNtimestamp2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalString(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNtimestamp2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalString(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
-}
-
 func (ec *executionContext) unmarshalNupdate_email_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdateEmailForm(ctx context.Context, v interface{}) (model.UpdateEmailForm, error) {
 	res, err := ec.unmarshalInputupdate_email_form(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6008,6 +5885,21 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalTime(*v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
@@ -6210,21 +6102,6 @@ func (ec *executionContext) marshalO__Type2ᚖgithubᚗcomᚋ99designsᚋgqlgen�
 		return graphql.Null
 	}
 	return ec.___Type(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOtimestamp2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalString(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOtimestamp2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return graphql.MarshalString(*v)
 }
 
 // endregion ***************************** type.gotpl *****************************

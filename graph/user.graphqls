@@ -5,17 +5,17 @@ type User {
   name: String
   avatar: String
   email_confirmed: Boolean!
-  email_confirmation_token_sent_at: timestamp
-  email_confirmed_at: timestamp
+  email_confirmation_token_sent_at: Time
+  email_confirmed_at: Time
   phone_confirmed: Boolean!
-  phone_confirmation_token_sent_at: timestamp
-  phone_confirmed_at: timestamp
-  recovery_token_sent_at: timestamp
-  email_change_token_sent_at: timestamp
-  phone_change_token_sent_at: timestamp
-  last_signin_at: timestamp
-  created_at: timestamp!
-  updated_at: timestamp!
-  invitation_token_sent_at: timestamp
-  invitation_accepted_at: timestamp
+  phone_confirmation_token_sent_at: Time
+  phone_confirmed_at: Time
+  recovery_token_sent_at: Time
+  email_change_token_sent_at: Time
+  phone_change_token_sent_at: Time
+  last_signin_at: Time
+  created_at: Time!
+  updated_at: Time!
+  invitation_token_sent_at: Time
+  invitation_accepted_at: Time
 }

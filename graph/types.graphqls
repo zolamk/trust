@@ -89,4 +89,4 @@ type login_response {
   id: String!
 }
 
-scalar timestamp
+scalar Time
