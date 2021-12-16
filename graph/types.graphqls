@@ -1,0 +1,92 @@
+input create_user_form {
+  email: String
+  phone: String
+  password: String
+  name: String
+  avatar: String
+  confirm: Boolean
+}
+
+input change_password_form {
+  old_password: String!
+  new_password: String!
+}
+
+input signup_form {
+  name: String
+  avatar: String
+  email: String
+  phone: String
+  password: String!
+}
+
+input confirm_phone_change_form {
+  phone_change_token: String!
+}
+
+input update_email_form {
+  email: String!
+  confirm: Boolean
+}
+
+input update_user_form {
+  name: String
+  avatar: String
+}
+
+input ResetForm {
+  username: String!
+}
+
+input invite_form {
+  name: String
+  email: String
+  phone: String
+}
+
+input update_password_form {
+  password: String!
+}
+
+input change_email_form {
+  email: String!
+}
+
+input accept_invite_form {
+  invitation_token: String!
+  password: String!
+}
+
+input resend_phone_form {
+  phone: String!
+}
+
+input change_phone_form {
+  phone: String!
+}
+
+input confirm_change_email_form {
+  email_change_token: String!
+}
+
+input ConfirmResetForm {
+  recovery_token: String!
+  new_password: String!
+}
+
+input resend_email_form {
+  email: String!
+}
+
+input update_phone_form {
+  phone: String!
+  confirm: Boolean
+}
+
+type login_response {
+  access_token: String!
+  refresh_token: String!
+  id: String!
+}
+
+scalar timestamp

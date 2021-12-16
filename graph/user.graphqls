@@ -1,0 +1,21 @@
+type User {
+  id: String!
+  email: String
+  phone: String
+  name: String
+  avatar: String
+  email_confirmed: Boolean!
+  email_confirmation_token_sent_at: timestamp
+  email_confirmed_at: timestamp
+  phone_confirmed: Boolean!
+  phone_confirmation_token_sent_at: timestamp
+  phone_confirmed_at: timestamp
+  recovery_token_sent_at: timestamp
+  email_change_token_sent_at: timestamp
+  phone_change_token_sent_at: timestamp
+  last_signin_at: timestamp
+  created_at: timestamp!
+  updated_at: timestamp!
+  invitation_token_sent_at: timestamp
+  invitation_accepted_at: timestamp
+}

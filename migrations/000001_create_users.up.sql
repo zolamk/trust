@@ -1,10 +1,12 @@
-create extension citext;
+CREATE SCHEMA IF NOT EXISTS trust;
 
-CREATE DOMAIN email AS citext CHECK ( value ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
+CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE DOMAIN phone_number AS citext CHECK (value ~ '^\+\d{5,15}$');
+CREATE DOMAIN trust.email AS citext CHECK ( value ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
 
-CREATE OR REPLACE FUNCTION public.feistel_crypt(value integer)
+CREATE DOMAIN trust.phone_number AS citext CHECK (value ~ '^\+\d{5,15}$');
+
+CREATE OR REPLACE FUNCTION trust.feistel_crypt(value integer)
   RETURNS integer
   LANGUAGE plpgsql
   IMMUTABLE STRICT
@@ -32,7 +34,7 @@ BEGIN
 END;
 $function$;
 
-CREATE OR REPLACE FUNCTION public.int_to_string(n int)
+CREATE OR REPLACE FUNCTION trust.int_to_string(n int)
   RETURNS text
   LANGUAGE plpgsql
   IMMUTABLE STRICT
@@ -50,21 +52,21 @@ BEGIN
     RETURN output;
 END $function$;
 
-CREATE SEQUENCE users_id_seq AS BIGINT INCREMENT 1 START 1;
+CREATE SEQUENCE trust.users_id_seq AS BIGINT INCREMENT 1 START 1;
 
-CREATE OR REPLACE FUNCTION public.id(n int)
+CREATE OR REPLACE FUNCTION trust.id(n int)
     RETURNS text
     LANGUAGE plpgsql
     IMMUTABLE STRICT
 AS $function$
 BEGIN
-    RETURN public.int_to_string(public.feistel_crypt(n));
+    RETURN trust.int_to_string(trust.feistel_crypt(n));
 END $function$;
 
-create table users (
-    id varchar primary key default id(nextval('users_id_seq')::int),
-    email email constraint uq_email unique,
-    phone phone_number constraint uq_phone unique,
+create table trust.users (
+    id varchar primary key default trust.id(nextval('trust.users_id_seq')::int),
+    email trust.email constraint uq_email unique,
+    phone trust.phone_number constraint uq_phone unique,
     name varchar,
     avatar varchar,
     is_admin boolean not null default false,
@@ -80,9 +82,9 @@ create table users (
     recovery_token varchar(250),
     recovery_token_sent_at timestamp,
     email_change_token varchar(250),
-    new_email citext,
+    new_email trust.email,
     email_change_token_sent_at timestamp,
-    new_phone phone_number,
+    new_phone trust.phone_number,
     phone_change_token varchar(250),
     phone_change_token_sent_at timestamp,
     last_signin_at timestamp,
@@ -93,7 +95,7 @@ create table users (
     constraint chk_phone_confirm check (phone_confirmed = false or phone_confirmed_at is not null)
 );
 
-create or replace function update_user_modified_at()
+create or replace function trust.update_user_modified_at()
 returns trigger as $$
 begin
     new.updated_at = current_timestamp;
@@ -101,4 +103,4 @@ begin
 end;
 $$ language 'plpgsql';
 
-create trigger update_user_modified_at_trigger before insert or update on users for each row execute procedure update_user_modified_at();
+create trigger update_user_modified_at_trigger before insert or update on trust.users for each row execute procedure trust.update_user_modified_at();

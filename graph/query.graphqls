@@ -1,0 +1,7 @@
+type Query {
+  User(id: String!): User!
+  users(limit: Int!, offset: Int!): [User!]!
+  me: User!
+  token(username: String!, password: String!): login_response!
+  refresh(token: String!): login_response!
+}
