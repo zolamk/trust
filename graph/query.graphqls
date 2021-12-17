@@ -1,5 +1,5 @@
 type Query {
-  User(id: String!): user!
+  user(id: String!): user!
   users(limit: Int!, offset: Int!): [user!]!
   me: user!
   token(username: String!, password: String!): login_response!
