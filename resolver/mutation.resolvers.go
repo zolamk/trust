@@ -9,6 +9,7 @@ import (
 
 	"github.com/zolamk/trust/graph/generated"
 	"github.com/zolamk/trust/handlers/lib"
+	"github.com/zolamk/trust/handlers/lib/reset"
 	"github.com/zolamk/trust/model"
 )
 
@@ -76,8 +77,8 @@ func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, object model.
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) Reset(ctx context.Context, object model.ResetForm) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) Reset(ctx context.Context, username string) (bool, error) {
+	return reset.Reset(r.DB, r.Config, username)
 }
 
 func (r *mutationResolver) ConfirmReset(ctx context.Context, object model.ConfirmResetForm) (*model.User, error) {

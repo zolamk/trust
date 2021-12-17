@@ -7,10 +7,6 @@ type ConfirmResetForm struct {
 	NewPassword   string `json:"new_password"`
 }
 
-type ResetForm struct {
-	Username string `json:"username"`
-}
-
 type AcceptInviteForm struct {
 	InvitationToken string `json:"invitation_token"`
 	Password        string `json:"password"`

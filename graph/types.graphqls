@@ -34,10 +34,6 @@ input update_user_form {
   avatar: String
 }
 
-input ResetForm {
-  username: String!
-}
-
 input invite_form {
   name: String
   email: String

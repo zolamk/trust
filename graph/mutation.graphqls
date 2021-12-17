@@ -15,7 +15,7 @@ type Mutation {
   change_phone(object: change_phone_form!): user!
   confirm_phone_change(object: confirm_phone_change_form!): user!
   confirm_email_change(object: confirm_change_email_form!): user!
-  reset(object: ResetForm!): Boolean!
+  reset(username: String!): Boolean!
   confirm_reset(object: ConfirmResetForm!): user!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!

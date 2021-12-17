@@ -10,7 +10,8 @@ type user {
   phone_confirmed: Boolean!
   phone_confirmation_token_sent_at: Time
   phone_confirmed_at: Time
-  recovery_token_sent_at: Time
+  email_recovery_token_sent_at: Time
+  phone_recovery_token_sent_at: Time
   email_change_token_sent_at: Time
   phone_change_token_sent_at: Time
   last_signin_at: Time

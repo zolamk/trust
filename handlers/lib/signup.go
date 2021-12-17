@@ -1,12 +1,12 @@
 package lib
 
 import (
-	"errors"
 	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
+	"github.com/zolamk/trust/errors"
 	"github.com/zolamk/trust/lib/email"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
@@ -18,8 +18,6 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 	now := time.Now()
 
-	internal_error := errors.New("internal server error")
-
 	user := &model.User{
 		Name:     form.Name,
 		Email:    form.Email,
@@ -28,14 +26,18 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 		Password: &form.Password,
 	}
 
+	if !config.PasswordRule.MatchString(form.Password) {
+		return nil, errors.InvalidPassword
+	}
+
 	if form.Email != nil {
 
 		if !config.EmailRule.MatchString(*form.Email) {
-			return nil, errors.New("invalid email address")
+			return nil, errors.InvalidEmail
 		}
 
 		if config.DisableEmail {
-			return nil, errors.New("email signup disabled")
+			return nil, errors.EmailDisabled
 		}
 
 		tx := db.First(user, "email = ?", *form.Email)
@@ -43,10 +45,10 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 		if tx.Error != nil {
 			if tx.Error != gorm.ErrRecordNotFound {
 				logrus.Error(tx.Error)
-				return nil, internal_error
+				return nil, errors.Internal
 			}
 		} else {
-			return nil, errors.New("email already registered")
+			return nil, errors.EmailRegistered
 		}
 
 	}
@@ -54,11 +56,11 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 	if form.Phone != nil {
 
 		if !config.PhoneRule.MatchString(*form.Phone) {
-			return nil, errors.New("invalid phone number")
+			return nil, errors.InvalidPhone
 		}
 
 		if config.DisablePhone {
-			return nil, errors.New("phone signup disabled")
+			return nil, errors.PhoneDisabled
 		}
 
 		tx := db.First(user, "phone = ?", *form.Phone)
@@ -66,10 +68,10 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 		if tx.Error != nil {
 			if tx.Error != gorm.ErrRecordNotFound {
 				logrus.Error(tx.Error)
-				return nil, internal_error
+				return nil, errors.Internal
 			}
 		} else {
-			return nil, errors.New("phone already registered")
+			return nil, errors.PhoneRegistered
 		}
 
 	}
@@ -80,7 +82,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 		if err != nil {
 			logrus.Error(err)
-			return internal_error
+			return errors.Internal
 		}
 
 		hash := string(password)
@@ -89,7 +91,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 		if err := user.Create(tx); err != nil {
 			logrus.Error(err)
-			return internal_error
+			return errors.Internal
 		}
 
 		if user.Email != nil {
@@ -98,7 +100,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 				if err := user.ConfirmEmail(tx); err != nil {
 					logrus.Error(err)
-					return internal_error
+					return errors.Internal
 				}
 
 			} else {
@@ -111,7 +113,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 				if err := user.Save(tx); err != nil {
 					logrus.Error(err)
-					return internal_error
+					return errors.Internal
 				}
 
 				context := &map[string]string{
