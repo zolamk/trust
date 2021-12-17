@@ -81,8 +81,8 @@ func (r *mutationResolver) Reset(ctx context.Context, username string) (bool, er
 	return reset.Reset(r.DB, r.Config, username)
 }
 
-func (r *mutationResolver) ConfirmReset(ctx context.Context, object model.ConfirmResetForm) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) ConfirmReset(ctx context.Context, recoveryToken string, password string) (bool, error) {
+	return reset.ConfirmReset(r.DB, r.Config, recoveryToken, password)
 }
 
 func (r *mutationResolver) ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error) {

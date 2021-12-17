@@ -18,8 +18,7 @@ type User struct {
 	PhoneConfirmed               bool       `json:"phone_confirmed,omitempty"`
 	PhoneConfirmationTokenSentAt *time.Time `json:"phone_confirmation_token_sent_at,omitempty"`
 	PhoneConfirmedAt             *time.Time `json:"phone_confirmed_at,omitempty"`
-	EmailRecoveryTokenSentAt     *time.Time `json:"email_recovery_token_sent_at,omitempty"`
-	PhoneRecoveryTokenSentAt     *time.Time `json:"phone_recovery_token_sent_at,omitempty"`
+	RecoveryTokenSentAt          *time.Time `json:"recovery_token_sent_at,omitempty"`
 	EmailChangeTokenSentAt       *time.Time `json:"email_change_token_sent_at,omitempty"`
 	PhoneChangeTokenSentAt       *time.Time `json:"phone_change_token_sent_at,omitempty"`
 	LastSigninAt                 *time.Time `json:"last_signin_at,omitempty"`
@@ -31,8 +30,7 @@ type User struct {
 	Password                     *string    `json:"-"`
 	EmailConfirmationToken       *string    `json:"-"`
 	PhoneConfirmationToken       *string    `json:"-"`
-	EmailRecoveryToken           *string    `json:"-"`
-	PhoneRecoveryToken           *string    `json:"-"`
+	RecoveryToken                *string    `json:"-"`
 	EmailChangeToken             *string    `json:"-"`
 	NewEmail                     *string    `json:"new_email,omitempty"`
 	NewPhone                     *string    `json:"new_phone,omitempty"`

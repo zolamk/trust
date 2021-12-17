@@ -17,4 +17,5 @@ var (
 	PhoneDisabled               = e.New("phone disabled")
 	EmailRegistered             = e.New("email address registered")
 	PhoneRegistered             = e.New("phone number registered")
+	RecoveryTokenNotFound       = e.New("recovery token not found")
 )

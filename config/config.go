@@ -103,10 +103,11 @@ type Config struct {
 	PasswordHashCost      uint8           `json:"password_hash_cost"`
 	MaxConnectionPoolSize uint8           `json:"max_connection_pool_size"`
 	AdminOnlyList         bool            `json:"admin_only_list"`
-	MinutesBetweenResend  uint8           `json:"minutes_between_resend"`
+	MinutesBetweenResend  time.Duration   `json:"minutes_between_resend"`
 	LoginHook             *string         `json:"login_hook"`
 	SocialRedirectPage    string          `json:"social_redirect_page"`
 	SMS                   *SMSConfig      `json:"sms"`
+	ConfirmationExpiry    time.Duration   `json:"confirmation_expiry"`
 }
 
 func New() *Config {
@@ -149,6 +150,7 @@ func New() *Config {
 		PasswordHashCost:      10,
 		MaxConnectionPoolSize: 10,
 		MinutesBetweenResend:  1,
+		ConfirmationExpiry:    60,
 		PasswordRule:          Regexp{*regexp.MustCompile(".{8,1000}")},
 		EmailRule:             Regexp{*regexp.MustCompile(`^[\w\-\.]+@([\w\-]+\.)+[\w\-]{1,}$`)},
 		PhoneRule:             Regexp{*regexp.MustCompile(`\+\d{5,15}`)},

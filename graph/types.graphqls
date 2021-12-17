@@ -61,11 +61,6 @@ input confirm_change_email_form {
   email_change_token: String!
 }
 
-input ConfirmResetForm {
-  recovery_token: String!
-  new_password: String!
-}
-
 input update_phone_form {
   phone: String!
   confirm: Boolean

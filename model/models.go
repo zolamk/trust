@@ -2,11 +2,6 @@
 
 package model
 
-type ConfirmResetForm struct {
-	RecoveryToken string `json:"recovery_token"`
-	NewPassword   string `json:"new_password"`
-}
-
 type AcceptInviteForm struct {
 	InvitationToken string `json:"invitation_token"`
 	Password        string `json:"password"`

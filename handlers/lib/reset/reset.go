@@ -35,11 +35,15 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 		if user.Email != nil && *user.Email == username && user.EmailConfirmed {
 
+			if user.RecoveryTokenSentAt != nil && time.Since(*user.RecoveryTokenSentAt).Minutes() < float64(config.MinutesBetweenResend) {
+				return nil
+			}
+
 			token := randstr.String(100)
 
-			user.EmailRecoveryToken = &token
+			user.RecoveryToken = &token
 
-			user.EmailRecoveryTokenSentAt = &now
+			user.RecoveryTokenSentAt = &now
 
 			if err := user.Save(db); err != nil {
 				logrus.Error(err)
@@ -48,7 +52,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			context := &map[string]string{
 				"site_url":             config.SiteURL,
-				"email_recovery_token": *user.EmailRecoveryToken,
+				"email_recovery_token": *user.RecoveryToken,
 				"instance_url":         config.InstanceURL,
 			}
 
@@ -61,11 +65,15 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 		if user.Phone != nil && *user.Phone == username && user.PhoneConfirmed {
 
+			if user.RecoveryTokenSentAt != nil && time.Since(*user.RecoveryTokenSentAt).Minutes() < float64(config.MinutesBetweenResend) {
+				return nil
+			}
+
 			token := randstr.String(6)
 
-			user.PhoneRecoveryToken = &token
+			user.RecoveryToken = &token
 
-			user.PhoneRecoveryTokenSentAt = &now
+			user.RecoveryTokenSentAt = &now
 
 			if err := user.Save(db); err != nil {
 				logrus.Error(err)
@@ -74,7 +82,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			context := &map[string]string{
 				"site_url":             config.SiteURL,
-				"phone_recovery_token": *user.PhoneRecoveryToken,
+				"phone_recovery_token": *user.RecoveryToken,
 				"instance_url":         config.InstanceURL,
 			}
 

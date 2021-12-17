@@ -53,7 +53,7 @@ type ComplexityRoot struct {
 		ConfirmEmailChange      func(childComplexity int, object model.ConfirmChangeEmailForm) int
 		ConfirmPhone            func(childComplexity int, token string) int
 		ConfirmPhoneChange      func(childComplexity int, object model.ConfirmPhoneChangeForm) int
-		ConfirmReset            func(childComplexity int, object model.ConfirmResetForm) int
+		ConfirmReset            func(childComplexity int, recoveryToken string, password string) int
 		CreateUser              func(childComplexity int, object model.CreateUserForm) int
 		DeleteUser              func(childComplexity int, id string) int
 		InviteUser              func(childComplexity int, object model.InviteForm) int
@@ -89,7 +89,6 @@ type ComplexityRoot struct {
 		EmailConfirmationTokenSentAt func(childComplexity int) int
 		EmailConfirmed               func(childComplexity int) int
 		EmailConfirmedAt             func(childComplexity int) int
-		EmailRecoveryTokenSentAt     func(childComplexity int) int
 		ID                           func(childComplexity int) int
 		InvitationAcceptedAt         func(childComplexity int) int
 		InvitationTokenSentAt        func(childComplexity int) int
@@ -100,7 +99,7 @@ type ComplexityRoot struct {
 		PhoneConfirmationTokenSentAt func(childComplexity int) int
 		PhoneConfirmed               func(childComplexity int) int
 		PhoneConfirmedAt             func(childComplexity int) int
-		PhoneRecoveryTokenSentAt     func(childComplexity int) int
+		RecoveryTokenSentAt          func(childComplexity int) int
 		UpdatedAt                    func(childComplexity int) int
 	}
 }
@@ -123,7 +122,7 @@ type MutationResolver interface {
 	ConfirmPhoneChange(ctx context.Context, object model.ConfirmPhoneChangeForm) (*model.User, error)
 	ConfirmEmailChange(ctx context.Context, object model.ConfirmChangeEmailForm) (*model.User, error)
 	Reset(ctx context.Context, username string) (bool, error)
-	ConfirmReset(ctx context.Context, object model.ConfirmResetForm) (*model.User, error)
+	ConfirmReset(ctx context.Context, recoveryToken string, password string) (bool, error)
 	ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error)
 	ResendEmailConfirmation(ctx context.Context, email string) (bool, error)
 }
@@ -256,7 +255,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ConfirmReset(childComplexity, args["object"].(model.ConfirmResetForm)), true
+		return e.complexity.Mutation.ConfirmReset(childComplexity, args["recovery_token"].(string), args["password"].(string)), true
 
 	case "Mutation.create_user":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -515,13 +514,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.EmailConfirmedAt(childComplexity), true
 
-	case "user.email_recovery_token_sent_at":
-		if e.complexity.User.EmailRecoveryTokenSentAt == nil {
-			break
-		}
-
-		return e.complexity.User.EmailRecoveryTokenSentAt(childComplexity), true
-
 	case "user.id":
 		if e.complexity.User.ID == nil {
 			break
@@ -592,12 +584,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.PhoneConfirmedAt(childComplexity), true
 
-	case "user.phone_recovery_token_sent_at":
-		if e.complexity.User.PhoneRecoveryTokenSentAt == nil {
+	case "user.recovery_token_sent_at":
+		if e.complexity.User.RecoveryTokenSentAt == nil {
 			break
 		}
 
-		return e.complexity.User.PhoneRecoveryTokenSentAt(childComplexity), true
+		return e.complexity.User.RecoveryTokenSentAt(childComplexity), true
 
 	case "user.updated_at":
 		if e.complexity.User.UpdatedAt == nil {
@@ -688,7 +680,7 @@ var sources = []*ast.Source{
   confirm_phone_change(object: confirm_phone_change_form!): user!
   confirm_email_change(object: confirm_change_email_form!): user!
   reset(username: String!): Boolean!
-  confirm_reset(object: ConfirmResetForm!): user!
+  confirm_reset(recovery_token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!
 }`, BuiltIn: false},
@@ -762,11 +754,6 @@ input confirm_change_email_form {
   email_change_token: String!
 }
 
-input ConfirmResetForm {
-  recovery_token: String!
-  new_password: String!
-}
-
 input update_phone_form {
   phone: String!
   confirm: Boolean
@@ -791,8 +778,7 @@ scalar Time`, BuiltIn: false},
   phone_confirmed: Boolean!
   phone_confirmation_token_sent_at: Time
   phone_confirmed_at: Time
-  email_recovery_token_sent_at: Time
-  phone_recovery_token_sent_at: Time
+  recovery_token_sent_at: Time
   email_change_token_sent_at: Time
   phone_change_token_sent_at: Time
   last_signin_at: Time
@@ -931,15 +917,24 @@ func (ec *executionContext) field_Mutation_confirm_phone_change_args(ctx context
 func (ec *executionContext) field_Mutation_confirm_reset_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ConfirmResetForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg0, err = ec.unmarshalNConfirmResetForm2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐConfirmResetForm(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["recovery_token"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("recovery_token"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg0
+	args["recovery_token"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["password"] = arg1
 	return args, nil
 }
 
@@ -2014,7 +2009,7 @@ func (ec *executionContext) _Mutation_confirm_reset(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ConfirmReset(rctx, args["object"].(model.ConfirmResetForm))
+		return ec.resolvers.Mutation().ConfirmReset(rctx, args["recovery_token"].(string), args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2026,9 +2021,9 @@ func (ec *executionContext) _Mutation_confirm_reset(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalNuser2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_resend_phone_confirmation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3973,7 +3968,7 @@ func (ec *executionContext) _user_phone_confirmed_at(ctx context.Context, field 
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _user_email_recovery_token_sent_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _user_recovery_token_sent_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3991,39 +3986,7 @@ func (ec *executionContext) _user_email_recovery_token_sent_at(ctx context.Conte
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.EmailRecoveryTokenSentAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*time.Time)
-	fc.Result = res
-	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _user_phone_recovery_token_sent_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "user",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PhoneRecoveryTokenSentAt, nil
+		return obj.RecoveryTokenSentAt, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4270,37 +4233,6 @@ func (ec *executionContext) _user_invitation_accepted_at(ctx context.Context, fi
 // endregion **************************** field.gotpl *****************************
 
 // region    **************************** input.gotpl *****************************
-
-func (ec *executionContext) unmarshalInputConfirmResetForm(ctx context.Context, obj interface{}) (model.ConfirmResetForm, error) {
-	var it model.ConfirmResetForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "recovery_token":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("recovery_token"))
-			it.RecoveryToken, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "new_password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_password"))
-			it.NewPassword, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
 
 func (ec *executionContext) unmarshalInputaccept_invite_form(ctx context.Context, obj interface{}) (model.AcceptInviteForm, error) {
 	var it model.AcceptInviteForm
@@ -5288,10 +5220,8 @@ func (ec *executionContext) _user(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._user_phone_confirmation_token_sent_at(ctx, field, obj)
 		case "phone_confirmed_at":
 			out.Values[i] = ec._user_phone_confirmed_at(ctx, field, obj)
-		case "email_recovery_token_sent_at":
-			out.Values[i] = ec._user_email_recovery_token_sent_at(ctx, field, obj)
-		case "phone_recovery_token_sent_at":
-			out.Values[i] = ec._user_phone_recovery_token_sent_at(ctx, field, obj)
+		case "recovery_token_sent_at":
+			out.Values[i] = ec._user_recovery_token_sent_at(ctx, field, obj)
 		case "email_change_token_sent_at":
 			out.Values[i] = ec._user_email_change_token_sent_at(ctx, field, obj)
 		case "phone_change_token_sent_at":
@@ -5340,11 +5270,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalNConfirmResetForm2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐConfirmResetForm(ctx context.Context, v interface{}) (model.ConfirmResetForm, error) {
-	res, err := ec.unmarshalInputConfirmResetForm(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
