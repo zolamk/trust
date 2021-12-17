@@ -46,13 +46,13 @@ type DirectiveRoot struct {
 type ComplexityRoot struct {
 	Mutation struct {
 		AcceptInvite            func(childComplexity int, object model.AcceptInviteForm) int
-		ChangeEmail             func(childComplexity int, object model.ChangeEmailForm) int
+		ChangeEmail             func(childComplexity int, email string) int
 		ChangePassword          func(childComplexity int, object model.ChangePasswordForm) int
 		ChangePhone             func(childComplexity int, phone string) int
 		ConfirmEmail            func(childComplexity int, token string) int
-		ConfirmEmailChange      func(childComplexity int, object model.ConfirmChangeEmailForm) int
+		ConfirmEmailChange      func(childComplexity int, token string) int
 		ConfirmPhone            func(childComplexity int, token string) int
-		ConfirmPhoneChange      func(childComplexity int, object model.ConfirmPhoneChangeForm) int
+		ConfirmPhoneChange      func(childComplexity int, token string) int
 		ConfirmReset            func(childComplexity int, recoveryToken string, password string) int
 		CreateUser              func(childComplexity int, object model.CreateUserForm) int
 		DeleteUser              func(childComplexity int, id string) int
@@ -121,10 +121,10 @@ type MutationResolver interface {
 	UpdatePhone(ctx context.Context, id string, object model.UpdatePhoneForm) (*model.User, error)
 	UpdatePassword(ctx context.Context, id string, object model.UpdatePasswordForm) (*model.User, error)
 	ChangePassword(ctx context.Context, object model.ChangePasswordForm) (*model.User, error)
-	ChangeEmail(ctx context.Context, object model.ChangeEmailForm) (*model.User, error)
+	ChangeEmail(ctx context.Context, email string) (*model.User, error)
 	ChangePhone(ctx context.Context, phone string) (*model.User, error)
-	ConfirmPhoneChange(ctx context.Context, object model.ConfirmPhoneChangeForm) (*model.User, error)
-	ConfirmEmailChange(ctx context.Context, object model.ConfirmChangeEmailForm) (*model.User, error)
+	ConfirmPhoneChange(ctx context.Context, token string) (*model.User, error)
+	ConfirmEmailChange(ctx context.Context, token string) (*model.User, error)
 	Reset(ctx context.Context, username string) (bool, error)
 	ConfirmReset(ctx context.Context, recoveryToken string, password string) (bool, error)
 	ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error)
@@ -175,7 +175,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ChangeEmail(childComplexity, args["object"].(model.ChangeEmailForm)), true
+		return e.complexity.Mutation.ChangeEmail(childComplexity, args["email"].(string)), true
 
 	case "Mutation.change_password":
 		if e.complexity.Mutation.ChangePassword == nil {
@@ -223,7 +223,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ConfirmEmailChange(childComplexity, args["object"].(model.ConfirmChangeEmailForm)), true
+		return e.complexity.Mutation.ConfirmEmailChange(childComplexity, args["token"].(string)), true
 
 	case "Mutation.confirm_phone":
 		if e.complexity.Mutation.ConfirmPhone == nil {
@@ -247,7 +247,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ConfirmPhoneChange(childComplexity, args["object"].(model.ConfirmPhoneChangeForm)), true
+		return e.complexity.Mutation.ConfirmPhoneChange(childComplexity, args["token"].(string)), true
 
 	case "Mutation.confirm_reset":
 		if e.complexity.Mutation.ConfirmReset == nil {
@@ -707,10 +707,10 @@ var sources = []*ast.Source{
   update_phone(id: String!, object: update_phone_form!): user!
   update_password(id: String!, object: update_password_form!): user!
   change_password(object: change_password_form!): user!
-  change_email(object: change_email_form!): user!
+  change_email(email: String!): user!
   change_phone(phone: String!): user!
-  confirm_phone_change(object: confirm_phone_change_form!): user!
-  confirm_email_change(object: confirm_change_email_form!): user!
+  confirm_phone_change(token: String!): user!
+  confirm_email_change(token: String!): user!
   reset(username: String!): Boolean!
   confirm_reset(recovery_token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
@@ -743,10 +743,6 @@ input signup_form {
   email: String
   phone: String
   password: String!
-}
-
-input confirm_phone_change_form {
-  phone_change_token: String!
 }
 
 input update_email_form {
@@ -844,15 +840,15 @@ func (ec *executionContext) field_Mutation_accept_invite_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_change_email_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ChangeEmailForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg0, err = ec.unmarshalNchange_email_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐChangeEmailForm(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["email"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg0
+	args["email"] = arg0
 	return args, nil
 }
 
@@ -904,15 +900,15 @@ func (ec *executionContext) field_Mutation_confirm_email_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_confirm_email_change_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ConfirmChangeEmailForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg0, err = ec.unmarshalNconfirm_change_email_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐConfirmChangeEmailForm(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["token"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg0
+	args["token"] = arg0
 	return args, nil
 }
 
@@ -934,15 +930,15 @@ func (ec *executionContext) field_Mutation_confirm_phone_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_confirm_phone_change_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ConfirmPhoneChangeForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg0, err = ec.unmarshalNconfirm_phone_change_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐConfirmPhoneChangeForm(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["token"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg0
+	args["token"] = arg0
 	return args, nil
 }
 
@@ -1831,7 +1827,7 @@ func (ec *executionContext) _Mutation_change_email(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ChangeEmail(rctx, args["object"].(model.ChangeEmailForm))
+		return ec.resolvers.Mutation().ChangeEmail(rctx, args["email"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1915,7 +1911,7 @@ func (ec *executionContext) _Mutation_confirm_phone_change(ctx context.Context, 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ConfirmPhoneChange(rctx, args["object"].(model.ConfirmPhoneChangeForm))
+		return ec.resolvers.Mutation().ConfirmPhoneChange(rctx, args["token"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1957,7 +1953,7 @@ func (ec *executionContext) _Mutation_confirm_email_change(ctx context.Context, 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ConfirmEmailChange(rctx, args["object"].(model.ConfirmChangeEmailForm))
+		return ec.resolvers.Mutation().ConfirmEmailChange(rctx, args["token"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4502,29 +4498,6 @@ func (ec *executionContext) unmarshalInputconfirm_change_email_form(ctx context.
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputconfirm_phone_change_form(ctx context.Context, obj interface{}) (model.ConfirmPhoneChangeForm, error) {
-	var it model.ConfirmPhoneChangeForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "phone_change_token":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_change_token"))
-			it.PhoneChangeToken, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputcreate_user_form(ctx context.Context, obj interface{}) (model.CreateUserForm, error) {
 	var it model.CreateUserForm
 	asMap := map[string]interface{}{}
@@ -5724,23 +5697,8 @@ func (ec *executionContext) unmarshalNaccept_invite_form2githubᚗcomᚋzolamk�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNchange_email_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐChangeEmailForm(ctx context.Context, v interface{}) (model.ChangeEmailForm, error) {
-	res, err := ec.unmarshalInputchange_email_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNchange_password_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐChangePasswordForm(ctx context.Context, v interface{}) (model.ChangePasswordForm, error) {
 	res, err := ec.unmarshalInputchange_password_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNconfirm_change_email_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐConfirmChangeEmailForm(ctx context.Context, v interface{}) (model.ConfirmChangeEmailForm, error) {
-	res, err := ec.unmarshalInputconfirm_change_email_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNconfirm_phone_change_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐConfirmPhoneChangeForm(ctx context.Context, v interface{}) (model.ConfirmPhoneChangeForm, error) {
-	res, err := ec.unmarshalInputconfirm_phone_change_form(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

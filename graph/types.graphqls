@@ -20,10 +20,6 @@ input signup_form {
   password: String!
 }
 
-input confirm_phone_change_form {
-  phone_change_token: String!
-}
-
 input update_email_form {
   email: String!
   confirm: Boolean

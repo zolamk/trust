@@ -64,8 +64,14 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, object model.Chan
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) ChangeEmail(ctx context.Context, object model.ChangeEmailForm) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) ChangeEmail(ctx context.Context, email string) (*model.User, error) {
+	token, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, errors.ErrInvalidJWT
+	}
+
+	return user.ChangeEmail(r.DB, r.Config, token, email)
 }
 
 func (r *mutationResolver) ChangePhone(ctx context.Context, phone string) (*model.User, error) {
@@ -78,12 +84,24 @@ func (r *mutationResolver) ChangePhone(ctx context.Context, phone string) (*mode
 	return user.ChangePhone(r.DB, r.Config, token, phone)
 }
 
-func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, object model.ConfirmPhoneChangeForm) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, confirmation_token string) (*model.User, error) {
+	token, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, errors.ErrInvalidJWT
+	}
+
+	return user.ConfirmPhoneChange(r.DB, r.Config, token, confirmation_token)
 }
 
-func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, object model.ConfirmChangeEmailForm) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, confirmation_token string) (*model.User, error) {
+	token, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, errors.ErrInvalidJWT
+	}
+
+	return user.ConfirmEmailChange(r.DB, r.Config, token, confirmation_token)
 }
 
 func (r *mutationResolver) Reset(ctx context.Context, username string) (bool, error) {

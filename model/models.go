@@ -20,10 +20,6 @@ type ConfirmChangeEmailForm struct {
 	EmailChangeToken string `json:"email_change_token"`
 }
 
-type ConfirmPhoneChangeForm struct {
-	PhoneChangeToken string `json:"phone_change_token"`
-}
-
 type CreateUserForm struct {
 	Email    *string `json:"email"`
 	Phone    *string `json:"phone"`

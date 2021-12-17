@@ -125,4 +125,10 @@ var (
 			"code": "cant_change_phone",
 		},
 	}
+	ErrCantChangeEmailNow = &gqlerror.Error{
+		Message: "cant change email right now",
+		Extensions: map[string]interface{}{
+			"code": "cant_change_email",
+		},
+	}
 )
