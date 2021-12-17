@@ -9,4 +9,5 @@ var (
 	EmailNotConfirmed           = e.New("email not confirmed")
 	PhoneNotConfirmed           = e.New("phone not confirmed")
 	WebHook                     = e.New("webhook error")
+	RefreshTokenNotFound        = e.New("refresh token not found")
 )

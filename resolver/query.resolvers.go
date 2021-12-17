@@ -29,7 +29,7 @@ func (r *queryResolver) Token(ctx context.Context, username string, password str
 }
 
 func (r *queryResolver) Refresh(ctx context.Context, token string) (*model.LoginResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+	return lib.RefreshToken(r.DB, r.Config, token)
 }
 
 // Query returns generated.QueryResolver implementation.
