@@ -17,9 +17,9 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 
 	if tx := db.Joins("User").First(&refresh_token, "token = ?", rt); tx.Error != nil {
 		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, errors.RefreshTokenNotFound
+			return nil, errors.ErrRefreshTokenNotFound
 		}
-		return nil, errors.Internal
+		return nil, errors.ErrInternal
 	}
 
 	user := refresh_token.User
@@ -36,7 +36,7 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.WebHook
+		return nil, errors.ErrWebHook
 	}
 
 	token := jwt.New(user, hook_response, config.JWT)
@@ -45,12 +45,12 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.Internal
+		return nil, errors.ErrInternal
 	}
 
 	if err := refresh_token.Save(db); err != nil {
 		logrus.Error(err)
-		return nil, errors.Internal
+		return nil, errors.ErrInternal
 	}
 
 	return &model.LoginResponse{

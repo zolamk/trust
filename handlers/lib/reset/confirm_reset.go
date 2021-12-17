@@ -13,19 +13,23 @@ func ConfirmReset(db *gorm.DB, config *config.Config, recovery_token string, pwd
 
 	user := &model.User{}
 
+	if !config.PasswordRule.MatchString(pwd) {
+		return false, errors.ErrInvalidPassword
+	}
+
 	if tx := db.First(user, "recovery_token = ?", recovery_token); tx.Error != nil {
 		if tx.Error == gorm.ErrRecordNotFound {
-			return false, errors.RecoveryTokenNotFound
+			return false, errors.ErrRecoveryTokenNotFound
 		}
 		logrus.Error(tx.Error)
-		return false, errors.Internal
+		return false, errors.ErrInternal
 	}
 
 	password, err := bcrypt.GenerateFromPassword([]byte(pwd), int(config.PasswordHashCost))
 
 	if err != nil {
 		logrus.Error(err)
-		return false, errors.Internal
+		return false, errors.ErrInternal
 	}
 
 	hash := string(password)
@@ -38,7 +42,7 @@ func ConfirmReset(db *gorm.DB, config *config.Config, recovery_token string, pwd
 
 	if err := user.Save(db); err != nil {
 		logrus.Error(err)
-		return false, errors.Internal
+		return false, errors.ErrInternal
 	}
 
 	return true, nil

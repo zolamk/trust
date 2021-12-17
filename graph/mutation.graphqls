@@ -12,7 +12,7 @@ type Mutation {
   update_password(id: String!, object: update_password_form!): user!
   change_password(object: change_password_form!): user!
   change_email(object: change_email_form!): user!
-  change_phone(object: change_phone_form!): user!
+  change_phone(phone: String!): user!
   confirm_phone_change(object: confirm_phone_change_form!): user!
   confirm_email_change(object: confirm_change_email_form!): user!
   reset(username: String!): Boolean!

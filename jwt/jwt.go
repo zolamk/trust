@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/zolamk/trust/config"
+	"github.com/zolamk/trust/errors"
 	"github.com/zolamk/trust/model"
 )
 
@@ -34,6 +35,32 @@ func New(user *model.User, metadata *interface{}, config *config.JWTConfig) *JWT
 		metadata,
 		config,
 	}
+
+}
+
+func Decode(signed_string string, config *config.JWTConfig) (*JWT, error) {
+
+	claims := &JWT{}
+
+	token, err := jwt.ParseWithClaims(signed_string, claims, func(t *jwt.Token) (interface{}, error) {
+		return config.GetDecodingKey(), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, errors.ErrInvalidJWT
+	}
+
+	claims, ok := token.Claims.(*JWT)
+
+	if !ok {
+		return nil, errors.ErrInvalidJWT
+	}
+
+	return claims, nil
 
 }
 

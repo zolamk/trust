@@ -23,13 +23,13 @@ func ResendEmail(db *gorm.DB, config *config.Config, e string) (bool, error) {
 			return true, nil
 		}
 		logrus.Error(tx.Error)
-		return true, errors.Internal
+		return true, errors.ErrInternal
 	}
 
 	if !(config.DisableEmail || user.Email == nil || user.EmailConfirmed) {
 
 		if user.EmailConfirmationTokenSentAt != nil && time.Since(*user.EmailConfirmationTokenSentAt).Minutes() < float64(config.MinutesBetweenResend) {
-			return true, errors.TooManyRequests
+			return true, errors.ErrTooManyRequests
 		}
 
 		token := randstr.String(100)
@@ -42,7 +42,7 @@ func ResendEmail(db *gorm.DB, config *config.Config, e string) (bool, error) {
 
 			if err := user.Save(db); err != nil {
 				logrus.Error(err)
-				return errors.Internal
+				return errors.ErrInternal
 			}
 
 			context := &map[string]string{
@@ -53,7 +53,7 @@ func ResendEmail(db *gorm.DB, config *config.Config, e string) (bool, error) {
 
 			if err := email.SendEmail(config.ConfirmationTemplate, context, user.Email, config); err != nil {
 				logrus.Error(err)
-				return errors.Internal
+				return errors.ErrInternal
 			}
 
 			return nil

@@ -48,7 +48,7 @@ type ComplexityRoot struct {
 		AcceptInvite            func(childComplexity int, object model.AcceptInviteForm) int
 		ChangeEmail             func(childComplexity int, object model.ChangeEmailForm) int
 		ChangePassword          func(childComplexity int, object model.ChangePasswordForm) int
-		ChangePhone             func(childComplexity int, object model.ChangePhoneForm) int
+		ChangePhone             func(childComplexity int, phone string) int
 		ConfirmEmail            func(childComplexity int, token string) int
 		ConfirmEmailChange      func(childComplexity int, object model.ConfirmChangeEmailForm) int
 		ConfirmPhone            func(childComplexity int, token string) int
@@ -86,6 +86,7 @@ type ComplexityRoot struct {
 		CreatedAt                    func(childComplexity int) int
 		Email                        func(childComplexity int) int
 		EmailChangeTokenSentAt       func(childComplexity int) int
+		EmailChangedAt               func(childComplexity int) int
 		EmailConfirmationTokenSentAt func(childComplexity int) int
 		EmailConfirmed               func(childComplexity int) int
 		EmailConfirmedAt             func(childComplexity int) int
@@ -94,8 +95,11 @@ type ComplexityRoot struct {
 		InvitationTokenSentAt        func(childComplexity int) int
 		LastSigninAt                 func(childComplexity int) int
 		Name                         func(childComplexity int) int
+		NewEmail                     func(childComplexity int) int
+		NewPhone                     func(childComplexity int) int
 		Phone                        func(childComplexity int) int
 		PhoneChangeTokenSentAt       func(childComplexity int) int
+		PhoneChangedAt               func(childComplexity int) int
 		PhoneConfirmationTokenSentAt func(childComplexity int) int
 		PhoneConfirmed               func(childComplexity int) int
 		PhoneConfirmedAt             func(childComplexity int) int
@@ -118,7 +122,7 @@ type MutationResolver interface {
 	UpdatePassword(ctx context.Context, id string, object model.UpdatePasswordForm) (*model.User, error)
 	ChangePassword(ctx context.Context, object model.ChangePasswordForm) (*model.User, error)
 	ChangeEmail(ctx context.Context, object model.ChangeEmailForm) (*model.User, error)
-	ChangePhone(ctx context.Context, object model.ChangePhoneForm) (*model.User, error)
+	ChangePhone(ctx context.Context, phone string) (*model.User, error)
 	ConfirmPhoneChange(ctx context.Context, object model.ConfirmPhoneChangeForm) (*model.User, error)
 	ConfirmEmailChange(ctx context.Context, object model.ConfirmChangeEmailForm) (*model.User, error)
 	Reset(ctx context.Context, username string) (bool, error)
@@ -195,7 +199,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ChangePhone(childComplexity, args["object"].(model.ChangePhoneForm)), true
+		return e.complexity.Mutation.ChangePhone(childComplexity, args["phone"].(string)), true
 
 	case "Mutation.confirm_email":
 		if e.complexity.Mutation.ConfirmEmail == nil {
@@ -493,6 +497,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.EmailChangeTokenSentAt(childComplexity), true
 
+	case "user.email_changed_at":
+		if e.complexity.User.EmailChangedAt == nil {
+			break
+		}
+
+		return e.complexity.User.EmailChangedAt(childComplexity), true
+
 	case "user.email_confirmation_token_sent_at":
 		if e.complexity.User.EmailConfirmationTokenSentAt == nil {
 			break
@@ -549,6 +560,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Name(childComplexity), true
 
+	case "user.new_email":
+		if e.complexity.User.NewEmail == nil {
+			break
+		}
+
+		return e.complexity.User.NewEmail(childComplexity), true
+
+	case "user.new_phone":
+		if e.complexity.User.NewPhone == nil {
+			break
+		}
+
+		return e.complexity.User.NewPhone(childComplexity), true
+
 	case "user.phone":
 		if e.complexity.User.Phone == nil {
 			break
@@ -562,6 +587,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.PhoneChangeTokenSentAt(childComplexity), true
+
+	case "user.phone_changed_at":
+		if e.complexity.User.PhoneChangedAt == nil {
+			break
+		}
+
+		return e.complexity.User.PhoneChangedAt(childComplexity), true
 
 	case "user.phone_confirmation_token_sent_at":
 		if e.complexity.User.PhoneConfirmationTokenSentAt == nil {
@@ -676,7 +708,7 @@ var sources = []*ast.Source{
   update_password(id: String!, object: update_password_form!): user!
   change_password(object: change_password_form!): user!
   change_email(object: change_email_form!): user!
-  change_phone(object: change_phone_form!): user!
+  change_phone(phone: String!): user!
   confirm_phone_change(object: confirm_phone_change_form!): user!
   confirm_email_change(object: confirm_change_email_form!): user!
   reset(username: String!): Boolean!
@@ -746,10 +778,6 @@ input accept_invite_form {
   password: String!
 }
 
-input change_phone_form {
-  phone: String!
-}
-
 input confirm_change_email_form {
   email_change_token: String!
 }
@@ -781,11 +809,15 @@ scalar Time`, BuiltIn: false},
   recovery_token_sent_at: Time
   email_change_token_sent_at: Time
   phone_change_token_sent_at: Time
+  phone_changed_at: Time
+  email_changed_at: Time
   last_signin_at: Time
   created_at: Time!
   updated_at: Time!
   invitation_token_sent_at: Time
   invitation_accepted_at: Time
+  new_phone: String
+  new_email: String
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -842,15 +874,15 @@ func (ec *executionContext) field_Mutation_change_password_args(ctx context.Cont
 func (ec *executionContext) field_Mutation_change_phone_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ChangePhoneForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg0, err = ec.unmarshalNchange_phone_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐChangePhoneForm(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["phone"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg0
+	args["phone"] = arg0
 	return args, nil
 }
 
@@ -1841,7 +1873,7 @@ func (ec *executionContext) _Mutation_change_phone(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ChangePhone(rctx, args["object"].(model.ChangePhoneForm))
+		return ec.resolvers.Mutation().ChangePhone(rctx, args["phone"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4064,6 +4096,70 @@ func (ec *executionContext) _user_phone_change_token_sent_at(ctx context.Context
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _user_phone_changed_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "user",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PhoneChangedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _user_email_changed_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "user",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EmailChangedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _user_last_signin_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4230,6 +4326,70 @@ func (ec *executionContext) _user_invitation_accepted_at(ctx context.Context, fi
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _user_new_phone(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "user",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NewPhone, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _user_new_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "user",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NewEmail, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 // endregion **************************** field.gotpl *****************************
 
 // region    **************************** input.gotpl *****************************
@@ -4310,29 +4470,6 @@ func (ec *executionContext) unmarshalInputchange_password_form(ctx context.Conte
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_password"))
 			it.NewPassword, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputchange_phone_form(ctx context.Context, obj interface{}) (model.ChangePhoneForm, error) {
-	var it model.ChangePhoneForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "phone":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
-			it.Phone, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5226,6 +5363,10 @@ func (ec *executionContext) _user(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._user_email_change_token_sent_at(ctx, field, obj)
 		case "phone_change_token_sent_at":
 			out.Values[i] = ec._user_phone_change_token_sent_at(ctx, field, obj)
+		case "phone_changed_at":
+			out.Values[i] = ec._user_phone_changed_at(ctx, field, obj)
+		case "email_changed_at":
+			out.Values[i] = ec._user_email_changed_at(ctx, field, obj)
 		case "last_signin_at":
 			out.Values[i] = ec._user_last_signin_at(ctx, field, obj)
 		case "created_at":
@@ -5242,6 +5383,10 @@ func (ec *executionContext) _user(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._user_invitation_token_sent_at(ctx, field, obj)
 		case "invitation_accepted_at":
 			out.Values[i] = ec._user_invitation_accepted_at(ctx, field, obj)
+		case "new_phone":
+			out.Values[i] = ec._user_new_phone(ctx, field, obj)
+		case "new_email":
+			out.Values[i] = ec._user_new_email(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5586,11 +5731,6 @@ func (ec *executionContext) unmarshalNchange_email_form2githubᚗcomᚋzolamkᚋ
 
 func (ec *executionContext) unmarshalNchange_password_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐChangePasswordForm(ctx context.Context, v interface{}) (model.ChangePasswordForm, error) {
 	res, err := ec.unmarshalInputchange_password_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNchange_phone_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐChangePhoneForm(ctx context.Context, v interface{}) (model.ChangePhoneForm, error) {
-	res, err := ec.unmarshalInputchange_phone_form(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

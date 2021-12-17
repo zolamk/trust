@@ -70,7 +70,7 @@ func TriggerHook(event string, payload *map[string]interface{}, config *config.C
 	}
 
 	if res.StatusCode >= 400 {
-		return nil, errors.WebHook
+		return nil, errors.ErrWebHook
 	}
 
 	if res.Header.Get("content-type") != "application/json" {

@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/graph/generated"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/resolver"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -68,7 +69,7 @@ func main() {
 
 	http.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql"))
 
-	http.Handle("/graphql", graphql)
+	http.Handle("/graphql", middleware.Authenticated(config)(graphql))
 
 	host := fmt.Sprintf("%s:%d", config.Host, config.Port)
 

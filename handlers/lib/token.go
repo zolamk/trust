@@ -19,36 +19,36 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 	if tx := db.First(user, "phone = ? or email = ?", username, username); tx.Error != nil {
 
 		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, errors.IncorrectUsernameOrPassword
+			return nil, errors.ErrIncorrectUsernameOrPassword
 		}
 
 		logrus.Error(tx.Error)
 
-		return nil, errors.Internal
+		return nil, errors.ErrInternal
 
 	}
 
 	if user.Email != nil && *user.Email == username && !user.EmailConfirmed {
-		return nil, errors.EmailNotConfirmed
+		return nil, errors.ErrEmailNotConfirmed
 	}
 
 	if user.Phone != nil && *user.Phone == username && !user.PhoneConfirmed {
-		return nil, errors.PhoneNotConfirmed
+		return nil, errors.ErrPhoneNotConfirmed
 	}
 
 	if user.Password == nil {
-		return nil, errors.IncorrectUsernameOrPassword
+		return nil, errors.ErrIncorrectUsernameOrPassword
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(password)); err != nil {
 
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return nil, errors.IncorrectUsernameOrPassword
+			return nil, errors.ErrIncorrectUsernameOrPassword
 		}
 
 		logrus.Error(err)
 
-		return nil, errors.Internal
+		return nil, errors.ErrInternal
 
 	}
 
@@ -62,7 +62,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.WebHook
+		return nil, errors.ErrWebHook
 	}
 
 	token := jwt.New(user, hook_response, config.JWT)
@@ -71,7 +71,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.Internal
+		return nil, errors.ErrInternal
 	}
 
 	refresh_token := model.RefreshToken{
@@ -81,7 +81,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 
 	if err := refresh_token.Create(db); err != nil {
 		logrus.Error(err)
-		return nil, errors.Internal
+		return nil, errors.ErrInternal
 	}
 
 	return &model.LoginResponse{

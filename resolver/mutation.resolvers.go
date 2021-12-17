@@ -7,9 +7,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/zolamk/trust/errors"
 	"github.com/zolamk/trust/graph/generated"
 	"github.com/zolamk/trust/handlers/lib"
 	"github.com/zolamk/trust/handlers/lib/reset"
+	"github.com/zolamk/trust/handlers/lib/user"
+	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
 )
 
@@ -65,8 +68,14 @@ func (r *mutationResolver) ChangeEmail(ctx context.Context, object model.ChangeE
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) ChangePhone(ctx context.Context, object model.ChangePhoneForm) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) ChangePhone(ctx context.Context, phone string) (*model.User, error) {
+	token, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, errors.ErrInvalidJWT
+	}
+
+	return user.ChangePhone(r.DB, r.Config, token, phone)
 }
 
 func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, object model.ConfirmPhoneChangeForm) (*model.User, error) {

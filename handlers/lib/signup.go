@@ -27,17 +27,17 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 	}
 
 	if !config.PasswordRule.MatchString(form.Password) {
-		return nil, errors.InvalidPassword
+		return nil, errors.ErrInvalidPassword
 	}
 
 	if form.Email != nil {
 
 		if !config.EmailRule.MatchString(*form.Email) {
-			return nil, errors.InvalidEmail
+			return nil, errors.ErrInvalidEmail
 		}
 
 		if config.DisableEmail {
-			return nil, errors.EmailDisabled
+			return nil, errors.ErrEmailDisabled
 		}
 
 		tx := db.First(user, "email = ?", *form.Email)
@@ -45,10 +45,10 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 		if tx.Error != nil {
 			if tx.Error != gorm.ErrRecordNotFound {
 				logrus.Error(tx.Error)
-				return nil, errors.Internal
+				return nil, errors.ErrInternal
 			}
 		} else {
-			return nil, errors.EmailRegistered
+			return nil, errors.ErrEmailRegistered
 		}
 
 	}
@@ -56,11 +56,11 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 	if form.Phone != nil {
 
 		if !config.PhoneRule.MatchString(*form.Phone) {
-			return nil, errors.InvalidPhone
+			return nil, errors.ErrInvalidPhone
 		}
 
 		if config.DisablePhone {
-			return nil, errors.PhoneDisabled
+			return nil, errors.ErrPhoneDisabled
 		}
 
 		tx := db.First(user, "phone = ?", *form.Phone)
@@ -68,10 +68,10 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 		if tx.Error != nil {
 			if tx.Error != gorm.ErrRecordNotFound {
 				logrus.Error(tx.Error)
-				return nil, errors.Internal
+				return nil, errors.ErrInternal
 			}
 		} else {
-			return nil, errors.PhoneRegistered
+			return nil, errors.ErrPhoneRegistered
 		}
 
 	}
@@ -82,7 +82,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 		if err != nil {
 			logrus.Error(err)
-			return errors.Internal
+			return errors.ErrInternal
 		}
 
 		hash := string(password)
@@ -91,7 +91,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 		if err := user.Create(tx); err != nil {
 			logrus.Error(err)
-			return errors.Internal
+			return errors.ErrInternal
 		}
 
 		if user.Email != nil {
@@ -100,7 +100,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 				if err := user.ConfirmEmail(tx); err != nil {
 					logrus.Error(err)
-					return errors.Internal
+					return errors.ErrInternal
 				}
 
 			} else {
@@ -113,7 +113,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 				if err := user.Save(tx); err != nil {
 					logrus.Error(err)
-					return errors.Internal
+					return errors.ErrInternal
 				}
 
 				context := &map[string]string{

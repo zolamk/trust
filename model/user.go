@@ -26,14 +26,17 @@ type User struct {
 	UpdatedAt                    time.Time  `json:"updated_at,omitempty"`
 	InvitationTokenSentAt        *time.Time `json:"invitation_token_sent_at,omitempty"`
 	InvitationAcceptedAt         *time.Time `json:"invitation_accepted_at,omitempty"`
+	NewEmail                     *string    `json:"new_email,omitempty"`
+	NewPhone                     *string    `json:"new_phone,omitempty"`
+	PhoneChangedAt               *time.Time `json:"phone_changed_at,omitempty"`
+	EmailChangedAt               *time.Time `json:"email_changed_at,omitempty"`
 	IsAdmin                      bool       `json:"-"`
 	Password                     *string    `json:"-"`
 	EmailConfirmationToken       *string    `json:"-"`
 	PhoneConfirmationToken       *string    `json:"-"`
 	RecoveryToken                *string    `json:"-"`
 	EmailChangeToken             *string    `json:"-"`
-	NewEmail                     *string    `json:"new_email,omitempty"`
-	NewPhone                     *string    `json:"new_phone,omitempty"`
+	PhoneChangeToken             *string    `json:"-"`
 	EmailInvitationToken         *string    `json:"-"`
 	PhoneInvitationToken         *string    `json:"-"`
 }

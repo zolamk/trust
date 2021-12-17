@@ -16,10 +16,6 @@ type ChangePasswordForm struct {
 	NewPassword string `json:"new_password"`
 }
 
-type ChangePhoneForm struct {
-	Phone string `json:"phone"`
-}
-
 type ConfirmChangeEmailForm struct {
 	EmailChangeToken string `json:"email_change_token"`
 }

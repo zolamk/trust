@@ -72,42 +72,44 @@ type JWTConfig struct {
 }
 
 type Config struct {
-	AutoConfirm           bool            `json:"auto_confirm"`
-	DatabaseURL           string          `json:"database_url"`
-	DisableSignup         bool            `json:"disable_signup"`
-	FacebookEnabled       bool            `json:"facebook_enabled"`
-	GoogleEnabled         bool            `json:"google_enabled"`
-	GithubEnabled         bool            `json:"github_enabled"`
-	FacebookClientID      *string         `json:"facebook_client_id"`
-	FacebookClientSecret  *string         `json:"facebook_client_secret"`
-	GoogleClientID        *string         `json:"google_client_id"`
-	GoogleClientSecret    *string         `json:"google_client_secret"`
-	GithubClientID        *string         `json:"github_client_id"`
-	GithubClientSecret    *string         `json:"github_client_secret"`
-	Host                  string          `json:"host"`
-	InstanceURL           string          `json:"instance_url"`
-	JWT                   *JWTConfig      `json:"jwt"`
-	LogLevel              logrus.Level    `json:"log_level"`
-	ConfirmationTemplate  *TemplateConfig `json:"confirmation_template"`
-	RecoveryTemplate      *TemplateConfig `json:"recovery_template"`
-	ChangeTemplate        *TemplateConfig `json:"change_template"`
-	InvitationTemplate    *TemplateConfig `json:"invitation_template"`
-	Port                  uint16          `json:"port"`
-	PasswordRule          Regexp          `json:"password_rule"`
-	EmailRule             Regexp          `json:"email_rule"`
-	PhoneRule             Regexp          `json:"phone_rule"`
-	SiteURL               string          `json:"site_url"`
-	SMTP                  *SMTPConfig     `json:"smtp"`
-	DisablePhone          bool            `json:"disable_phone"`
-	DisableEmail          bool            `json:"disable_email"`
-	PasswordHashCost      uint8           `json:"password_hash_cost"`
-	MaxConnectionPoolSize uint8           `json:"max_connection_pool_size"`
-	AdminOnlyList         bool            `json:"admin_only_list"`
-	MinutesBetweenResend  time.Duration   `json:"minutes_between_resend"`
-	LoginHook             *string         `json:"login_hook"`
-	SocialRedirectPage    string          `json:"social_redirect_page"`
-	SMS                   *SMSConfig      `json:"sms"`
-	ConfirmationExpiry    time.Duration   `json:"confirmation_expiry"`
+	AutoConfirm               bool            `json:"auto_confirm"`
+	DatabaseURL               string          `json:"database_url"`
+	DisableSignup             bool            `json:"disable_signup"`
+	FacebookEnabled           bool            `json:"facebook_enabled"`
+	GoogleEnabled             bool            `json:"google_enabled"`
+	GithubEnabled             bool            `json:"github_enabled"`
+	FacebookClientID          *string         `json:"facebook_client_id"`
+	FacebookClientSecret      *string         `json:"facebook_client_secret"`
+	GoogleClientID            *string         `json:"google_client_id"`
+	GoogleClientSecret        *string         `json:"google_client_secret"`
+	GithubClientID            *string         `json:"github_client_id"`
+	GithubClientSecret        *string         `json:"github_client_secret"`
+	Host                      string          `json:"host"`
+	InstanceURL               string          `json:"instance_url"`
+	JWT                       *JWTConfig      `json:"jwt"`
+	LogLevel                  logrus.Level    `json:"log_level"`
+	ConfirmationTemplate      *TemplateConfig `json:"confirmation_template"`
+	RecoveryTemplate          *TemplateConfig `json:"recovery_template"`
+	ChangeTemplate            *TemplateConfig `json:"change_template"`
+	InvitationTemplate        *TemplateConfig `json:"invitation_template"`
+	Port                      uint16          `json:"port"`
+	PasswordRule              Regexp          `json:"password_rule"`
+	EmailRule                 Regexp          `json:"email_rule"`
+	PhoneRule                 Regexp          `json:"phone_rule"`
+	SiteURL                   string          `json:"site_url"`
+	SMTP                      *SMTPConfig     `json:"smtp"`
+	DisablePhone              bool            `json:"disable_phone"`
+	DisableEmail              bool            `json:"disable_email"`
+	PasswordHashCost          uint8           `json:"password_hash_cost"`
+	MaxConnectionPoolSize     uint8           `json:"max_connection_pool_size"`
+	AdminOnlyList             bool            `json:"admin_only_list"`
+	MinutesBetweenResend      time.Duration   `json:"minutes_between_resend"`
+	MinutesBetweenPhoneChange time.Duration   `json:"minutes_between_phone_change"`
+	MinutesBetweenEmailChange time.Duration   `json:"minutes_between_email_change"`
+	LoginHook                 *string         `json:"login_hook"`
+	SocialRedirectPage        string          `json:"social_redirect_page"`
+	SMS                       *SMSConfig      `json:"sms"`
+	ConfirmationExpiry        time.Duration   `json:"confirmation_expiry"`
 }
 
 func New() *Config {
@@ -141,19 +143,21 @@ func New() *Config {
 			Aud:  "trust",
 			Iss:  "trust",
 		},
-		LogLevel:              logrus.ErrorLevel,
-		Port:                  1995,
-		DisablePhone:          false,
-		DisableEmail:          false,
-		AdminOnlyList:         true,
-		SocialRedirectPage:    "social",
-		PasswordHashCost:      10,
-		MaxConnectionPoolSize: 10,
-		MinutesBetweenResend:  1,
-		ConfirmationExpiry:    60,
-		PasswordRule:          Regexp{*regexp.MustCompile(".{8,1000}")},
-		EmailRule:             Regexp{*regexp.MustCompile(`^[\w\-\.]+@([\w\-]+\.)+[\w\-]{1,}$`)},
-		PhoneRule:             Regexp{*regexp.MustCompile(`\+\d{5,15}`)},
+		LogLevel:                  logrus.ErrorLevel,
+		Port:                      1995,
+		DisablePhone:              false,
+		DisableEmail:              false,
+		AdminOnlyList:             true,
+		SocialRedirectPage:        "social",
+		PasswordHashCost:          10,
+		MaxConnectionPoolSize:     10,
+		MinutesBetweenResend:      10,
+		MinutesBetweenPhoneChange: 1440,
+		MinutesBetweenEmailChange: 1440,
+		ConfirmationExpiry:        60,
+		PasswordRule:              Regexp{*regexp.MustCompile(".{8,1000}")},
+		EmailRule:                 Regexp{*regexp.MustCompile(`^[\w\-\.]+@([\w\-]+\.)+[\w\-]{1,}$`)},
+		PhoneRule:                 Regexp{*regexp.MustCompile(`\+\d{5,15}`)},
 		ConfirmationTemplate: &TemplateConfig{
 			Subject: "Confirm Your Account",
 			SMS:     default_confirmation_sms,
@@ -352,7 +356,7 @@ func (c *JWTConfig) GetSigningKey() interface{} {
 
 func (c *JWTConfig) GetDecodingKey() interface{} {
 
-	if c.Type == "symmetric" {
+	if c.Type == "assymetric" {
 		return c.publicKey
 	}
 

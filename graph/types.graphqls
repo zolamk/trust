@@ -53,10 +53,6 @@ input accept_invite_form {
   password: String!
 }
 
-input change_phone_form {
-  phone: String!
-}
-
 input confirm_change_email_form {
   email_change_token: String!
 }

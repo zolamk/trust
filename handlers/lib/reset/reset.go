@@ -27,7 +27,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 		logrus.Error(tx.Error)
 
-		return false, errors.Internal
+		return false, errors.ErrInternal
 
 	}
 
@@ -47,7 +47,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			if err := user.Save(db); err != nil {
 				logrus.Error(err)
-				return errors.Internal
+				return errors.ErrInternal
 			}
 
 			context := &map[string]string{
@@ -58,7 +58,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			if err := email.SendEmail(config.RecoveryTemplate, context, user.Email, config); err != nil {
 				logrus.Error(err)
-				return errors.Internal
+				return errors.ErrInternal
 			}
 
 		}
@@ -77,7 +77,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			if err := user.Save(db); err != nil {
 				logrus.Error(err)
-				return errors.Internal
+				return errors.ErrInternal
 			}
 
 			context := &map[string]string{
@@ -88,7 +88,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			if err := sms.SendSMS(config.RecoveryTemplate, user.Phone, context, config.SMS); err != nil {
 				logrus.Error(err)
-				return errors.Internal
+				return errors.ErrInternal
 			}
 
 		}
