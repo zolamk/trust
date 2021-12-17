@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/99designs/gqlgen v0.14.0
 	github.com/cbroglie/mustache v1.3.0
+	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/vektah/gqlparser/v2 v2.2.0

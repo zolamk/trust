@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/zolamk/trust/graph/generated"
+	"github.com/zolamk/trust/handlers/lib"
 	"github.com/zolamk/trust/model"
 )
 
@@ -24,7 +25,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 }
 
 func (r *queryResolver) Token(ctx context.Context, username string, password string) (*model.LoginResponse, error) {
-	panic(fmt.Errorf("not implemented"))
+	return lib.Token(r.DB, r.Config, username, password)
 }
 
 func (r *queryResolver) Refresh(ctx context.Context, token string) (*model.LoginResponse, error) {

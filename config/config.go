@@ -1,10 +1,12 @@
 package config
 
 import (
+	"crypto/x509"
 	"encoding/json"
-	"log"
+	"encoding/pem"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -57,16 +59,19 @@ type SMSConfig struct {
 }
 
 type JWTConfig struct {
-	Alg            string  `json:"algorithm"`
-	Exp            uint64  `json:"exp"`
-	PrivateKeyPath *string `json:"private_key_path"`
-	PublicKeyPath  *string `json:"public_key_path"`
-	Secret         *string `json:"secret"`
-	Type           string  `json:"-"`
+	Aud            string        `json:"audience"`
+	Alg            string        `json:"algorithm"`
+	Exp            time.Duration `json:"expiry"`
+	Iss            string        `json:"issuer"`
+	PrivateKeyPath *string       `json:"private_key_path"`
+	PublicKeyPath  *string       `json:"public_key_path"`
+	Secret         *string       `json:"secret"`
+	Type           string        `json:"-"`
+	privateKey     interface{}
+	publicKey      interface{}
 }
 
 type Config struct {
-	Aud                   string          `json:"aud"`
 	AutoConfirm           bool            `json:"auto_confirm"`
 	DatabaseURL           string          `json:"database_url"`
 	DisableSignup         bool            `json:"disable_signup"`
@@ -101,9 +106,7 @@ type Config struct {
 	MinutesBetweenResend  uint8           `json:"minutes_between_resend"`
 	LoginHook             *string         `json:"login_hook"`
 	SocialRedirectPage    string          `json:"social_redirect_page"`
-	privateKey            *string
-	publicKey             *string
-	SMS                   *SMSConfig `json:"sms"`
+	SMS                   *SMSConfig      `json:"sms"`
 }
 
 func New() *Config {
@@ -134,6 +137,8 @@ func New() *Config {
 		JWT: &JWTConfig{
 			Exp:  900,
 			Type: "assymetric",
+			Aud:  "trust",
+			Iss:  "trust",
 		},
 		LogLevel:              logrus.ErrorLevel,
 		Port:                  1995,
@@ -172,53 +177,92 @@ func New() *Config {
 	file, err := os.ReadFile("./.conf")
 
 	if err != nil {
-		log.Fatalln(err)
+		logrus.Fatalln(err)
 	}
 
 	if err = json.Unmarshal(file, &config); err != nil {
-		log.Fatalln(err)
+		logrus.Fatalln(err)
 	}
 
 	switch config.JWT.Alg {
-	case "RS256", "RS384", "RS512", "ES256", "ES384", "ES512":
+	case "RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "PS256", "PS384", "PS512":
+
+		var public_key []byte
+
+		var private_key []byte
 
 		if config.JWT.PrivateKeyPath == nil || config.JWT.PublicKeyPath == nil {
-			log.Fatalln("expected jwt_private_key_path and jwt_public_key_path to be set for all supported assymetric algorithms")
+			logrus.Fatalln("expected jwt_private_key_path and jwt_public_key_path to be set for all supported assymetric algorithms")
 		}
 
-		if file, err = os.ReadFile(*config.JWT.PrivateKeyPath); err != nil {
-			log.Fatalln("unable to read private key file " + err.Error())
+		if private_key, err = os.ReadFile(*config.JWT.PrivateKeyPath); err != nil {
+			logrus.Fatalln("unable to read private key file " + err.Error())
 		}
 
-		privateKey := string(file)
-
-		config.privateKey = &privateKey
-
-		if file, err = os.ReadFile(*config.JWT.PublicKeyPath); err != nil {
-			log.Fatalln("unable to read public key file " + err.Error())
+		if public_key, err = os.ReadFile(*config.JWT.PublicKeyPath); err != nil {
+			logrus.Fatalln("unable to read public key file " + err.Error())
 		}
 
-		publicKey := string(file)
+		private_block, _ := pem.Decode(private_key)
 
-		config.publicKey = &publicKey
+		public_block, _ := pem.Decode(public_key)
+
+		switch config.JWT.Alg {
+		case "RS256", "RS384", "RS512":
+
+			private_key, err := x509.ParsePKCS8PrivateKey(private_block.Bytes)
+
+			if err != nil {
+				logrus.Fatalln(err)
+			}
+
+			config.JWT.privateKey = private_key
+
+			public_key, err := x509.ParsePKIXPublicKey(public_block.Bytes)
+
+			if err != nil {
+				logrus.Fatalln(err)
+			}
+
+			config.JWT.publicKey = public_key
+
+		case "ES256", "ES384", "ES512":
+
+			private_key, err := x509.ParseECPrivateKey(private_block.Bytes)
+
+			if err != nil {
+				logrus.Fatalln(err)
+			}
+
+			config.JWT.privateKey = private_key
+
+			public_key, err := x509.ParsePKIXPublicKey(public_block.Bytes)
+
+			if err != nil {
+				logrus.Fatalln(err)
+			}
+
+			config.JWT.publicKey = public_key
+
+		}
 
 	case "HS256", "HS384", "HS512":
 
 		if config.JWT.Secret == nil {
-			log.Fatalln("expected jwt_secret to be set for all symmetric algorithms")
+			logrus.Fatalln("expected jwt_secret to be set for all symmetric algorithms")
 		}
 
 		config.JWT.Type = "symmetric"
 
 	default:
-		log.Fatalln("unsupported algorithm " + config.JWT.Alg)
+		logrus.Fatalln("unsupported algorithm " + config.JWT.Alg)
 	}
 
 	if config.ConfirmationTemplate.Path != nil {
 
 		if config.ConfirmationTemplate.Email, err = parseFileTemplate(*config.ConfirmationTemplate.Path); err != nil {
 
-			log.Fatalln("unable to read confirmation email template " + err.Error())
+			logrus.Fatalln("unable to read confirmation email template " + err.Error())
 
 		}
 
@@ -228,7 +272,7 @@ func New() *Config {
 
 		if config.ChangeTemplate.Email, err = parseFileTemplate(*config.ChangeTemplate.Path); err != nil {
 
-			log.Fatalln("unable to read change email template " + err.Error())
+			logrus.Fatalln("unable to read change email template " + err.Error())
 
 		}
 
@@ -238,7 +282,7 @@ func New() *Config {
 
 		if config.RecoveryTemplate.Email, err = parseFileTemplate(*config.RecoveryTemplate.Path); err != nil {
 
-			log.Fatalln("unable to read recovery email template", err.Error())
+			logrus.Fatalln("unable to read recovery email template", err.Error())
 
 		}
 
@@ -248,7 +292,7 @@ func New() *Config {
 
 		if config.InvitationTemplate.Email, err = parseFileTemplate(*config.InvitationTemplate.Path); err != nil {
 
-			log.Fatalln("unable to read invitation email ", err.Error())
+			logrus.Fatalln("unable to read invitation email ", err.Error())
 
 		}
 
@@ -256,37 +300,37 @@ func New() *Config {
 
 	if config.GoogleEnabled && (config.GoogleClientID == nil || config.GoogleClientSecret == nil) {
 
-		log.Fatalln("expected google_client_id, google_client_secret to be set if google provider is enabled")
+		logrus.Fatalln("expected google_client_id, google_client_secret to be set if google provider is enabled")
 
 	}
 
 	if config.FacebookEnabled && (config.FacebookClientID == nil || config.FacebookClientSecret == nil) {
 
-		log.Fatalln("expected facebook_client_id, facebook_client_secret to be set if facebook provider is enabled")
+		logrus.Fatalln("expected facebook_client_id, facebook_client_secret to be set if facebook provider is enabled")
 
 	}
 
 	if config.GithubEnabled && (config.GithubClientID == nil || config.GithubClientSecret == nil) {
 
-		log.Fatalln("expected github_client_id, github_client_secret to be set if github providder is enabled")
+		logrus.Fatalln("expected github_client_id, github_client_secret to be set if github providder is enabled")
 
 	}
 
 	if config.DisableEmail && config.DisablePhone {
 
-		log.Fatalln("can't disable email and phone at the same time")
+		logrus.Fatalln("can't disable email and phone at the same time")
 
 	}
 
 	if !config.DisablePhone && config.SMS == nil {
 
-		log.Fatalln("expected sms to be set if phone support is enabled")
+		logrus.Fatalln("expected sms to be set if phone support is enabled")
 
 	}
 
 	if !config.DisableEmail && config.SMTP == nil {
 
-		log.Fatalln("expected smtp to be set if email support is enabled")
+		logrus.Fatalln("expected smtp to be set if email support is enabled")
 
 	}
 
@@ -294,22 +338,22 @@ func New() *Config {
 
 }
 
-func (c *Config) GetSigningKey() string {
+func (c *JWTConfig) GetSigningKey() interface{} {
 
-	if c.JWT.Type == "assymetric" {
-		return *c.privateKey
+	if c.Type == "assymetric" {
+		return c.privateKey
 	}
 
-	return *c.JWT.Secret
+	return c.Secret
 
 }
 
-func (c *Config) GetDecodingKey() string {
+func (c *JWTConfig) GetDecodingKey() interface{} {
 
-	if c.JWT.Type == "symmetric" {
-		return *c.publicKey
+	if c.Type == "symmetric" {
+		return c.publicKey
 	}
 
-	return *c.JWT.Secret
+	return c.Secret
 
 }
