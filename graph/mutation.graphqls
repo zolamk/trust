@@ -10,7 +10,7 @@ type Mutation {
   update_email(id: String!, object: update_email_form!): user!
   update_phone(id: String!, object: update_phone_form!): user!
   update_password(id: String!, object: update_password_form!): user!
-  change_password(object: change_password_form!): user!
+  change_password(old_password: String!, new_password: String!): user!
   change_email(email: String!): user!
   change_phone(phone: String!): user!
   confirm_phone_change(token: String!): user!

@@ -131,4 +131,10 @@ var (
 			"code": "cant_change_email",
 		},
 	}
+	ErrIncorrectOldPassword = &gqlerror.Error{
+		Message: "incorrect old password",
+		Extensions: map[string]interface{}{
+			"code": "incorrect_old_password",
+		},
+	}
 )

@@ -22,4 +22,5 @@ type user {
   invitation_accepted_at: Time
   new_phone: String
   new_email: String
+  password_changed_at: Time
 }

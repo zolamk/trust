@@ -47,7 +47,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AcceptInvite            func(childComplexity int, object model.AcceptInviteForm) int
 		ChangeEmail             func(childComplexity int, email string) int
-		ChangePassword          func(childComplexity int, object model.ChangePasswordForm) int
+		ChangePassword          func(childComplexity int, oldPassword string, newPassword string) int
 		ChangePhone             func(childComplexity int, phone string) int
 		ConfirmEmail            func(childComplexity int, token string) int
 		ConfirmEmailChange      func(childComplexity int, token string) int
@@ -120,7 +120,7 @@ type MutationResolver interface {
 	UpdateEmail(ctx context.Context, id string, object model.UpdateEmailForm) (*model.User, error)
 	UpdatePhone(ctx context.Context, id string, object model.UpdatePhoneForm) (*model.User, error)
 	UpdatePassword(ctx context.Context, id string, object model.UpdatePasswordForm) (*model.User, error)
-	ChangePassword(ctx context.Context, object model.ChangePasswordForm) (*model.User, error)
+	ChangePassword(ctx context.Context, oldPassword string, newPassword string) (*model.User, error)
 	ChangeEmail(ctx context.Context, email string) (*model.User, error)
 	ChangePhone(ctx context.Context, phone string) (*model.User, error)
 	ConfirmPhoneChange(ctx context.Context, token string) (*model.User, error)
@@ -187,7 +187,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ChangePassword(childComplexity, args["object"].(model.ChangePasswordForm)), true
+		return e.complexity.Mutation.ChangePassword(childComplexity, args["old_password"].(string), args["new_password"].(string)), true
 
 	case "Mutation.change_phone":
 		if e.complexity.Mutation.ChangePhone == nil {
@@ -706,7 +706,7 @@ var sources = []*ast.Source{
   update_email(id: String!, object: update_email_form!): user!
   update_phone(id: String!, object: update_phone_form!): user!
   update_password(id: String!, object: update_password_form!): user!
-  change_password(object: change_password_form!): user!
+  change_password(old_password: String!, new_password: String!): user!
   change_email(email: String!): user!
   change_phone(phone: String!): user!
   confirm_phone_change(token: String!): user!
@@ -855,15 +855,24 @@ func (ec *executionContext) field_Mutation_change_email_args(ctx context.Context
 func (ec *executionContext) field_Mutation_change_password_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.ChangePasswordForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg0, err = ec.unmarshalNchange_password_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐChangePasswordForm(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["old_password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("old_password"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg0
+	args["old_password"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["new_password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_password"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["new_password"] = arg1
 	return args, nil
 }
 
@@ -1785,7 +1794,7 @@ func (ec *executionContext) _Mutation_change_password(ctx context.Context, field
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ChangePassword(rctx, args["object"].(model.ChangePasswordForm))
+		return ec.resolvers.Mutation().ChangePassword(rctx, args["old_password"].(string), args["new_password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5694,11 +5703,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 
 func (ec *executionContext) unmarshalNaccept_invite_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐAcceptInviteForm(ctx context.Context, v interface{}) (model.AcceptInviteForm, error) {
 	res, err := ec.unmarshalInputaccept_invite_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNchange_password_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐChangePasswordForm(ctx context.Context, v interface{}) (model.ChangePasswordForm, error) {
-	res, err := ec.unmarshalInputchange_password_form(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -30,6 +30,7 @@ type User struct {
 	NewPhone                     *string    `json:"new_phone,omitempty"`
 	PhoneChangedAt               *time.Time `json:"phone_changed_at,omitempty"`
 	EmailChangedAt               *time.Time `json:"email_changed_at,omitempty"`
+	PasswordChangedAt            *time.Time `json:"password_changed_at,omitempty"`
 	IsAdmin                      bool       `json:"-"`
 	Password                     *string    `json:"-"`
 	EmailConfirmationToken       *string    `json:"-"`
