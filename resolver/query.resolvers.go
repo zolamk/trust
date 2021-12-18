@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/zolamk/trust/errors"
 	"github.com/zolamk/trust/graph/generated"
 	"github.com/zolamk/trust/handlers/lib"
@@ -20,14 +21,14 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Users(ctx context.Context, limit int, offset int) ([]*model.User, error) {
-	token, ok := ctx.Value("token").(*jwt.JWT)
+func (r *queryResolver) Users(ctx context.Context, where *model.UsersExpression, orderBy *model.UsersOrderBy) ([]*model.User, error) {
+	// token, ok := ctx.Value("token").(*jwt.JWT)
 
-	if !ok {
-		return nil, errors.ErrInvalidJWT
-	}
+	// if !ok {
+	// 	return nil, errors.ErrInvalidJWT
+	// }
 
-	return users.Users(r.DB, r.Config, token, limit, offset)
+	return users.Users(r.DB, r.Config, nil, graphql.GetOperationContext(ctx), r.DBSchema)
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {

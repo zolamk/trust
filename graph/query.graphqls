@@ -1,6 +1,6 @@
 type Query {
   user(id: String!): user!
-  users(limit: Int!, offset: Int!): [user!]!
+  users(where: users_expression, order_by: users_order_by): [user!]
   me: user!
   token(username: String!, password: String!): login_response!
   refresh(token: String!): login_response!

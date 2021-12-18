@@ -1,0 +1,160 @@
+input boolean_expression {
+  """Equals value"""
+  _eq: String
+
+  """Is value null (true) or not null (false)"""
+  _is_null: Boolean
+
+  """Does not equal value"""
+  _neq: String
+}
+
+enum order_direction {
+  """Ascending"""
+  asc
+
+  """Descending"""
+  desc
+}
+
+input string_expression {
+  """JSON value contains all of they key/value pairs"""
+  _contained_in: String
+
+  """JSON value matches any of they key/value pairs"""
+  _contains: String
+
+  """Equals value"""
+  _eq: String
+
+  """Is greater than value"""
+  _gt: String
+
+  """Is greater than or equals value"""
+  _gte: String
+
+  """JSON value contains this key"""
+  _has_key: String
+
+  """JSON value contains all of these keys"""
+  _has_key_all: [String]
+
+  """JSON value contains any of these keys"""
+  _has_key_any: [String]
+
+  """
+  Value matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
+  """
+  _ilike: String
+
+  """Is in list of values"""
+  _in: [String]
+
+  """Value matches (case-insensitive) regex pattern"""
+  _iregex: String
+
+  """Is value null (true) or not null (false)"""
+  _is_null: Boolean
+
+  """
+  Value matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
+  """
+  _like: String
+
+  """Is lesser than value"""
+  _lt: String
+
+  """Is lesser than or equals value"""
+  _lte: String
+
+  """Does not equal value"""
+  _neq: String
+
+  """
+  Value not matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
+  """
+  _nilike: String
+
+  """Is not in list of values"""
+  _nin: [String]
+
+  """Value not matching (case-insensitive) regex pattern"""
+  _niregex: String
+
+  """
+  Value not matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
+  """
+  _nlike: String
+
+  """Value not matching regex pattern"""
+  _nregex: String
+
+  """
+  Value not matching regex pattern. Similar to the 'like' operator but with support for regex. Pattern must not match entire value.
+  """
+  _nsimilar: String
+
+  """Value matches regex pattern"""
+  _regex: String
+
+  """
+  Value matching regex pattern. Similar to the 'like' operator but with support for regex. Pattern must match entire value.
+  """
+  _similar: String
+}
+
+
+input users_expression {
+  and: users_expression
+  avatar: string_expression
+  created_at: string_expression
+  email: string_expression
+  email_change_token_sent_at: string_expression
+  email_changed_at: string_expression
+  email_confirmation_token_sent_at: string_expression
+  email_confirmed: boolean_expression
+  email_confirmed_at: string_expression
+  id: string_expression
+  invitation_accepted_at: string_expression
+  invitation_token_sent_at: string_expression
+  is_admin: boolean_expression
+  last_signin_at: string_expression
+  name: string_expression
+  new_email: string_expression
+  new_phone: string_expression
+  not: users_expression
+  or: users_expression
+  password_changed_at: string_expression
+  phone: string_expression
+  phone_change_token_sent_at: string_expression
+  phone_changed_at: string_expression
+  phone_confirmation_token_sent_at: string_expression
+  phone_confirmed: boolean_expression
+  updated_at: string_expression
+}
+
+input users_order_by {
+  avatar: order_direction
+  created_at: order_direction
+  email: order_direction
+  email_change_token_sent_at: order_direction
+  email_changed_at: order_direction
+  email_confirmation_token_sent_at: order_direction
+  email_confirmed: order_direction
+  email_confirmed_at: order_direction
+  id: order_direction
+  invitation_accepted_at: order_direction
+  invitation_token_sent_at: order_direction
+  is_admin: order_direction
+  last_signin_at: order_direction
+  name: order_direction
+  new_email: order_direction
+  new_phone: order_direction
+  password_changed_at: order_direction
+  phone: order_direction
+  phone_change_token_sent_at: order_direction
+  phone_changed_at: order_direction
+  phone_confirmation_token_sent_at: order_direction
+  phone_confirmed: order_direction
+  updated_at: order_direction
+}

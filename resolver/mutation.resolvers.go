@@ -60,16 +60,14 @@ func (r *mutationResolver) UpdatePassword(ctx context.Context, id string, object
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) ChangePassword(ctx context.Context, old_password string, new_password string) (*model.User, error) {
-
+func (r *mutationResolver) ChangePassword(ctx context.Context, oldPassword string, newPassword string) (*model.User, error) {
 	token, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
 		return nil, errors.ErrInvalidJWT
 	}
 
-	return user.ChangePassword(r.DB, r.Config, token, old_password, new_password)
-
+	return user.ChangePassword(r.DB, r.Config, token, oldPassword, newPassword)
 }
 
 func (r *mutationResolver) ChangeEmail(ctx context.Context, email string) (*model.User, error) {
