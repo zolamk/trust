@@ -101,7 +101,7 @@ type Config struct {
 	DisablePhone              bool            `json:"disable_phone"`
 	DisableEmail              bool            `json:"disable_email"`
 	PasswordHashCost          uint8           `json:"password_hash_cost"`
-	MaxConnectionPoolSize     uint8           `json:"max_connection_pool_size"`
+	MaxConnectionPoolSize     int             `json:"max_connection_pool_size"`
 	AdminOnlyList             bool            `json:"admin_only_list"`
 	MinutesBetweenResend      time.Duration   `json:"minutes_between_resend"`
 	MinutesBetweenPhoneChange time.Duration   `json:"minutes_between_phone_change"`

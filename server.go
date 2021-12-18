@@ -55,6 +55,16 @@ func main() {
 		logrus.Fatalln(err)
 	}
 
+	sql, err := db.DB()
+
+	if err != nil {
+		logrus.Fatalln(err)
+	}
+
+	sql.SetMaxIdleConns(config.MaxConnectionPoolSize)
+
+	sql.SetMaxOpenConns(config.MaxConnectionPoolSize)
+
 	migration_driver, err := migrate.NewWithSourceInstance("iofs", migrations, config.DatabaseURL)
 
 	if err != nil {
