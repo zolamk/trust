@@ -137,4 +137,10 @@ var (
 			"code": "incorrect_old_password",
 		},
 	}
+	ErrAdminOnly = &gqlerror.Error{
+		Message: "only an admin can perform this action",
+		Extensions: map[string]interface{}{
+			"code": "admin_only",
+		},
+	}
 )

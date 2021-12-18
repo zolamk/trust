@@ -7,6 +7,7 @@ import (
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/errors"
 	"github.com/zolamk/trust/model"
+	"gorm.io/gorm"
 )
 
 type JWT struct {
@@ -72,4 +73,15 @@ func (j *JWT) Sign() (string, error) {
 
 	return token.SignedString(j.config.GetSigningKey())
 
+}
+
+func (j *JWT) IsAdmin(db *gorm.DB) (bool, error) {
+
+	is_admin := false
+
+	if tx := db.Table("trust.users").Select("is_admin").Where("id = ?", j.Subject).Scan(&is_admin); tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
+		return false, tx.Error
+	}
+
+	return is_admin, nil
 }

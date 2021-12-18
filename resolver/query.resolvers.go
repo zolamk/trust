@@ -11,6 +11,7 @@ import (
 	"github.com/zolamk/trust/graph/generated"
 	"github.com/zolamk/trust/handlers/lib"
 	"github.com/zolamk/trust/handlers/lib/user"
+	"github.com/zolamk/trust/handlers/lib/users"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
 )
@@ -20,7 +21,13 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 }
 
 func (r *queryResolver) Users(ctx context.Context, limit int, offset int) ([]*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	token, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, errors.ErrInvalidJWT
+	}
+
+	return users.Users(r.DB, r.Config, token, limit, offset)
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
