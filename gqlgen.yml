@@ -47,6 +47,10 @@ models:
   user:
     model:
       - github.com/zolamk/trust/model.User
+  users_order_by:
+    model: "map[string]interface{}"
+  users_bool_exp:
+    model: "map[string]interface{}"
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.ID

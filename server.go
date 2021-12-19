@@ -16,7 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/graph/generated"
-	"github.com/zolamk/trust/graphjin/sdata"
 	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/resolver"
 	"gorm.io/driver/postgres"
@@ -76,19 +75,7 @@ func main() {
 		logrus.Fatalln(err)
 	}
 
-	db_info, err := sdata.GetDBInfo(sql, "postgres", []string{})
-
-	if err != nil {
-		logrus.Fatalln(err)
-	}
-
-	db_schema, err := sdata.NewDBSchema(db_info, map[string][]string{})
-
-	if err != nil {
-		logrus.Fatalln(err)
-	}
-
-	graphql := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &resolver.Resolver{DB: db, Config: config, DBSchema: db_schema}}))
+	graphql := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &resolver.Resolver{DB: db, Config: config}}))
 
 	http.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql"))
 

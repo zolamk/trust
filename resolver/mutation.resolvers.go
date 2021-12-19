@@ -90,24 +90,24 @@ func (r *mutationResolver) ChangePhone(ctx context.Context, phone string) (*mode
 	return user.ChangePhone(r.DB, r.Config, token, phone)
 }
 
-func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, confirmation_token string) (*model.User, error) {
-	token, ok := ctx.Value("token").(*jwt.JWT)
+func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, token string) (*model.User, error) {
+	jwt, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
 		return nil, errors.ErrInvalidJWT
 	}
 
-	return user.ConfirmPhoneChange(r.DB, r.Config, token, confirmation_token)
+	return user.ConfirmPhoneChange(r.DB, r.Config, jwt, token)
 }
 
-func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, confirmation_token string) (*model.User, error) {
-	token, ok := ctx.Value("token").(*jwt.JWT)
+func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, token string) (*model.User, error) {
+	jwt, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
 		return nil, errors.ErrInvalidJWT
 	}
 
-	return user.ConfirmEmailChange(r.DB, r.Config, token, confirmation_token)
+	return user.ConfirmEmailChange(r.DB, r.Config, jwt, token)
 }
 
 func (r *mutationResolver) Reset(ctx context.Context, username string) (bool, error) {

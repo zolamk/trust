@@ -3,73 +3,48 @@ package users
 import (
 	"log"
 
-	"github.com/99designs/gqlgen/graphql"
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/errors"
-	"github.com/zolamk/trust/graphjin/psql"
-	"github.com/zolamk/trust/graphjin/qcode"
-	"github.com/zolamk/trust/graphjin/sdata"
 	"github.com/zolamk/trust/jwt"
+	"github.com/zolamk/trust/lib/compilers"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, oc *graphql.OperationContext, db_schema *sdata.DBSchema) ([]*model.User, error) {
+func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, where map[string]interface{}, order_by map[string]interface{}, offset, limit int) ([]*model.User, error) {
 
-	users := &[]*model.User{}
+	users := []*model.User{}
 
-	// if config.AdminOnlyList {
+	if config.AdminOnlyList {
 
-	// 	is_admin, err := token.IsAdmin(db)
+		is_admin, err := token.IsAdmin(db)
 
-	// 	if err != nil {
-	// 		logrus.Error(err)
-	// 		return *users, errors.ErrInternal
-	// 	}
+		if err != nil {
+			logrus.Error(err)
+			return users, errors.ErrInternal
+		}
 
-	// 	if !is_admin {
-	// 		return *users, errors.ErrAdminOnly
-	// 	}
+		if !is_admin {
+			return users, errors.ErrAdminOnly
+		}
 
-	// }
+	}
 
-	qcode_compiler, err := qcode.NewCompiler(db_schema, qcode.Config{
-		DBSchema:     "trust",
-		DisableAgg:   true,
-		DisableFuncs: true,
-	})
+	query, params, err := compilers.CompileQuery(fields, where, order_by, offset, limit)
 
 	if err != nil {
 		logrus.Error(err)
-		return *users, errors.ErrInternal
+		return nil, errors.ErrInternal
 	}
 
-	qcode, err := qcode_compiler.Compile([]byte(oc.RawQuery), qcode.Variables{}, "user")
+	log.Println(*query)
 
-	if err != nil {
-		logrus.Error(err)
-		return *users, errors.ErrInternal
-	}
-
-	psql_compiler := psql.NewCompiler(psql.Config{
-		Vars: map[string]string{},
-	})
-
-	_, query, err := psql_compiler.CompileEx(qcode)
-
-	if err != nil {
-		logrus.Error(err)
-		return *users, errors.ErrInternal
-	}
-
-	log.Println(string(query))
-
-	if tx := db.Raw(string(query)).Scan(users); tx.Error != nil {
+	if tx := db.Raw(*query, params...).Scan(&users); tx.Error != nil {
 		logrus.Error(tx.Error)
-		return *users, errors.ErrInternal
+		return users, errors.ErrInternal
 	}
 
-	return *users, nil
+	return users, nil
 
 }

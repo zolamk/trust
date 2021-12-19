@@ -1,9 +1,0 @@
-goos: darwin
-goarch: amd64
-pkg: github.com/zolamk/trust/graphjin/psql
-BenchmarkCompile
-BenchmarkCompile-16            	   52245	     23205 ns/op	   34804 B/op	      52 allocs/op
-BenchmarkCompileParallel
-BenchmarkCompileParallel-16    	   91502	     13652 ns/op	   34821 B/op	      52 allocs/op
-PASS
-ok  	github.com/zolamk/trust/graphjin/psql	2.914s

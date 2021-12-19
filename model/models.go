@@ -65,54 +65,28 @@ type SignupForm struct {
 }
 
 type StringExpression struct {
-	// JSON value contains all of they key/value pairs
-	ContainedIn *string `json:"_contained_in"`
-	// JSON value matches any of they key/value pairs
-	Contains *string `json:"_contains"`
 	// Equals value
 	Eq *string `json:"_eq"`
+	// Does not equal value
+	Neq *string `json:"_neq"`
 	// Is greater than value
 	Gt *string `json:"_gt"`
 	// Is greater than or equals value
 	Gte *string `json:"_gte"`
-	// JSON value contains this key
-	HasKey *string `json:"_has_key"`
-	// JSON value contains all of these keys
-	HasKeyAll []*string `json:"_has_key_all"`
-	// JSON value contains any of these keys
-	HasKeyAny []*string `json:"_has_key_any"`
-	// Value matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
-	Ilike *string `json:"_ilike"`
-	// Is in list of values
-	In []*string `json:"_in"`
-	// Value matches (case-insensitive) regex pattern
-	Iregex *string `json:"_iregex"`
-	// Is value null (true) or not null (false)
-	IsNull *bool `json:"_is_null"`
 	// Value matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
 	Like *string `json:"_like"`
+	// Value matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
+	Ilike *string `json:"_ilike"`
+	// Value not matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
+	Nlike *string `json:"_nlike"`
+	// Value not matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
+	Nilike *string `json:"_nilike"`
+	// Is value null (true) or not null (false)
+	IsNull *bool `json:"_is_null"`
 	// Is lesser than value
 	Lt *string `json:"_lt"`
 	// Is lesser than or equals value
 	Lte *string `json:"_lte"`
-	// Does not equal value
-	Neq *string `json:"_neq"`
-	// Value not matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
-	Nilike *string `json:"_nilike"`
-	// Is not in list of values
-	Nin []*string `json:"_nin"`
-	// Value not matching (case-insensitive) regex pattern
-	Niregex *string `json:"_niregex"`
-	// Value not matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
-	Nlike *string `json:"_nlike"`
-	// Value not matching regex pattern
-	Nregex *string `json:"_nregex"`
-	// Value not matching regex pattern. Similar to the 'like' operator but with support for regex. Pattern must not match entire value.
-	Nsimilar *string `json:"_nsimilar"`
-	// Value matches regex pattern
-	Regex *string `json:"_regex"`
-	// Value matching regex pattern. Similar to the 'like' operator but with support for regex. Pattern must match entire value.
-	Similar *string `json:"_similar"`
 }
 
 type UpdateEmailForm struct {
@@ -132,61 +106,6 @@ type UpdatePhoneForm struct {
 type UpdateUserForm struct {
 	Name   *string `json:"name"`
 	Avatar *string `json:"avatar"`
-}
-
-type UsersExpression struct {
-	And                          *UsersExpression   `json:"and"`
-	Avatar                       *StringExpression  `json:"avatar"`
-	CreatedAt                    *StringExpression  `json:"created_at"`
-	Email                        *StringExpression  `json:"email"`
-	EmailChangeTokenSentAt       *StringExpression  `json:"email_change_token_sent_at"`
-	EmailChangedAt               *StringExpression  `json:"email_changed_at"`
-	EmailConfirmationTokenSentAt *StringExpression  `json:"email_confirmation_token_sent_at"`
-	EmailConfirmed               *BooleanExpression `json:"email_confirmed"`
-	EmailConfirmedAt             *StringExpression  `json:"email_confirmed_at"`
-	ID                           *StringExpression  `json:"id"`
-	InvitationAcceptedAt         *StringExpression  `json:"invitation_accepted_at"`
-	InvitationTokenSentAt        *StringExpression  `json:"invitation_token_sent_at"`
-	IsAdmin                      *BooleanExpression `json:"is_admin"`
-	LastSigninAt                 *StringExpression  `json:"last_signin_at"`
-	Name                         *StringExpression  `json:"name"`
-	NewEmail                     *StringExpression  `json:"new_email"`
-	NewPhone                     *StringExpression  `json:"new_phone"`
-	Not                          *UsersExpression   `json:"not"`
-	Or                           *UsersExpression   `json:"or"`
-	PasswordChangedAt            *StringExpression  `json:"password_changed_at"`
-	Phone                        *StringExpression  `json:"phone"`
-	PhoneChangeTokenSentAt       *StringExpression  `json:"phone_change_token_sent_at"`
-	PhoneChangedAt               *StringExpression  `json:"phone_changed_at"`
-	PhoneConfirmationTokenSentAt *StringExpression  `json:"phone_confirmation_token_sent_at"`
-	PhoneConfirmed               *BooleanExpression `json:"phone_confirmed"`
-	UpdatedAt                    *StringExpression  `json:"updated_at"`
-}
-
-type UsersOrderBy struct {
-	Avatar                       *OrderDirection `json:"avatar"`
-	CreatedAt                    *OrderDirection `json:"created_at"`
-	Email                        *OrderDirection `json:"email"`
-	EmailChangeTokenSentAt       *OrderDirection `json:"email_change_token_sent_at"`
-	EmailChangedAt               *OrderDirection `json:"email_changed_at"`
-	EmailConfirmationTokenSentAt *OrderDirection `json:"email_confirmation_token_sent_at"`
-	EmailConfirmed               *OrderDirection `json:"email_confirmed"`
-	EmailConfirmedAt             *OrderDirection `json:"email_confirmed_at"`
-	ID                           *OrderDirection `json:"id"`
-	InvitationAcceptedAt         *OrderDirection `json:"invitation_accepted_at"`
-	InvitationTokenSentAt        *OrderDirection `json:"invitation_token_sent_at"`
-	IsAdmin                      *OrderDirection `json:"is_admin"`
-	LastSigninAt                 *OrderDirection `json:"last_signin_at"`
-	Name                         *OrderDirection `json:"name"`
-	NewEmail                     *OrderDirection `json:"new_email"`
-	NewPhone                     *OrderDirection `json:"new_phone"`
-	PasswordChangedAt            *OrderDirection `json:"password_changed_at"`
-	Phone                        *OrderDirection `json:"phone"`
-	PhoneChangeTokenSentAt       *OrderDirection `json:"phone_change_token_sent_at"`
-	PhoneChangedAt               *OrderDirection `json:"phone_changed_at"`
-	PhoneConfirmationTokenSentAt *OrderDirection `json:"phone_confirmation_token_sent_at"`
-	PhoneConfirmed               *OrderDirection `json:"phone_confirmed"`
-	UpdatedAt                    *OrderDirection `json:"updated_at"`
 }
 
 type OrderDirection string

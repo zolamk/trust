@@ -72,7 +72,7 @@ type ComplexityRoot struct {
 		Refresh func(childComplexity int, token string) int
 		Token   func(childComplexity int, username string, password string) int
 		User    func(childComplexity int, id string) int
-		Users   func(childComplexity int, where *model.UsersExpression, orderBy *model.UsersOrderBy) int
+		Users   func(childComplexity int, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) int
 	}
 
 	LoginResponse struct {
@@ -133,7 +133,7 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	User(ctx context.Context, id string) (*model.User, error)
-	Users(ctx context.Context, where *model.UsersExpression, orderBy *model.UsersOrderBy) ([]*model.User, error)
+	Users(ctx context.Context, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) ([]*model.User, error)
 	Me(ctx context.Context) (*model.User, error)
 	Token(ctx context.Context, username string, password string) (*model.LoginResponse, error)
 	Refresh(ctx context.Context, token string) (*model.LoginResponse, error)
@@ -447,7 +447,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Users(childComplexity, args["where"].(*model.UsersExpression), args["order_by"].(*model.UsersOrderBy)), true
+		return e.complexity.Query.Users(childComplexity, args["where"].(map[string]interface{}), args["order_by"].(map[string]interface{}), args["offset"].(int), args["limit"].(int)), true
 
 	case "login_response.access_token":
 		if e.complexity.LoginResponse.AccessToken == nil {
@@ -726,7 +726,7 @@ var sources = []*ast.Source{
 }`, BuiltIn: false},
 	{Name: "graph/query.graphqls", Input: `type Query {
   user(id: String!): user!
-  users(where: users_expression, order_by: users_order_by): [user!]
+  users(where: users_bool_exp, order_by: users_order_by, offset: Int!, limit: Int!): [user!]
   me: user!
   token(username: String!, password: String!): login_response!
   refresh(token: String!): login_response!
@@ -844,14 +844,11 @@ enum order_direction {
 }
 
 input string_expression {
-  """JSON value contains all of they key/value pairs"""
-  _contained_in: String
-
-  """JSON value matches any of they key/value pairs"""
-  _contains: String
-
   """Equals value"""
   _eq: String
+
+  """Does not equal value"""
+  _neq: String
 
   """Is greater than value"""
   _gt: String
@@ -859,79 +856,38 @@ input string_expression {
   """Is greater than or equals value"""
   _gte: String
 
-  """JSON value contains this key"""
-  _has_key: String
-
-  """JSON value contains all of these keys"""
-  _has_key_all: [String]
-
-  """JSON value contains any of these keys"""
-  _has_key_any: [String]
+  """
+  Value matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
+  """
+  _like: String
 
   """
   Value matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
   """
   _ilike: String
 
-  """Is in list of values"""
-  _in: [String]
-
-  """Value matches (case-insensitive) regex pattern"""
-  _iregex: String
-
-  """Is value null (true) or not null (false)"""
-  _is_null: Boolean
-
   """
-  Value matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
+  Value not matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
   """
-  _like: String
-
-  """Is lesser than value"""
-  _lt: String
-
-  """Is lesser than or equals value"""
-  _lte: String
-
-  """Does not equal value"""
-  _neq: String
+  _nlike: String
 
   """
   Value not matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
   """
   _nilike: String
 
-  """Is not in list of values"""
-  _nin: [String]
+  """Is value null (true) or not null (false)"""
+  _is_null: Boolean
 
-  """Value not matching (case-insensitive) regex pattern"""
-  _niregex: String
+  """Is lesser than value"""
+  _lt: String
 
-  """
-  Value not matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
-  """
-  _nlike: String
-
-  """Value not matching regex pattern"""
-  _nregex: String
-
-  """
-  Value not matching regex pattern. Similar to the 'like' operator but with support for regex. Pattern must not match entire value.
-  """
-  _nsimilar: String
-
-  """Value matches regex pattern"""
-  _regex: String
-
-  """
-  Value matching regex pattern. Similar to the 'like' operator but with support for regex. Pattern must match entire value.
-  """
-  _similar: String
+  """Is lesser than or equals value"""
+  _lte: String
 }
 
 
-input users_expression {
-  and: users_expression
+input users_bool_exp {
   avatar: string_expression
   created_at: string_expression
   email: string_expression
@@ -948,8 +904,6 @@ input users_expression {
   name: string_expression
   new_email: string_expression
   new_phone: string_expression
-  not: users_expression
-  or: users_expression
   password_changed_at: string_expression
   phone: string_expression
   phone_change_token_sent_at: string_expression
@@ -1417,24 +1371,42 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.UsersExpression
+	var arg0 map[string]interface{}
 	if tmp, ok := rawArgs["where"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
-		arg0, err = ec.unmarshalOusers_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUsersExpression(ctx, tmp)
+		arg0, err = ec.unmarshalOusers_bool_exp2map(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["where"] = arg0
-	var arg1 *model.UsersOrderBy
+	var arg1 map[string]interface{}
 	if tmp, ok := rawArgs["order_by"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
-		arg1, err = ec.unmarshalOusers_order_by2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUsersOrderBy(ctx, tmp)
+		arg1, err = ec.unmarshalOusers_order_by2map(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["order_by"] = arg1
+	var arg2 int
+	if tmp, ok := rawArgs["offset"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("offset"))
+		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["offset"] = arg2
+	var arg3 int
+	if tmp, ok := rawArgs["limit"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+		arg3, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["limit"] = arg3
 	return args, nil
 }
 
@@ -2383,7 +2355,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Users(rctx, args["where"].(*model.UsersExpression), args["order_by"].(*model.UsersOrderBy))
+		return ec.resolvers.Query().Users(rctx, args["where"].(map[string]interface{}), args["order_by"].(map[string]interface{}), args["offset"].(int), args["limit"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4910,27 +4882,19 @@ func (ec *executionContext) unmarshalInputstring_expression(ctx context.Context,
 
 	for k, v := range asMap {
 		switch k {
-		case "_contained_in":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_contained_in"))
-			it.ContainedIn, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_contains":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_contains"))
-			it.Contains, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		case "_eq":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_eq"))
 			it.Eq, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "_neq":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_neq"))
+			it.Neq, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4950,27 +4914,11 @@ func (ec *executionContext) unmarshalInputstring_expression(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
-		case "_has_key":
+		case "_like":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_has_key"))
-			it.HasKey, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_has_key_all":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_has_key_all"))
-			it.HasKeyAll, err = ec.unmarshalOString2ᚕᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_has_key_any":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_has_key_any"))
-			it.HasKeyAny, err = ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_like"))
+			it.Like, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4982,19 +4930,19 @@ func (ec *executionContext) unmarshalInputstring_expression(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
-		case "_in":
+		case "_nlike":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_in"))
-			it.In, err = ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_nlike"))
+			it.Nlike, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "_iregex":
+		case "_nilike":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_iregex"))
-			it.Iregex, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_nilike"))
+			it.Nilike, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5003,14 +4951,6 @@ func (ec *executionContext) unmarshalInputstring_expression(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_is_null"))
 			it.IsNull, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_like":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_like"))
-			it.Like, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5027,78 +4967,6 @@ func (ec *executionContext) unmarshalInputstring_expression(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_lte"))
 			it.Lte, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_neq":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_neq"))
-			it.Neq, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_nilike":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_nilike"))
-			it.Nilike, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_nin":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_nin"))
-			it.Nin, err = ec.unmarshalOString2ᚕᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_niregex":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_niregex"))
-			it.Niregex, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_nlike":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_nlike"))
-			it.Nlike, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_nregex":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_nregex"))
-			it.Nregex, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_nsimilar":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_nsimilar"))
-			it.Nsimilar, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_regex":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_regex"))
-			it.Regex, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "_similar":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_similar"))
-			it.Similar, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5215,428 +5083,6 @@ func (ec *executionContext) unmarshalInputupdate_user_form(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatar"))
 			it.Avatar, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputusers_expression(ctx context.Context, obj interface{}) (model.UsersExpression, error) {
-	var it model.UsersExpression
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "and":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("and"))
-			it.And, err = ec.unmarshalOusers_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUsersExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "avatar":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatar"))
-			it.Avatar, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "created_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("created_at"))
-			it.CreatedAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-			it.Email, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_change_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_change_token_sent_at"))
-			it.EmailChangeTokenSentAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_changed_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_changed_at"))
-			it.EmailChangedAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_confirmation_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_confirmation_token_sent_at"))
-			it.EmailConfirmationTokenSentAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_confirmed":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_confirmed"))
-			it.EmailConfirmed, err = ec.unmarshalOboolean_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐBooleanExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_confirmed_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_confirmed_at"))
-			it.EmailConfirmedAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "invitation_accepted_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invitation_accepted_at"))
-			it.InvitationAcceptedAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "invitation_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invitation_token_sent_at"))
-			it.InvitationTokenSentAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "is_admin":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("is_admin"))
-			it.IsAdmin, err = ec.unmarshalOboolean_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐBooleanExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "last_signin_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last_signin_at"))
-			it.LastSigninAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "new_email":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_email"))
-			it.NewEmail, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "new_phone":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_phone"))
-			it.NewPhone, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "not":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("not"))
-			it.Not, err = ec.unmarshalOusers_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUsersExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "or":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("or"))
-			it.Or, err = ec.unmarshalOusers_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUsersExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "password_changed_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password_changed_at"))
-			it.PasswordChangedAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
-			it.Phone, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone_change_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_change_token_sent_at"))
-			it.PhoneChangeTokenSentAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone_changed_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_changed_at"))
-			it.PhoneChangedAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone_confirmation_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_confirmation_token_sent_at"))
-			it.PhoneConfirmationTokenSentAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone_confirmed":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_confirmed"))
-			it.PhoneConfirmed, err = ec.unmarshalOboolean_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐBooleanExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "updated_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updated_at"))
-			it.UpdatedAt, err = ec.unmarshalOstring_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐStringExpression(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputusers_order_by(ctx context.Context, obj interface{}) (model.UsersOrderBy, error) {
-	var it model.UsersOrderBy
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "avatar":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatar"))
-			it.Avatar, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "created_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("created_at"))
-			it.CreatedAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-			it.Email, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_change_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_change_token_sent_at"))
-			it.EmailChangeTokenSentAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_changed_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_changed_at"))
-			it.EmailChangedAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_confirmation_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_confirmation_token_sent_at"))
-			it.EmailConfirmationTokenSentAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_confirmed":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_confirmed"))
-			it.EmailConfirmed, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email_confirmed_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_confirmed_at"))
-			it.EmailConfirmedAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "invitation_accepted_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invitation_accepted_at"))
-			it.InvitationAcceptedAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "invitation_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invitation_token_sent_at"))
-			it.InvitationTokenSentAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "is_admin":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("is_admin"))
-			it.IsAdmin, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "last_signin_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last_signin_at"))
-			it.LastSigninAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "new_email":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_email"))
-			it.NewEmail, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "new_phone":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_phone"))
-			it.NewPhone, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "password_changed_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password_changed_at"))
-			it.PasswordChangedAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
-			it.Phone, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone_change_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_change_token_sent_at"))
-			it.PhoneChangeTokenSentAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone_changed_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_changed_at"))
-			it.PhoneChangedAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone_confirmation_token_sent_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_confirmation_token_sent_at"))
-			it.PhoneConfirmationTokenSentAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone_confirmed":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone_confirmed"))
-			it.PhoneConfirmed, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "updated_at":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updated_at"))
-			it.UpdatedAt, err = ec.unmarshalOorder_direction2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐOrderDirection(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6264,6 +5710,21 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6652,42 +6113,6 @@ func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.S
 	return graphql.MarshalString(v)
 }
 
-func (ec *executionContext) unmarshalOString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*string, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalOString2ᚖstring(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalOString2ᚕᚖstring(ctx context.Context, sel ast.SelectionSet, v []*string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalOString2ᚖstring(ctx, sel, v[i])
-	}
-
-	return ret
-}
-
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -6999,20 +6424,18 @@ func (ec *executionContext) marshalOuser2ᚕᚖgithubᚗcomᚋzolamkᚋtrustᚋm
 	return ret
 }
 
-func (ec *executionContext) unmarshalOusers_expression2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUsersExpression(ctx context.Context, v interface{}) (*model.UsersExpression, error) {
+func (ec *executionContext) unmarshalOusers_bool_exp2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalInputusers_expression(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
+	return v.(map[string]interface{}), nil
 }
 
-func (ec *executionContext) unmarshalOusers_order_by2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUsersOrderBy(ctx context.Context, v interface{}) (*model.UsersOrderBy, error) {
+func (ec *executionContext) unmarshalOusers_order_by2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalInputusers_order_by(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
+	return v.(map[string]interface{}), nil
 }
 
 // endregion ***************************** type.gotpl *****************************

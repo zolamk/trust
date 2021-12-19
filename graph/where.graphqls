@@ -18,14 +18,11 @@ enum order_direction {
 }
 
 input string_expression {
-  """JSON value contains all of they key/value pairs"""
-  _contained_in: String
-
-  """JSON value matches any of they key/value pairs"""
-  _contains: String
-
   """Equals value"""
   _eq: String
+
+  """Does not equal value"""
+  _neq: String
 
   """Is greater than value"""
   _gt: String
@@ -33,79 +30,38 @@ input string_expression {
   """Is greater than or equals value"""
   _gte: String
 
-  """JSON value contains this key"""
-  _has_key: String
-
-  """JSON value contains all of these keys"""
-  _has_key_all: [String]
-
-  """JSON value contains any of these keys"""
-  _has_key_any: [String]
+  """
+  Value matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
+  """
+  _like: String
 
   """
   Value matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
   """
   _ilike: String
 
-  """Is in list of values"""
-  _in: [String]
-
-  """Value matches (case-insensitive) regex pattern"""
-  _iregex: String
-
-  """Is value null (true) or not null (false)"""
-  _is_null: Boolean
-
   """
-  Value matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
+  Value not matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
   """
-  _like: String
-
-  """Is lesser than value"""
-  _lt: String
-
-  """Is lesser than or equals value"""
-  _lte: String
-
-  """Does not equal value"""
-  _neq: String
+  _nlike: String
 
   """
   Value not matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
   """
   _nilike: String
 
-  """Is not in list of values"""
-  _nin: [String]
+  """Is value null (true) or not null (false)"""
+  _is_null: Boolean
 
-  """Value not matching (case-insensitive) regex pattern"""
-  _niregex: String
+  """Is lesser than value"""
+  _lt: String
 
-  """
-  Value not matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
-  """
-  _nlike: String
-
-  """Value not matching regex pattern"""
-  _nregex: String
-
-  """
-  Value not matching regex pattern. Similar to the 'like' operator but with support for regex. Pattern must not match entire value.
-  """
-  _nsimilar: String
-
-  """Value matches regex pattern"""
-  _regex: String
-
-  """
-  Value matching regex pattern. Similar to the 'like' operator but with support for regex. Pattern must match entire value.
-  """
-  _similar: String
+  """Is lesser than or equals value"""
+  _lte: String
 }
 
 
-input users_expression {
-  and: users_expression
+input users_bool_exp {
   avatar: string_expression
   created_at: string_expression
   email: string_expression
@@ -122,8 +78,6 @@ input users_expression {
   name: string_expression
   new_email: string_expression
   new_phone: string_expression
-  not: users_expression
-  or: users_expression
   password_changed_at: string_expression
   phone: string_expression
   phone_change_token_sent_at: string_expression

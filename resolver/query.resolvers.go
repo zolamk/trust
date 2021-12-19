@@ -5,7 +5,6 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/zolamk/trust/errors"
@@ -18,17 +17,25 @@ import (
 )
 
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	token, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, errors.ErrInvalidJWT
+	}
+
+	return users.User(r.DB, r.Config, token, id)
 }
 
-func (r *queryResolver) Users(ctx context.Context, where *model.UsersExpression, orderBy *model.UsersOrderBy) ([]*model.User, error) {
-	// token, ok := ctx.Value("token").(*jwt.JWT)
+func (r *queryResolver) Users(ctx context.Context, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) ([]*model.User, error) {
+	token, ok := ctx.Value("token").(*jwt.JWT)
 
-	// if !ok {
-	// 	return nil, errors.ErrInvalidJWT
-	// }
+	if !ok {
+		return nil, errors.ErrInvalidJWT
+	}
 
-	return users.Users(r.DB, r.Config, nil, graphql.GetOperationContext(ctx), r.DBSchema)
+	fields := graphql.CollectAllFields(ctx)
+
+	return users.Users(r.DB, r.Config, token, fields, where, orderBy, offset, limit)
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
