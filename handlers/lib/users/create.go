@@ -1,10 +1,8 @@
 package users
 
 import (
-	"errors"
 	"time"
 
-	"github.com/jackc/pgconn"
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
@@ -34,19 +32,71 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 		return nil, handlers.ErrEmailOrPhoneRequired
 	}
 
-	if form.Email != nil && !config.EmailRule.MatchString(*form.Email) {
-		return nil, handlers.ErrInvalidEmail
-	}
-
-	if form.Phone != nil && !config.PhoneRule.MatchString(*form.Phone) {
-		return nil, handlers.ErrInvalidPhone
-	}
-
 	user := &model.User{
 		Name:   form.Name,
 		Avatar: form.Avatar,
 		Email:  form.Email,
 		Phone:  form.Phone,
+	}
+
+	if form.Email != nil {
+
+		if !config.EmailRule.MatchString(*form.Email) {
+			return nil, handlers.ErrInvalidEmail
+		}
+
+		tx := db.First(user, "email = ?", *form.Email)
+
+		if tx.Error != nil {
+
+			if tx.Error != gorm.ErrRecordNotFound {
+				logrus.Error(tx.Error)
+				return nil, handlers.ErrInternal
+			}
+
+		} else {
+
+			err := handlers.ErrEmailRegistered
+
+			err.Extensions["email"] = user.Email
+
+			err.Extensions["phone"] = user.Phone
+
+			err.Extensions["id"] = user.ID
+
+			return nil, err
+
+		}
+
+	}
+
+	if form.Phone != nil {
+
+		if !config.PhoneRule.MatchString(*form.Phone) {
+			return nil, handlers.ErrInvalidPhone
+		}
+
+		tx := db.First(user, "phone = ?", *form.Phone)
+
+		if tx.Error != nil {
+			if tx.Error != gorm.ErrRecordNotFound {
+				logrus.Error(tx.Error)
+				return nil, handlers.ErrInternal
+			}
+		} else {
+
+			err := handlers.ErrPhoneRegistered
+
+			err.Extensions["email"] = user.Email
+
+			err.Extensions["phone"] = user.Phone
+
+			err.Extensions["id"] = user.ID
+
+			return nil, err
+
+		}
+
 	}
 
 	if form.Password != nil {
@@ -71,25 +121,8 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 	err = db.Transaction(func(tx *gorm.DB) error {
 
 		if err := user.Create(tx); err != nil {
-
-			var pgerr *pgconn.PgError
-
-			if errors.As(err, &pgerr) {
-
-				if pgerr.ConstraintName == "uq_email" {
-					return handlers.ErrEmailRegistered
-				}
-
-				if pgerr.ConstraintName == "uq_phone" {
-					return handlers.ErrPhoneRegistered
-				}
-
-			}
-
 			logrus.Error(err)
-
 			return handlers.ErrInternal
-
 		}
 
 		if config.AutoConfirm || (form.Confirm != nil && *form.Confirm) {

@@ -61,9 +61,9 @@ type ComplexityRoot struct {
 		ResendPhoneConfirmation func(childComplexity int, phone string) int
 		Reset                   func(childComplexity int, username string) int
 		Signup                  func(childComplexity int, object model.SignupForm) int
-		UpdateEmail             func(childComplexity int, id string, object model.UpdateEmailForm) int
-		UpdatePassword          func(childComplexity int, id string, object model.UpdatePasswordForm) int
-		UpdatePhone             func(childComplexity int, id string, object model.UpdatePhoneForm) int
+		UpdateEmail             func(childComplexity int, id string, email string, confirm *bool) int
+		UpdatePassword          func(childComplexity int, id string, password string) int
+		UpdatePhone             func(childComplexity int, id string, phone string, password *bool) int
 		UpdateUser              func(childComplexity int, id string, object model.UpdateUserForm) int
 	}
 
@@ -118,9 +118,9 @@ type MutationResolver interface {
 	CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error)
 	UpdateUser(ctx context.Context, id string, object model.UpdateUserForm) (*model.User, error)
 	DeleteUser(ctx context.Context, id string) (*model.User, error)
-	UpdateEmail(ctx context.Context, id string, object model.UpdateEmailForm) (*model.User, error)
-	UpdatePhone(ctx context.Context, id string, object model.UpdatePhoneForm) (*model.User, error)
-	UpdatePassword(ctx context.Context, id string, object model.UpdatePasswordForm) (*model.User, error)
+	UpdateEmail(ctx context.Context, id string, email string, confirm *bool) (*model.User, error)
+	UpdatePhone(ctx context.Context, id string, phone string, password *bool) (*model.User, error)
+	UpdatePassword(ctx context.Context, id string, password string) (*model.User, error)
 	ChangePassword(ctx context.Context, oldPassword string, newPassword string) (*model.User, error)
 	ChangeEmail(ctx context.Context, email string) (*model.User, error)
 	ChangePhone(ctx context.Context, phone string) (*model.User, error)
@@ -356,7 +356,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateEmail(childComplexity, args["id"].(string), args["object"].(model.UpdateEmailForm)), true
+		return e.complexity.Mutation.UpdateEmail(childComplexity, args["id"].(string), args["email"].(string), args["confirm"].(*bool)), true
 
 	case "Mutation.update_password":
 		if e.complexity.Mutation.UpdatePassword == nil {
@@ -368,7 +368,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdatePassword(childComplexity, args["id"].(string), args["object"].(model.UpdatePasswordForm)), true
+		return e.complexity.Mutation.UpdatePassword(childComplexity, args["id"].(string), args["password"].(string)), true
 
 	case "Mutation.update_phone":
 		if e.complexity.Mutation.UpdatePhone == nil {
@@ -380,7 +380,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdatePhone(childComplexity, args["id"].(string), args["object"].(model.UpdatePhoneForm)), true
+		return e.complexity.Mutation.UpdatePhone(childComplexity, args["id"].(string), args["phone"].(string), args["password"].(*bool)), true
 
 	case "Mutation.update_user":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -711,9 +711,9 @@ var sources = []*ast.Source{
   create_user(object: create_user_form!): user!
   update_user(id: String!, object: update_user_form!): user!
   delete_user(id: String!): user!
-  update_email(id: String!, object: update_email_form!): user!
-  update_phone(id: String!, object: update_phone_form!): user!
-  update_password(id: String!, object: update_password_form!): user!
+  update_email(id: String!, email: String!, confirm: Boolean): user!
+  update_phone(id: String!, phone: String!, password: Boolean): user!
+  update_password(id: String!, password: String!): user!
   change_password(old_password: String!, new_password: String!): user!
   change_email(email: String!): user!
   change_phone(phone: String!): user!
@@ -1215,15 +1215,24 @@ func (ec *executionContext) field_Mutation_update_email_args(ctx context.Context
 		}
 	}
 	args["id"] = arg0
-	var arg1 model.UpdateEmailForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg1, err = ec.unmarshalNupdate_email_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdateEmailForm(ctx, tmp)
+	var arg1 string
+	if tmp, ok := rawArgs["email"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg1
+	args["email"] = arg1
+	var arg2 *bool
+	if tmp, ok := rawArgs["confirm"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("confirm"))
+		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["confirm"] = arg2
 	return args, nil
 }
 
@@ -1239,15 +1248,15 @@ func (ec *executionContext) field_Mutation_update_password_args(ctx context.Cont
 		}
 	}
 	args["id"] = arg0
-	var arg1 model.UpdatePasswordForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg1, err = ec.unmarshalNupdate_password_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdatePasswordForm(ctx, tmp)
+	var arg1 string
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg1
+	args["password"] = arg1
 	return args, nil
 }
 
@@ -1263,15 +1272,24 @@ func (ec *executionContext) field_Mutation_update_phone_args(ctx context.Context
 		}
 	}
 	args["id"] = arg0
-	var arg1 model.UpdatePhoneForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg1, err = ec.unmarshalNupdate_phone_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdatePhoneForm(ctx, tmp)
+	var arg1 string
+	if tmp, ok := rawArgs["phone"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg1
+	args["phone"] = arg1
+	var arg2 *bool
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["password"] = arg2
 	return args, nil
 }
 
@@ -1809,7 +1827,7 @@ func (ec *executionContext) _Mutation_update_email(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateEmail(rctx, args["id"].(string), args["object"].(model.UpdateEmailForm))
+		return ec.resolvers.Mutation().UpdateEmail(rctx, args["id"].(string), args["email"].(string), args["confirm"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1851,7 +1869,7 @@ func (ec *executionContext) _Mutation_update_phone(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdatePhone(rctx, args["id"].(string), args["object"].(model.UpdatePhoneForm))
+		return ec.resolvers.Mutation().UpdatePhone(rctx, args["id"].(string), args["phone"].(string), args["password"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1893,7 +1911,7 @@ func (ec *executionContext) _Mutation_update_password(ctx context.Context, field
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdatePassword(rctx, args["id"].(string), args["object"].(model.UpdatePasswordForm))
+		return ec.resolvers.Mutation().UpdatePassword(rctx, args["id"].(string), args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6043,21 +6061,6 @@ func (ec *executionContext) marshalNlogin_response2ᚖgithubᚗcomᚋzolamkᚋtr
 
 func (ec *executionContext) unmarshalNsignup_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐSignupForm(ctx context.Context, v interface{}) (model.SignupForm, error) {
 	res, err := ec.unmarshalInputsignup_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNupdate_email_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdateEmailForm(ctx context.Context, v interface{}) (model.UpdateEmailForm, error) {
-	res, err := ec.unmarshalInputupdate_email_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNupdate_password_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdatePasswordForm(ctx context.Context, v interface{}) (model.UpdatePasswordForm, error) {
-	res, err := ec.unmarshalInputupdate_password_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNupdate_phone_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdatePhoneForm(ctx context.Context, v interface{}) (model.UpdatePhoneForm, error) {
-	res, err := ec.unmarshalInputupdate_phone_form(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -149,4 +149,10 @@ var (
 			"code": "email_or_phone_required",
 		},
 	}
+	ErrCantChangeOwnAccount = &gqlerror.Error{
+		Message: "can't change your own account",
+		Extensions: map[string]interface{}{
+			"code": "cant_change_own_account",
+		},
+	}
 )
