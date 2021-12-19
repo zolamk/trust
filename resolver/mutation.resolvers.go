@@ -13,6 +13,7 @@ import (
 	"github.com/zolamk/trust/handlers/lib/reset"
 	"github.com/zolamk/trust/handlers/lib/user"
 	"github.com/zolamk/trust/handlers/lib/users"
+	"github.com/zolamk/trust/handlers/lib/users/update"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
 )
@@ -70,7 +71,13 @@ func (r *mutationResolver) UpdatePhone(ctx context.Context, id string, phone str
 }
 
 func (r *mutationResolver) UpdatePassword(ctx context.Context, id string, password string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	jwt, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, handlers.ErrInvalidJWT
+	}
+
+	return update.UpdatePassword(r.DB, r.Config, jwt, id, password)
 }
 
 func (r *mutationResolver) ChangePassword(ctx context.Context, oldPassword string, newPassword string) (*model.User, error) {
