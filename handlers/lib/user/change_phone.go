@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/errors"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
@@ -18,29 +18,29 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 	user := &model.User{}
 
 	if !config.PhoneRule.MatchString(phone) {
-		return nil, errors.ErrInvalidPhone
+		return nil, handlers.ErrInvalidPhone
 	}
 
 	if tx := db.First(user, "id = ?", token.Subject); tx.Error != nil {
 		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, errors.ErrUserNotFound
+			return nil, handlers.ErrUserNotFound
 		}
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 	}
 
 	if user.Phone != nil && *user.Phone == phone {
-		return nil, errors.ErrNewPhoneSimilar
+		return nil, handlers.ErrNewPhoneSimilar
 	}
 
 	if tx := db.First(&model.User{}, "phone = ?", phone); tx.Error == nil {
 
-		return nil, errors.ErrPhoneRegistered
+		return nil, handlers.ErrPhoneRegistered
 
 	} else {
 
 		if tx.Error != gorm.ErrRecordNotFound {
 			logrus.Error(tx.Error)
-			return nil, errors.ErrInternal
+			return nil, handlers.ErrInternal
 		}
 
 	}
@@ -49,7 +49,7 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 
 		changable_at := user.PhoneChangedAt.Add(time.Minute * config.MinutesBetweenPhoneChange)
 
-		err := errors.ErrCantChangePhoneNow
+		err := handlers.ErrCantChangePhoneNow
 
 		err.Extensions["changable_at"] = changable_at
 
@@ -62,7 +62,7 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 		user.Phone = &phone
 
 		if err := user.Save(db); err != nil {
-			return nil, errors.ErrInternal
+			return nil, handlers.ErrInternal
 		}
 
 		return user, nil
@@ -70,7 +70,7 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 	}
 
 	if user.PhoneChangeTokenSentAt != nil && time.Since(*user.PhoneChangeTokenSentAt).Minutes() < float64(config.MinutesBetweenResend) {
-		return nil, errors.ErrTooManyRequests
+		return nil, handlers.ErrTooManyRequests
 	}
 
 	change_token := randstr.String(6)
@@ -87,7 +87,7 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 
 		if err := user.Save(tx); err != nil {
 			logrus.Error(err)
-			return errors.ErrInternal
+			return handlers.ErrInternal
 		}
 
 		context := &map[string]string{
@@ -100,7 +100,7 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 
 		if err := sms.SendSMS(config.ChangeTemplate, user.NewPhone, context, config.SMS); err != nil {
 			logrus.Error(err)
-			return errors.ErrInternal
+			return handlers.ErrInternal
 		}
 
 		return nil

@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/errors"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/lib/email"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
@@ -27,17 +27,17 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 	}
 
 	if !config.PasswordRule.MatchString(form.Password) {
-		return nil, errors.ErrInvalidPassword
+		return nil, handlers.ErrInvalidPassword
 	}
 
 	if form.Email != nil {
 
 		if !config.EmailRule.MatchString(*form.Email) {
-			return nil, errors.ErrInvalidEmail
+			return nil, handlers.ErrInvalidEmail
 		}
 
 		if config.DisableEmail {
-			return nil, errors.ErrEmailDisabled
+			return nil, handlers.ErrEmailDisabled
 		}
 
 		tx := db.First(user, "email = ?", *form.Email)
@@ -45,10 +45,10 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 		if tx.Error != nil {
 			if tx.Error != gorm.ErrRecordNotFound {
 				logrus.Error(tx.Error)
-				return nil, errors.ErrInternal
+				return nil, handlers.ErrInternal
 			}
 		} else {
-			return nil, errors.ErrEmailRegistered
+			return nil, handlers.ErrEmailRegistered
 		}
 
 	}
@@ -56,11 +56,11 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 	if form.Phone != nil {
 
 		if !config.PhoneRule.MatchString(*form.Phone) {
-			return nil, errors.ErrInvalidPhone
+			return nil, handlers.ErrInvalidPhone
 		}
 
 		if config.DisablePhone {
-			return nil, errors.ErrPhoneDisabled
+			return nil, handlers.ErrPhoneDisabled
 		}
 
 		tx := db.First(user, "phone = ?", *form.Phone)
@@ -68,10 +68,10 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 		if tx.Error != nil {
 			if tx.Error != gorm.ErrRecordNotFound {
 				logrus.Error(tx.Error)
-				return nil, errors.ErrInternal
+				return nil, handlers.ErrInternal
 			}
 		} else {
-			return nil, errors.ErrPhoneRegistered
+			return nil, handlers.ErrPhoneRegistered
 		}
 
 	}
@@ -82,7 +82,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 		if err != nil {
 			logrus.Error(err)
-			return errors.ErrInternal
+			return handlers.ErrInternal
 		}
 
 		hash := string(password)
@@ -91,7 +91,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 		if err := user.Create(tx); err != nil {
 			logrus.Error(err)
-			return errors.ErrInternal
+			return handlers.ErrInternal
 		}
 
 		if user.Email != nil {
@@ -100,7 +100,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 				if err := user.ConfirmEmail(tx); err != nil {
 					logrus.Error(err)
-					return errors.ErrInternal
+					return handlers.ErrInternal
 				}
 
 			} else {
@@ -113,7 +113,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 				if err := user.Save(tx); err != nil {
 					logrus.Error(err)
-					return errors.ErrInternal
+					return handlers.ErrInternal
 				}
 
 				context := &map[string]string{

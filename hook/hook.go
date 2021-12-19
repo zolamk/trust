@@ -10,7 +10,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/errors"
+	"github.com/zolamk/trust/handlers"
 )
 
 func TriggerHook(event string, payload *map[string]interface{}, config *config.Config) (*interface{}, error) {
@@ -70,7 +70,7 @@ func TriggerHook(event string, payload *map[string]interface{}, config *config.C
 	}
 
 	if res.StatusCode >= 400 {
-		return nil, errors.ErrWebHook
+		return nil, handlers.ErrWebHook
 	}
 
 	if res.Header.Get("content-type") != "application/json" {

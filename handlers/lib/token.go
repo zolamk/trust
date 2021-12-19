@@ -4,7 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/errors"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/hook"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
@@ -19,36 +19,36 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 	if tx := db.First(user, "phone = ? or email = ?", username, username); tx.Error != nil {
 
 		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, errors.ErrIncorrectUsernameOrPassword
+			return nil, handlers.ErrIncorrectUsernameOrPassword
 		}
 
 		logrus.Error(tx.Error)
 
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 
 	}
 
 	if user.Email != nil && *user.Email == username && !user.EmailConfirmed {
-		return nil, errors.ErrEmailNotConfirmed
+		return nil, handlers.ErrEmailNotConfirmed
 	}
 
 	if user.Phone != nil && *user.Phone == username && !user.PhoneConfirmed {
-		return nil, errors.ErrPhoneNotConfirmed
+		return nil, handlers.ErrPhoneNotConfirmed
 	}
 
 	if user.Password == nil {
-		return nil, errors.ErrIncorrectUsernameOrPassword
+		return nil, handlers.ErrIncorrectUsernameOrPassword
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(password)); err != nil {
 
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return nil, errors.ErrIncorrectUsernameOrPassword
+			return nil, handlers.ErrIncorrectUsernameOrPassword
 		}
 
 		logrus.Error(err)
 
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 
 	}
 
@@ -62,7 +62,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.ErrWebHook
+		return nil, handlers.ErrWebHook
 	}
 
 	token := jwt.New(user, hook_response, config.JWT)
@@ -71,7 +71,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 	}
 
 	refresh_token := model.RefreshToken{
@@ -81,7 +81,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 
 	if err := refresh_token.Create(db); err != nil {
 		logrus.Error(err)
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 	}
 
 	return &model.LoginResponse{

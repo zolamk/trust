@@ -1,4 +1,4 @@
-package errors
+package handlers
 
 import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
@@ -141,6 +141,12 @@ var (
 		Message: "only an admin can perform this action",
 		Extensions: map[string]interface{}{
 			"code": "admin_only",
+		},
+	}
+	ErrEmailOrPhoneRequired = &gqlerror.Error{
+		Message: "email or phone required",
+		Extensions: map[string]interface{}{
+			"code": "email_or_phone_required",
 		},
 	}
 )

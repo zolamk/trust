@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/zolamk/trust/errors"
 	"github.com/zolamk/trust/graph/generated"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/handlers/lib"
 	"github.com/zolamk/trust/handlers/lib/user"
 	"github.com/zolamk/trust/handlers/lib/users"
@@ -20,7 +20,7 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 	token, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
-		return nil, errors.ErrInvalidJWT
+		return nil, handlers.ErrInvalidJWT
 	}
 
 	return users.User(r.DB, r.Config, token, id)
@@ -30,7 +30,7 @@ func (r *queryResolver) Users(ctx context.Context, where map[string]interface{},
 	token, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
-		return nil, errors.ErrInvalidJWT
+		return nil, handlers.ErrInvalidJWT
 	}
 
 	fields := graphql.CollectAllFields(ctx)
@@ -42,7 +42,7 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	token, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
-		return nil, errors.ErrInvalidJWT
+		return nil, handlers.ErrInvalidJWT
 	}
 
 	return user.Me(r.DB, r.Config, token)

@@ -4,7 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/errors"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/hook"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
@@ -17,9 +17,9 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 
 	if tx := db.Joins("User").First(&refresh_token, "token = ?", rt); tx.Error != nil {
 		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, errors.ErrRefreshTokenNotFound
+			return nil, handlers.ErrRefreshTokenNotFound
 		}
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 	}
 
 	user := refresh_token.User
@@ -36,7 +36,7 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.ErrWebHook
+		return nil, handlers.ErrWebHook
 	}
 
 	token := jwt.New(user, hook_response, config.JWT)
@@ -45,12 +45,12 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 	}
 
 	if err := refresh_token.Save(db); err != nil {
 		logrus.Error(err)
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 	}
 
 	return &model.LoginResponse{

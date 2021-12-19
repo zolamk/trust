@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/errors"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
@@ -23,13 +23,13 @@ func ResendPhone(db *gorm.DB, config *config.Config, p string) (bool, error) {
 			return true, nil
 		}
 		logrus.Error(tx.Error)
-		return true, errors.ErrInternal
+		return true, handlers.ErrInternal
 	}
 
 	if !(config.DisablePhone || user.Phone == nil || user.PhoneConfirmed) {
 
 		if user.PhoneConfirmationTokenSentAt != nil && time.Since(*user.PhoneConfirmationTokenSentAt).Minutes() < float64(config.MinutesBetweenResend) {
-			return true, errors.ErrTooManyRequests
+			return true, handlers.ErrTooManyRequests
 		}
 
 		token := randstr.String(6)
@@ -42,7 +42,7 @@ func ResendPhone(db *gorm.DB, config *config.Config, p string) (bool, error) {
 
 			if err := user.Save(db); err != nil {
 				logrus.Error(err)
-				return errors.ErrInternal
+				return handlers.ErrInternal
 			}
 
 			context := &map[string]string{
@@ -52,7 +52,7 @@ func ResendPhone(db *gorm.DB, config *config.Config, p string) (bool, error) {
 			}
 
 			if err := sms.SendSMS(config.ConfirmationTemplate, user.Phone, context, config.SMS); err != nil {
-				return errors.ErrInternal
+				return handlers.ErrInternal
 			}
 
 			return nil

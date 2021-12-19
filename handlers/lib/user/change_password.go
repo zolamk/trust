@@ -5,7 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/errors"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
 	"golang.org/x/crypto/bcrypt"
@@ -17,30 +17,30 @@ func ChangePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, old_pass
 	user := &model.User{}
 
 	if !config.PasswordRule.MatchString(new_password) {
-		return nil, errors.ErrInvalidPassword
+		return nil, handlers.ErrInvalidPassword
 	}
 
 	if tx := db.First(user, "id = ?", token.Subject); tx.Error != nil {
 
 		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, errors.ErrUserNotFound
+			return nil, handlers.ErrUserNotFound
 		}
 
 		logrus.Error(tx.Error)
 
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(old_password)); err != nil {
 
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return nil, errors.ErrIncorrectOldPassword
+			return nil, handlers.ErrIncorrectOldPassword
 		}
 
 		logrus.Error(err)
 
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 
 	}
 
@@ -48,7 +48,7 @@ func ChangePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, old_pass
 
 	if err != nil {
 		logrus.Error(err)
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 	}
 
 	hash := string(password)
@@ -63,7 +63,7 @@ func ChangePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, old_pass
 
 		logrus.Error(err)
 
-		return nil, errors.ErrInternal
+		return nil, handlers.ErrInternal
 
 	}
 

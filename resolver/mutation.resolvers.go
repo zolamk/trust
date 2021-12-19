@@ -7,11 +7,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/zolamk/trust/errors"
 	"github.com/zolamk/trust/graph/generated"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/handlers/lib"
 	"github.com/zolamk/trust/handlers/lib/reset"
 	"github.com/zolamk/trust/handlers/lib/user"
+	"github.com/zolamk/trust/handlers/lib/users"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
 )
@@ -37,7 +38,14 @@ func (r *mutationResolver) AcceptInvite(ctx context.Context, object model.Accept
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	jwt, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, handlers.ErrInvalidJWT
+	}
+
+	return users.CreateUser(r.DB, r.Config, jwt, object)
+
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, id string, object model.UpdateUserForm) (*model.User, error) {
@@ -64,7 +72,7 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, oldPassword strin
 	token, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
-		return nil, errors.ErrInvalidJWT
+		return nil, handlers.ErrInvalidJWT
 	}
 
 	return user.ChangePassword(r.DB, r.Config, token, oldPassword, newPassword)
@@ -74,7 +82,7 @@ func (r *mutationResolver) ChangeEmail(ctx context.Context, email string) (*mode
 	token, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
-		return nil, errors.ErrInvalidJWT
+		return nil, handlers.ErrInvalidJWT
 	}
 
 	return user.ChangeEmail(r.DB, r.Config, token, email)
@@ -84,7 +92,7 @@ func (r *mutationResolver) ChangePhone(ctx context.Context, phone string) (*mode
 	token, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
-		return nil, errors.ErrInvalidJWT
+		return nil, handlers.ErrInvalidJWT
 	}
 
 	return user.ChangePhone(r.DB, r.Config, token, phone)
@@ -94,7 +102,7 @@ func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, token string)
 	jwt, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
-		return nil, errors.ErrInvalidJWT
+		return nil, handlers.ErrInvalidJWT
 	}
 
 	return user.ConfirmPhoneChange(r.DB, r.Config, jwt, token)
@@ -104,7 +112,7 @@ func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, token string)
 	jwt, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
-		return nil, errors.ErrInvalidJWT
+		return nil, handlers.ErrInvalidJWT
 	}
 
 	return user.ConfirmEmailChange(r.DB, r.Config, jwt, token)

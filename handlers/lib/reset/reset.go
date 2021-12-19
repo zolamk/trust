@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/errors"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/lib/email"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
@@ -27,7 +27,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 		logrus.Error(tx.Error)
 
-		return false, errors.ErrInternal
+		return false, handlers.ErrInternal
 
 	}
 
@@ -47,7 +47,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			if err := user.Save(db); err != nil {
 				logrus.Error(err)
-				return errors.ErrInternal
+				return handlers.ErrInternal
 			}
 
 			context := &map[string]string{
@@ -58,7 +58,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			if err := email.SendEmail(config.RecoveryTemplate, context, user.Email, config); err != nil {
 				logrus.Error(err)
-				return errors.ErrInternal
+				return handlers.ErrInternal
 			}
 
 		}
@@ -77,7 +77,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			if err := user.Save(db); err != nil {
 				logrus.Error(err)
-				return errors.ErrInternal
+				return handlers.ErrInternal
 			}
 
 			context := &map[string]string{
@@ -88,7 +88,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 			if err := sms.SendSMS(config.RecoveryTemplate, user.Phone, context, config.SMS); err != nil {
 				logrus.Error(err)
-				return errors.ErrInternal
+				return handlers.ErrInternal
 			}
 
 		}
