@@ -5,7 +5,6 @@ import (
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/model"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -25,16 +24,7 @@ func ConfirmReset(db *gorm.DB, config *config.Config, recovery_token string, pwd
 		return false, handlers.ErrInternal
 	}
 
-	password, err := bcrypt.GenerateFromPassword([]byte(pwd), int(config.PasswordHashCost))
-
-	if err != nil {
-		logrus.Error(err)
-		return false, handlers.ErrInternal
-	}
-
-	hash := string(password)
-
-	user.Password = &hash
+	user.SetPassword(pwd, int(config.PasswordHashCost))
 
 	user.RecoveryToken = nil
 

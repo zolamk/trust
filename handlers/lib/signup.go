@@ -10,7 +10,6 @@ import (
 	"github.com/zolamk/trust/lib/mail"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -19,11 +18,10 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 	now := time.Now()
 
 	user := &model.User{
-		Name:     form.Name,
-		Email:    form.Email,
-		Phone:    form.Phone,
-		Avatar:   form.Avatar,
-		Password: &form.Password,
+		Name:   form.Name,
+		Email:  form.Email,
+		Phone:  form.Phone,
+		Avatar: form.Avatar,
 	}
 
 	if !config.PasswordRule.MatchString(form.Password) {
@@ -78,16 +76,7 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 	err := db.Transaction(func(tx *gorm.DB) error {
 
-		password, err := bcrypt.GenerateFromPassword([]byte(form.Password), int(config.PasswordHashCost))
-
-		if err != nil {
-			logrus.Error(err)
-			return handlers.ErrInternal
-		}
-
-		hash := string(password)
-
-		user.Password = &hash
+		user.SetPassword(form.Password, int(config.PasswordHashCost))
 
 		if err := user.Create(tx); err != nil {
 			logrus.Error(err)

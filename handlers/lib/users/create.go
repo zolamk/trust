@@ -11,7 +11,6 @@ import (
 	"github.com/zolamk/trust/lib/mail"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -105,16 +104,7 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 			return nil, handlers.ErrInvalidPassword
 		}
 
-		password, err := bcrypt.GenerateFromPassword([]byte(*form.Password), int(config.PasswordHashCost))
-
-		if err != nil {
-			logrus.Error(err)
-			return nil, handlers.ErrInternal
-		}
-
-		hash := string(password)
-
-		user.Password = &hash
+		user.SetPassword(*form.Password, int(config.PasswordHashCost))
 
 	}
 

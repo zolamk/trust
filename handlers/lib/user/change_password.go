@@ -44,18 +44,9 @@ func ChangePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, old_pass
 
 	}
 
-	password, err := bcrypt.GenerateFromPassword([]byte(new_password), int(config.PasswordHashCost))
-
-	if err != nil {
-		logrus.Error(err)
-		return nil, handlers.ErrInternal
-	}
-
-	hash := string(password)
+	user.SetPassword(new_password, int(config.PasswordHashCost))
 
 	now := time.Now()
-
-	user.Password = &hash
 
 	user.PasswordChangedAt = &now
 

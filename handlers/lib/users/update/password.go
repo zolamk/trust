@@ -8,7 +8,6 @@ import (
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -43,20 +42,11 @@ func UpdatePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, id strin
 		return nil, handlers.ErrInvalidPassword
 	}
 
-	pwd, err := bcrypt.GenerateFromPassword([]byte(password), int(config.PasswordHashCost))
-
-	if err != nil {
-		logrus.Error(err)
-		return nil, handlers.ErrInternal
-	}
-
-	hash := string(pwd)
+	user.SetPassword(password, int(config.PasswordHashCost))
 
 	now := time.Now()
 
 	user.PasswordChangedAt = &now
-
-	user.Password = &hash
 
 	if err := user.Save(db); err != nil {
 		logrus.Error(err)
