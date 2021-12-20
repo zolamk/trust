@@ -5,7 +5,6 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/zolamk/trust/graph/generated"
 	"github.com/zolamk/trust/handlers"
@@ -50,8 +49,12 @@ func (r *mutationResolver) InviteByPhone(ctx context.Context, name string, phone
 	return users.InvitePhone(r.DB, r.Config, jwt, name, phone)
 }
 
-func (r *mutationResolver) AcceptInvite(ctx context.Context, token string, password string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) AcceptPhoneInvite(ctx context.Context, token string, password string) (*model.User, error) {
+	return lib.AcceptPhoneInvite(r.DB, r.Config, token, password)
+}
+
+func (r *mutationResolver) AcceptEmailInvite(ctx context.Context, token string, password string) (*model.User, error) {
+	return lib.AcceptEmailInvite(r.DB, r.Config, token, password)
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error) {
@@ -184,13 +187,3 @@ func (r *mutationResolver) ResendEmailConfirmation(ctx context.Context, email st
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
 type mutationResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *mutationResolver) InviteUser(ctx context.Context, name string, email *string, phone *string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
-}

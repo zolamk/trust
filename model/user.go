@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -111,5 +112,53 @@ func (u *User) ConfirmEmailChange(db *gorm.DB) error {
 	u.EmailChangeTokenSentAt = nil
 
 	return u.Save(db)
+
+}
+
+func (u *User) AcceptPhoneInvite(db *gorm.DB) error {
+
+	now := time.Now()
+
+	u.PhoneInvitationToken = nil
+
+	u.InvitationAcceptedAt = &now
+
+	u.PhoneConfirmedAt = &now
+
+	u.PhoneConfirmed = true
+
+	return u.Save(db)
+
+}
+
+func (u *User) AcceptEmailInvite(db *gorm.DB) error {
+
+	now := time.Now()
+
+	u.EmailInvitationToken = nil
+
+	u.InvitationAcceptedAt = &now
+
+	u.EmailConfirmedAt = &now
+
+	u.EmailConfirmed = true
+
+	return u.Save(db)
+
+}
+
+func (u *User) SetPassword(password string, cost int) error {
+
+	pwd, err := bcrypt.GenerateFromPassword([]byte(password), cost)
+
+	if err != nil {
+		return err
+	}
+
+	hash := string(pwd)
+
+	u.Password = &hash
+
+	return nil
 
 }

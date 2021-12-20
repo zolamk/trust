@@ -9,14 +9,6 @@ input boolean_expression {
   _neq: Boolean
 }
 
-enum order_direction {
-  """Ascending"""
-  asc
-
-  """Descending"""
-  desc
-}
-
 input string_expression {
   """Equals value"""
   _eq: String
@@ -60,7 +52,6 @@ input string_expression {
   _lte: String
 }
 
-
 input users_bool_exp {
   avatar: string_expression
   created_at: string_expression
@@ -85,30 +76,4 @@ input users_bool_exp {
   phone_confirmation_token_sent_at: string_expression
   phone_confirmed: boolean_expression
   updated_at: string_expression
-}
-
-input users_order_by {
-  avatar: order_direction
-  created_at: order_direction
-  email: order_direction
-  email_change_token_sent_at: order_direction
-  email_changed_at: order_direction
-  email_confirmation_token_sent_at: order_direction
-  email_confirmed: order_direction
-  email_confirmed_at: order_direction
-  id: order_direction
-  invitation_accepted_at: order_direction
-  invitation_token_sent_at: order_direction
-  is_admin: order_direction
-  last_signin_at: order_direction
-  name: order_direction
-  new_email: order_direction
-  new_phone: order_direction
-  password_changed_at: order_direction
-  phone: order_direction
-  phone_change_token_sent_at: order_direction
-  phone_changed_at: order_direction
-  phone_confirmation_token_sent_at: order_direction
-  phone_confirmed: order_direction
-  updated_at: order_direction
 }

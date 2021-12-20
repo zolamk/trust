@@ -4,7 +4,8 @@ type Mutation {
   confirm_phone(token: String!): user!
   invite_by_email(name: String!, email: String!): user!
   invite_by_phone(name: String!, phone: String!): user!
-  accept_invite(token: String!, password: String!): user!
+  accept_phone_invite(token: String!, password: String!): user!
+  accept_email_invite(token: String!, password: String!): user!
   create_user(object: create_user_form!): user!
   update_user(id: String!, name: String, avatar: String): user!
   delete_user(id: String!): user!

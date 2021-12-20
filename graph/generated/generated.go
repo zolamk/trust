@@ -45,7 +45,8 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		AcceptInvite            func(childComplexity int, token string, password string) int
+		AcceptEmailInvite       func(childComplexity int, token string, password string) int
+		AcceptPhoneInvite       func(childComplexity int, token string, password string) int
 		ChangeEmail             func(childComplexity int, email string) int
 		ChangePassword          func(childComplexity int, oldPassword string, newPassword string) int
 		ChangePhone             func(childComplexity int, phone string) int
@@ -116,7 +117,8 @@ type MutationResolver interface {
 	ConfirmPhone(ctx context.Context, token string) (*model.User, error)
 	InviteByEmail(ctx context.Context, name string, email string) (*model.User, error)
 	InviteByPhone(ctx context.Context, name string, phone string) (*model.User, error)
-	AcceptInvite(ctx context.Context, token string, password string) (*model.User, error)
+	AcceptPhoneInvite(ctx context.Context, token string, password string) (*model.User, error)
+	AcceptEmailInvite(ctx context.Context, token string, password string) (*model.User, error)
 	CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error)
 	UpdateUser(ctx context.Context, id string, name *string, avatar *string) (*model.User, error)
 	DeleteUser(ctx context.Context, id string) (*model.User, error)
@@ -156,17 +158,29 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Mutation.accept_invite":
-		if e.complexity.Mutation.AcceptInvite == nil {
+	case "Mutation.accept_email_invite":
+		if e.complexity.Mutation.AcceptEmailInvite == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_accept_invite_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_accept_email_invite_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AcceptInvite(childComplexity, args["token"].(string), args["password"].(string)), true
+		return e.complexity.Mutation.AcceptEmailInvite(childComplexity, args["token"].(string), args["password"].(string)), true
+
+	case "Mutation.accept_phone_invite":
+		if e.complexity.Mutation.AcceptPhoneInvite == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_accept_phone_invite_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AcceptPhoneInvite(childComplexity, args["token"].(string), args["password"].(string)), true
 
 	case "Mutation.change_email":
 		if e.complexity.Mutation.ChangeEmail == nil {
@@ -722,7 +736,8 @@ var sources = []*ast.Source{
   confirm_phone(token: String!): user!
   invite_by_email(name: String!, email: String!): user!
   invite_by_phone(name: String!, phone: String!): user!
-  accept_invite(token: String!, password: String!): user!
+  accept_phone_invite(token: String!, password: String!): user!
+  accept_email_invite(token: String!, password: String!): user!
   create_user(object: create_user_form!): user!
   update_user(id: String!, name: String, avatar: String): user!
   delete_user(id: String!): user!
@@ -738,6 +753,39 @@ var sources = []*ast.Source{
   confirm_reset(token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!
+}`, BuiltIn: false},
+	{Name: "graph/order_by.graphqls", Input: `enum order_direction {
+  """Ascending"""
+  asc
+
+  """Descending"""
+  desc
+}
+
+input users_order_by {
+  avatar: order_direction
+  created_at: order_direction
+  email: order_direction
+  email_change_token_sent_at: order_direction
+  email_changed_at: order_direction
+  email_confirmation_token_sent_at: order_direction
+  email_confirmed: order_direction
+  email_confirmed_at: order_direction
+  id: order_direction
+  invitation_accepted_at: order_direction
+  invitation_token_sent_at: order_direction
+  is_admin: order_direction
+  last_signin_at: order_direction
+  name: order_direction
+  new_email: order_direction
+  new_phone: order_direction
+  password_changed_at: order_direction
+  phone: order_direction
+  phone_change_token_sent_at: order_direction
+  phone_changed_at: order_direction
+  phone_confirmation_token_sent_at: order_direction
+  phone_confirmed: order_direction
+  updated_at: order_direction
 }`, BuiltIn: false},
 	{Name: "graph/query.graphqls", Input: `type Query {
   user(id: String!): user!
@@ -807,14 +855,6 @@ scalar Time`, BuiltIn: false},
   _neq: Boolean
 }
 
-enum order_direction {
-  """Ascending"""
-  asc
-
-  """Descending"""
-  desc
-}
-
 input string_expression {
   """Equals value"""
   _eq: String
@@ -858,7 +898,6 @@ input string_expression {
   _lte: String
 }
 
-
 input users_bool_exp {
   avatar: string_expression
   created_at: string_expression
@@ -883,32 +922,6 @@ input users_bool_exp {
   phone_confirmation_token_sent_at: string_expression
   phone_confirmed: boolean_expression
   updated_at: string_expression
-}
-
-input users_order_by {
-  avatar: order_direction
-  created_at: order_direction
-  email: order_direction
-  email_change_token_sent_at: order_direction
-  email_changed_at: order_direction
-  email_confirmation_token_sent_at: order_direction
-  email_confirmed: order_direction
-  email_confirmed_at: order_direction
-  id: order_direction
-  invitation_accepted_at: order_direction
-  invitation_token_sent_at: order_direction
-  is_admin: order_direction
-  last_signin_at: order_direction
-  name: order_direction
-  new_email: order_direction
-  new_phone: order_direction
-  password_changed_at: order_direction
-  phone: order_direction
-  phone_change_token_sent_at: order_direction
-  phone_changed_at: order_direction
-  phone_confirmation_token_sent_at: order_direction
-  phone_confirmed: order_direction
-  updated_at: order_direction
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -917,7 +930,31 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_accept_invite_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_accept_email_invite_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["token"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["token"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["password"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_accept_phone_invite_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -1699,7 +1736,7 @@ func (ec *executionContext) _Mutation_invite_by_phone(ctx context.Context, field
 	return ec.marshalNuser2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_accept_invite(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_accept_phone_invite(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1716,7 +1753,7 @@ func (ec *executionContext) _Mutation_accept_invite(ctx context.Context, field g
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_accept_invite_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_accept_phone_invite_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1724,7 +1761,49 @@ func (ec *executionContext) _Mutation_accept_invite(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AcceptInvite(rctx, args["token"].(string), args["password"].(string))
+		return ec.resolvers.Mutation().AcceptPhoneInvite(rctx, args["token"].(string), args["password"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNuser2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_accept_email_invite(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_accept_email_invite_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AcceptEmailInvite(rctx, args["token"].(string), args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4960,8 +5039,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "accept_invite":
-			out.Values[i] = ec._Mutation_accept_invite(ctx, field)
+		case "accept_phone_invite":
+			out.Values[i] = ec._Mutation_accept_phone_invite(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "accept_email_invite":
+			out.Values[i] = ec._Mutation_accept_email_invite(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
