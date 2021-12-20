@@ -1,12 +1,12 @@
 input boolean_expression {
   """Equals value"""
-  _eq: String
+  _eq: Boolean
 
   """Is value null (true) or not null (false)"""
   _is_null: Boolean
 
   """Does not equal value"""
-  _neq: String
+  _neq: Boolean
 }
 
 enum order_direction {

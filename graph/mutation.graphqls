@@ -2,8 +2,9 @@ type Mutation {
   signup(object: signup_form!): user!
   confirm_email(token: String!): user!
   confirm_phone(token: String!): user!
-  invite_user(object: invite_form!): user!
-  accept_invite(object: accept_invite_form!): user!
+  invite_by_email(name: String!, email: String!): user!
+  invite_by_phone(name: String!, phone: String!): user!
+  accept_invite(token: String!, password: String!): user!
   create_user(object: create_user_form!): user!
   update_user(id: String!, name: String, avatar: String): user!
   delete_user(id: String!): user!
@@ -16,7 +17,7 @@ type Mutation {
   confirm_phone_change(token: String!): user!
   confirm_email_change(token: String!): user!
   reset(username: String!): Boolean!
-  confirm_reset(recovery_token: String!, password: String!): Boolean!
+  confirm_reset(token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!
 }

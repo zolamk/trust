@@ -1,8 +1,6 @@
 package user
 
 import (
-	"time"
-
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
@@ -27,19 +25,7 @@ func ConfirmEmailChange(db *gorm.DB, config *config.Config, token *jwt.JWT, emai
 
 	}
 
-	now := time.Now()
-
-	user.Email = user.NewEmail
-
-	user.NewEmail = nil
-
-	user.EmailChangedAt = &now
-
-	user.EmailChangeToken = nil
-
-	user.EmailChangeTokenSentAt = nil
-
-	if err := user.Save(db); err != nil {
+	if err := user.ConfirmEmailChange(db); err != nil {
 		logrus.Error(err)
 		return nil, handlers.ErrInternal
 	}

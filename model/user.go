@@ -80,9 +80,17 @@ func (u *User) ConfirmPhone(db *gorm.DB) error {
 
 func (u *User) ConfirmPhoneChange(db *gorm.DB) error {
 
+	now := time.Now()
+
 	u.Phone = u.NewPhone
 
 	u.NewPhone = nil
+
+	u.PhoneChangedAt = &now
+
+	u.PhoneChangeToken = nil
+
+	u.PhoneChangeTokenSentAt = nil
 
 	return u.Save(db)
 
@@ -90,9 +98,17 @@ func (u *User) ConfirmPhoneChange(db *gorm.DB) error {
 
 func (u *User) ConfirmEmailChange(db *gorm.DB) error {
 
+	now := time.Now()
+
 	u.Email = u.NewEmail
 
 	u.NewEmail = nil
+
+	u.EmailChangedAt = &now
+
+	u.EmailChangeToken = nil
+
+	u.EmailChangeTokenSentAt = nil
 
 	return u.Save(db)
 

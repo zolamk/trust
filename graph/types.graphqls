@@ -7,55 +7,12 @@ input create_user_form {
   confirm: Boolean
 }
 
-input change_password_form {
-  old_password: String!
-  new_password: String!
-}
-
 input signup_form {
   name: String
   avatar: String
   email: String
   phone: String
   password: String!
-}
-
-input update_email_form {
-  email: String!
-  confirm: Boolean
-}
-
-input update_user_form {
-  name: String
-  avatar: String
-}
-
-input invite_form {
-  name: String
-  email: String
-  phone: String
-}
-
-input update_password_form {
-  password: String!
-}
-
-input change_email_form {
-  email: String!
-}
-
-input accept_invite_form {
-  invitation_token: String!
-  password: String!
-}
-
-input confirm_change_email_form {
-  email_change_token: String!
-}
-
-input update_phone_form {
-  phone: String!
-  confirm: Boolean
 }
 
 type login_response {

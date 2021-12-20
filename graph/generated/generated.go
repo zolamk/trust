@@ -45,7 +45,7 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Mutation struct {
-		AcceptInvite            func(childComplexity int, object model.AcceptInviteForm) int
+		AcceptInvite            func(childComplexity int, token string, password string) int
 		ChangeEmail             func(childComplexity int, email string) int
 		ChangePassword          func(childComplexity int, oldPassword string, newPassword string) int
 		ChangePhone             func(childComplexity int, phone string) int
@@ -53,10 +53,11 @@ type ComplexityRoot struct {
 		ConfirmEmailChange      func(childComplexity int, token string) int
 		ConfirmPhone            func(childComplexity int, token string) int
 		ConfirmPhoneChange      func(childComplexity int, token string) int
-		ConfirmReset            func(childComplexity int, recoveryToken string, password string) int
+		ConfirmReset            func(childComplexity int, token string, password string) int
 		CreateUser              func(childComplexity int, object model.CreateUserForm) int
 		DeleteUser              func(childComplexity int, id string) int
-		InviteUser              func(childComplexity int, object model.InviteForm) int
+		InviteByEmail           func(childComplexity int, name string, email string) int
+		InviteByPhone           func(childComplexity int, name string, phone string) int
 		ResendEmailConfirmation func(childComplexity int, email string) int
 		ResendPhoneConfirmation func(childComplexity int, phone string) int
 		Reset                   func(childComplexity int, username string) int
@@ -113,8 +114,9 @@ type MutationResolver interface {
 	Signup(ctx context.Context, object model.SignupForm) (*model.User, error)
 	ConfirmEmail(ctx context.Context, token string) (*model.User, error)
 	ConfirmPhone(ctx context.Context, token string) (*model.User, error)
-	InviteUser(ctx context.Context, object model.InviteForm) (*model.User, error)
-	AcceptInvite(ctx context.Context, object model.AcceptInviteForm) (*model.User, error)
+	InviteByEmail(ctx context.Context, name string, email string) (*model.User, error)
+	InviteByPhone(ctx context.Context, name string, phone string) (*model.User, error)
+	AcceptInvite(ctx context.Context, token string, password string) (*model.User, error)
 	CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error)
 	UpdateUser(ctx context.Context, id string, name *string, avatar *string) (*model.User, error)
 	DeleteUser(ctx context.Context, id string) (*model.User, error)
@@ -127,7 +129,7 @@ type MutationResolver interface {
 	ConfirmPhoneChange(ctx context.Context, token string) (*model.User, error)
 	ConfirmEmailChange(ctx context.Context, token string) (*model.User, error)
 	Reset(ctx context.Context, username string) (bool, error)
-	ConfirmReset(ctx context.Context, recoveryToken string, password string) (bool, error)
+	ConfirmReset(ctx context.Context, token string, password string) (bool, error)
 	ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error)
 	ResendEmailConfirmation(ctx context.Context, email string) (bool, error)
 }
@@ -164,7 +166,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AcceptInvite(childComplexity, args["object"].(model.AcceptInviteForm)), true
+		return e.complexity.Mutation.AcceptInvite(childComplexity, args["token"].(string), args["password"].(string)), true
 
 	case "Mutation.change_email":
 		if e.complexity.Mutation.ChangeEmail == nil {
@@ -260,7 +262,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ConfirmReset(childComplexity, args["recovery_token"].(string), args["password"].(string)), true
+		return e.complexity.Mutation.ConfirmReset(childComplexity, args["token"].(string), args["password"].(string)), true
 
 	case "Mutation.create_user":
 		if e.complexity.Mutation.CreateUser == nil {
@@ -286,17 +288,29 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteUser(childComplexity, args["id"].(string)), true
 
-	case "Mutation.invite_user":
-		if e.complexity.Mutation.InviteUser == nil {
+	case "Mutation.invite_by_email":
+		if e.complexity.Mutation.InviteByEmail == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_invite_user_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_invite_by_email_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.InviteUser(childComplexity, args["object"].(model.InviteForm)), true
+		return e.complexity.Mutation.InviteByEmail(childComplexity, args["name"].(string), args["email"].(string)), true
+
+	case "Mutation.invite_by_phone":
+		if e.complexity.Mutation.InviteByPhone == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_invite_by_phone_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.InviteByPhone(childComplexity, args["name"].(string), args["phone"].(string)), true
 
 	case "Mutation.resend_email_confirmation":
 		if e.complexity.Mutation.ResendEmailConfirmation == nil {
@@ -706,8 +720,9 @@ var sources = []*ast.Source{
   signup(object: signup_form!): user!
   confirm_email(token: String!): user!
   confirm_phone(token: String!): user!
-  invite_user(object: invite_form!): user!
-  accept_invite(object: accept_invite_form!): user!
+  invite_by_email(name: String!, email: String!): user!
+  invite_by_phone(name: String!, phone: String!): user!
+  accept_invite(token: String!, password: String!): user!
   create_user(object: create_user_form!): user!
   update_user(id: String!, name: String, avatar: String): user!
   delete_user(id: String!): user!
@@ -720,7 +735,7 @@ var sources = []*ast.Source{
   confirm_phone_change(token: String!): user!
   confirm_email_change(token: String!): user!
   reset(username: String!): Boolean!
-  confirm_reset(recovery_token: String!, password: String!): Boolean!
+  confirm_reset(token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!
 }`, BuiltIn: false},
@@ -740,55 +755,12 @@ var sources = []*ast.Source{
   confirm: Boolean
 }
 
-input change_password_form {
-  old_password: String!
-  new_password: String!
-}
-
 input signup_form {
   name: String
   avatar: String
   email: String
   phone: String
   password: String!
-}
-
-input update_email_form {
-  email: String!
-  confirm: Boolean
-}
-
-input update_user_form {
-  name: String
-  avatar: String
-}
-
-input invite_form {
-  name: String
-  email: String
-  phone: String
-}
-
-input update_password_form {
-  password: String!
-}
-
-input change_email_form {
-  email: String!
-}
-
-input accept_invite_form {
-  invitation_token: String!
-  password: String!
-}
-
-input confirm_change_email_form {
-  email_change_token: String!
-}
-
-input update_phone_form {
-  phone: String!
-  confirm: Boolean
 }
 
 type login_response {
@@ -826,13 +798,13 @@ scalar Time`, BuiltIn: false},
 }`, BuiltIn: false},
 	{Name: "graph/where.graphqls", Input: `input boolean_expression {
   """Equals value"""
-  _eq: String
+  _eq: Boolean
 
   """Is value null (true) or not null (false)"""
   _is_null: Boolean
 
   """Does not equal value"""
-  _neq: String
+  _neq: Boolean
 }
 
 enum order_direction {
@@ -948,15 +920,24 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_accept_invite_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.AcceptInviteForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg0, err = ec.unmarshalNaccept_invite_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐAcceptInviteForm(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["token"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg0
+	args["token"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["password"] = arg1
 	return args, nil
 }
 
@@ -1078,14 +1059,14 @@ func (ec *executionContext) field_Mutation_confirm_reset_args(ctx context.Contex
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["recovery_token"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("recovery_token"))
+	if tmp, ok := rawArgs["token"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["recovery_token"] = arg0
+	args["token"] = arg0
 	var arg1 string
 	if tmp, ok := rawArgs["password"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
@@ -1128,18 +1109,51 @@ func (ec *executionContext) field_Mutation_delete_user_args(ctx context.Context,
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_invite_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_invite_by_email_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.InviteForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg0, err = ec.unmarshalNinvite_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐInviteForm(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg0
+	args["name"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["email"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["email"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_invite_by_phone_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["phone"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["phone"] = arg1
 	return args, nil
 }
 
@@ -1601,7 +1615,7 @@ func (ec *executionContext) _Mutation_confirm_phone(ctx context.Context, field g
 	return ec.marshalNuser2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_invite_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_invite_by_email(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1618,7 +1632,7 @@ func (ec *executionContext) _Mutation_invite_user(ctx context.Context, field gra
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_invite_user_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_invite_by_email_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -1626,7 +1640,49 @@ func (ec *executionContext) _Mutation_invite_user(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().InviteUser(rctx, args["object"].(model.InviteForm))
+		return ec.resolvers.Mutation().InviteByEmail(rctx, args["name"].(string), args["email"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNuser2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_invite_by_phone(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_invite_by_phone_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().InviteByPhone(rctx, args["name"].(string), args["phone"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1668,7 +1724,7 @@ func (ec *executionContext) _Mutation_accept_invite(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AcceptInvite(rctx, args["object"].(model.AcceptInviteForm))
+		return ec.resolvers.Mutation().AcceptInvite(rctx, args["token"].(string), args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2214,7 +2270,7 @@ func (ec *executionContext) _Mutation_confirm_reset(ctx context.Context, field g
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ConfirmReset(rctx, args["recovery_token"].(string), args["password"].(string))
+		return ec.resolvers.Mutation().ConfirmReset(rctx, args["token"].(string), args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4596,37 +4652,6 @@ func (ec *executionContext) _user_password_changed_at(ctx context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputaccept_invite_form(ctx context.Context, obj interface{}) (model.AcceptInviteForm, error) {
-	var it model.AcceptInviteForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "invitation_token":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invitation_token"))
-			it.InvitationToken, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			it.Password, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputboolean_expression(ctx context.Context, obj interface{}) (model.BooleanExpression, error) {
 	var it model.BooleanExpression
 	asMap := map[string]interface{}{}
@@ -4640,7 +4665,7 @@ func (ec *executionContext) unmarshalInputboolean_expression(ctx context.Context
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_eq"))
-			it.Eq, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			it.Eq, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4656,84 +4681,7 @@ func (ec *executionContext) unmarshalInputboolean_expression(ctx context.Context
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_neq"))
-			it.Neq, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputchange_email_form(ctx context.Context, obj interface{}) (model.ChangeEmailForm, error) {
-	var it model.ChangeEmailForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "email":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-			it.Email, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputchange_password_form(ctx context.Context, obj interface{}) (model.ChangePasswordForm, error) {
-	var it model.ChangePasswordForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "old_password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("old_password"))
-			it.OldPassword, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "new_password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_password"))
-			it.NewPassword, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputconfirm_change_email_form(ctx context.Context, obj interface{}) (model.ConfirmChangeEmailForm, error) {
-	var it model.ConfirmChangeEmailForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "email_change_token":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email_change_token"))
-			it.EmailChangeToken, err = ec.unmarshalNString2string(ctx, v)
+			it.Neq, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4797,45 +4745,6 @@ func (ec *executionContext) unmarshalInputcreate_user_form(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("confirm"))
 			it.Confirm, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputinvite_form(ctx context.Context, obj interface{}) (model.InviteForm, error) {
-	var it model.InviteForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-			it.Email, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "phone":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
-			it.Phone, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5003,122 +4912,6 @@ func (ec *executionContext) unmarshalInputstring_expression(ctx context.Context,
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputupdate_email_form(ctx context.Context, obj interface{}) (model.UpdateEmailForm, error) {
-	var it model.UpdateEmailForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "email":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-			it.Email, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "confirm":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("confirm"))
-			it.Confirm, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputupdate_password_form(ctx context.Context, obj interface{}) (model.UpdatePasswordForm, error) {
-	var it model.UpdatePasswordForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			it.Password, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputupdate_phone_form(ctx context.Context, obj interface{}) (model.UpdatePhoneForm, error) {
-	var it model.UpdatePhoneForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "phone":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
-			it.Phone, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "confirm":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("confirm"))
-			it.Confirm, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputupdate_user_form(ctx context.Context, obj interface{}) (model.UpdateUserForm, error) {
-	var it model.UpdateUserForm
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "avatar":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatar"))
-			it.Avatar, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5157,8 +4950,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "invite_user":
-			out.Values[i] = ec._Mutation_invite_user(ctx, field)
+		case "invite_by_email":
+			out.Values[i] = ec._Mutation_invite_by_email(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "invite_by_phone":
+			out.Values[i] = ec._Mutation_invite_by_phone(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6039,18 +5837,8 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) unmarshalNaccept_invite_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐAcceptInviteForm(ctx context.Context, v interface{}) (model.AcceptInviteForm, error) {
-	res, err := ec.unmarshalInputaccept_invite_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNcreate_user_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐCreateUserForm(ctx context.Context, v interface{}) (model.CreateUserForm, error) {
 	res, err := ec.unmarshalInputcreate_user_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNinvite_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐInviteForm(ctx context.Context, v interface{}) (model.InviteForm, error) {
-	res, err := ec.unmarshalInputinvite_form(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

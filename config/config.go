@@ -114,13 +114,13 @@ type Config struct {
 
 func New() *Config {
 
-	default_confirmation, _ := parseStringTemplate("<h2>Confirm your email</h2><p>Follow this link to confirm your email</p><p><a href='{{ site_url }}?confirmation_token={{ email_confirmation_token }}'>Confirm</a></p>")
+	default_confirmation, _ := parseStringTemplate("<h2>Confirm your email</h2><p>Follow this link to confirm your email</p><p><a href='{{ site_url }}?token={{ email_confirmation_token }}'>Confirm</a></p>")
 
-	default_invitation, _ := parseStringTemplate("<h2>You have been invited</h2><p>Follow this link to accept your invitation</p><p><a href='{{ site_url }}?invitation_token={{ email_invitation_token }}'>Accept Invite</a></p>")
+	default_invitation, _ := parseStringTemplate("<h2>You have been invited</h2><p>Follow this link to accept your invitation</p><p><a href='{{ site_url }}?token={{ email_invitation_token }}'>Accept Invite</a></p>")
 
-	default_recovery, _ := parseStringTemplate("<h2>Recover Your Account</h2><p>Follow this link to recover you account</p><p><a href='{{ site_url }}?recovery_token={{ email_recovery_token }}'>Recover</a></p>")
+	default_recovery, _ := parseStringTemplate("<h2>Recover Your Account</h2><p>Follow this link to recover you account</p><p><a href='{{ site_url }}?token={{ email_recovery_token }}'>Recover</a></p>")
 
-	default_change, _ := parseStringTemplate("<h2>Change Your Email Address<h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?change_email_token={{ change_email_token }}'>Confirm</a></p>")
+	default_change, _ := parseStringTemplate("<h2>Change Your Email Address<h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?token={{ email_change_token }}'>Confirm</a></p>")
 
 	default_confirmation_sms, _ := parseStringTemplate("Phone confirmation code - {{ phone_confirmation_token }}")
 

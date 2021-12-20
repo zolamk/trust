@@ -7,7 +7,7 @@ import (
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
-	"github.com/zolamk/trust/lib/email"
+	"github.com/zolamk/trust/lib/mail"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
@@ -56,7 +56,7 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 				"instance_url":         config.InstanceURL,
 			}
 
-			if err := email.SendEmail(config.RecoveryTemplate, context, user.Email, config); err != nil {
+			if err := mail.SendEmail(config.RecoveryTemplate, context, user.Email, config); err != nil {
 				logrus.Error(err)
 				return handlers.ErrInternal
 			}

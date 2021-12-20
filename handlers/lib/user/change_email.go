@@ -8,7 +8,7 @@ import (
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
-	"github.com/zolamk/trust/lib/email"
+	"github.com/zolamk/trust/lib/mail"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
@@ -98,7 +98,7 @@ func ChangeEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, new_email s
 			"instance_url":       config.InstanceURL,
 		}
 
-		if err := email.SendEmail(config.ChangeTemplate, context, user.NewEmail, config); err != nil {
+		if err := mail.SendEmail(config.ChangeTemplate, context, user.NewEmail, config); err != nil {
 			logrus.Error(err)
 			return handlers.ErrInternal
 		}

@@ -1,4 +1,4 @@
-package email
+package mail
 
 import (
 	"github.com/zolamk/trust/config"

@@ -8,31 +8,13 @@ import (
 	"strconv"
 )
 
-type AcceptInviteForm struct {
-	InvitationToken string `json:"invitation_token"`
-	Password        string `json:"password"`
-}
-
 type BooleanExpression struct {
 	// Equals value
-	Eq *string `json:"_eq"`
+	Eq *bool `json:"_eq"`
 	// Is value null (true) or not null (false)
 	IsNull *bool `json:"_is_null"`
 	// Does not equal value
-	Neq *string `json:"_neq"`
-}
-
-type ChangeEmailForm struct {
-	Email string `json:"email"`
-}
-
-type ChangePasswordForm struct {
-	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password"`
-}
-
-type ConfirmChangeEmailForm struct {
-	EmailChangeToken string `json:"email_change_token"`
+	Neq *bool `json:"_neq"`
 }
 
 type CreateUserForm struct {
@@ -42,12 +24,6 @@ type CreateUserForm struct {
 	Name     *string `json:"name"`
 	Avatar   *string `json:"avatar"`
 	Confirm  *bool   `json:"confirm"`
-}
-
-type InviteForm struct {
-	Name  *string `json:"name"`
-	Email *string `json:"email"`
-	Phone *string `json:"phone"`
 }
 
 type LoginResponse struct {
@@ -87,25 +63,6 @@ type StringExpression struct {
 	Lt *string `json:"_lt"`
 	// Is lesser than or equals value
 	Lte *string `json:"_lte"`
-}
-
-type UpdateEmailForm struct {
-	Email   string `json:"email"`
-	Confirm *bool  `json:"confirm"`
-}
-
-type UpdatePasswordForm struct {
-	Password string `json:"password"`
-}
-
-type UpdatePhoneForm struct {
-	Phone   string `json:"phone"`
-	Confirm *bool  `json:"confirm"`
-}
-
-type UpdateUserForm struct {
-	Name   *string `json:"name"`
-	Avatar *string `json:"avatar"`
 }
 
 type OrderDirection string

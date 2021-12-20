@@ -8,7 +8,7 @@ import (
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
-	"github.com/zolamk/trust/lib/email"
+	"github.com/zolamk/trust/lib/mail"
 	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/model"
 	"golang.org/x/crypto/bcrypt"
@@ -170,7 +170,7 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 				"instance_url":             config.InstanceURL,
 			}
 
-			if err := email.SendEmail(config.ConfirmationTemplate, context, user.Email, config); err != nil {
+			if err := mail.SendEmail(config.ConfirmationTemplate, context, user.Email, config); err != nil {
 				logrus.Error(err)
 				return handlers.ErrInternal
 			}
