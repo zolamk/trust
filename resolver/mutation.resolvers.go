@@ -48,8 +48,14 @@ func (r *mutationResolver) CreateUser(ctx context.Context, object model.CreateUs
 	return users.CreateUser(r.DB, r.Config, jwt, object)
 }
 
-func (r *mutationResolver) UpdateUser(ctx context.Context, id string, object model.UpdateUserForm) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) UpdateUser(ctx context.Context, id string, name *string, avatar *string) (*model.User, error) {
+	jwt, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, handlers.ErrInvalidJWT
+	}
+
+	return update.UpdateUser(r.DB, r.Config, jwt, id, name, avatar)
 }
 
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.User, error) {
@@ -63,11 +69,23 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.Us
 }
 
 func (r *mutationResolver) UpdateEmail(ctx context.Context, id string, email string, confirm *bool) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	jwt, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, handlers.ErrInvalidJWT
+	}
+
+	return update.UpdateEmail(r.DB, r.Config, jwt, id, email, confirm)
 }
 
-func (r *mutationResolver) UpdatePhone(ctx context.Context, id string, phone string, password *bool) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) UpdatePhone(ctx context.Context, id string, phone string, confirm *bool) (*model.User, error) {
+	jwt, ok := ctx.Value("token").(*jwt.JWT)
+
+	if !ok {
+		return nil, handlers.ErrInvalidJWT
+	}
+
+	return update.UpdatePhone(r.DB, r.Config, jwt, id, phone, confirm)
 }
 
 func (r *mutationResolver) UpdatePassword(ctx context.Context, id string, password string) (*model.User, error) {

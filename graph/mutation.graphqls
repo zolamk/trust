@@ -5,10 +5,10 @@ type Mutation {
   invite_user(object: invite_form!): user!
   accept_invite(object: accept_invite_form!): user!
   create_user(object: create_user_form!): user!
-  update_user(id: String!, object: update_user_form!): user!
+  update_user(id: String!, name: String, avatar: String): user!
   delete_user(id: String!): user!
   update_email(id: String!, email: String!, confirm: Boolean): user!
-  update_phone(id: String!, phone: String!, password: Boolean): user!
+  update_phone(id: String!, phone: String!, confirm: Boolean): user!
   update_password(id: String!, password: String!): user!
   change_password(old_password: String!, new_password: String!): user!
   change_email(email: String!): user!

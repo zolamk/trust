@@ -77,3 +77,23 @@ func (u *User) ConfirmPhone(db *gorm.DB) error {
 	return db.Save(u).Error
 
 }
+
+func (u *User) ConfirmPhoneChange(db *gorm.DB) error {
+
+	u.Phone = u.NewPhone
+
+	u.NewPhone = nil
+
+	return u.Save(db)
+
+}
+
+func (u *User) ConfirmEmailChange(db *gorm.DB) error {
+
+	u.Email = u.NewEmail
+
+	u.NewEmail = nil
+
+	return u.Save(db)
+
+}

@@ -63,8 +63,8 @@ type ComplexityRoot struct {
 		Signup                  func(childComplexity int, object model.SignupForm) int
 		UpdateEmail             func(childComplexity int, id string, email string, confirm *bool) int
 		UpdatePassword          func(childComplexity int, id string, password string) int
-		UpdatePhone             func(childComplexity int, id string, phone string, password *bool) int
-		UpdateUser              func(childComplexity int, id string, object model.UpdateUserForm) int
+		UpdatePhone             func(childComplexity int, id string, phone string, confirm *bool) int
+		UpdateUser              func(childComplexity int, id string, name *string, avatar *string) int
 	}
 
 	Query struct {
@@ -116,10 +116,10 @@ type MutationResolver interface {
 	InviteUser(ctx context.Context, object model.InviteForm) (*model.User, error)
 	AcceptInvite(ctx context.Context, object model.AcceptInviteForm) (*model.User, error)
 	CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error)
-	UpdateUser(ctx context.Context, id string, object model.UpdateUserForm) (*model.User, error)
+	UpdateUser(ctx context.Context, id string, name *string, avatar *string) (*model.User, error)
 	DeleteUser(ctx context.Context, id string) (*model.User, error)
 	UpdateEmail(ctx context.Context, id string, email string, confirm *bool) (*model.User, error)
-	UpdatePhone(ctx context.Context, id string, phone string, password *bool) (*model.User, error)
+	UpdatePhone(ctx context.Context, id string, phone string, confirm *bool) (*model.User, error)
 	UpdatePassword(ctx context.Context, id string, password string) (*model.User, error)
 	ChangePassword(ctx context.Context, oldPassword string, newPassword string) (*model.User, error)
 	ChangeEmail(ctx context.Context, email string) (*model.User, error)
@@ -380,7 +380,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdatePhone(childComplexity, args["id"].(string), args["phone"].(string), args["password"].(*bool)), true
+		return e.complexity.Mutation.UpdatePhone(childComplexity, args["id"].(string), args["phone"].(string), args["confirm"].(*bool)), true
 
 	case "Mutation.update_user":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -392,7 +392,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["object"].(model.UpdateUserForm)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["name"].(*string), args["avatar"].(*string)), true
 
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
@@ -709,10 +709,10 @@ var sources = []*ast.Source{
   invite_user(object: invite_form!): user!
   accept_invite(object: accept_invite_form!): user!
   create_user(object: create_user_form!): user!
-  update_user(id: String!, object: update_user_form!): user!
+  update_user(id: String!, name: String, avatar: String): user!
   delete_user(id: String!): user!
   update_email(id: String!, email: String!, confirm: Boolean): user!
-  update_phone(id: String!, phone: String!, password: Boolean): user!
+  update_phone(id: String!, phone: String!, confirm: Boolean): user!
   update_password(id: String!, password: String!): user!
   change_password(old_password: String!, new_password: String!): user!
   change_email(email: String!): user!
@@ -1282,14 +1282,14 @@ func (ec *executionContext) field_Mutation_update_phone_args(ctx context.Context
 	}
 	args["phone"] = arg1
 	var arg2 *bool
-	if tmp, ok := rawArgs["password"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+	if tmp, ok := rawArgs["confirm"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("confirm"))
 		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["password"] = arg2
+	args["confirm"] = arg2
 	return args, nil
 }
 
@@ -1305,15 +1305,24 @@ func (ec *executionContext) field_Mutation_update_user_args(ctx context.Context,
 		}
 	}
 	args["id"] = arg0
-	var arg1 model.UpdateUserForm
-	if tmp, ok := rawArgs["object"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("object"))
-		arg1, err = ec.unmarshalNupdate_user_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdateUserForm(ctx, tmp)
+	var arg1 *string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["object"] = arg1
+	args["name"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["avatar"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatar"))
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["avatar"] = arg2
 	return args, nil
 }
 
@@ -1743,7 +1752,7 @@ func (ec *executionContext) _Mutation_update_user(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateUser(rctx, args["id"].(string), args["object"].(model.UpdateUserForm))
+		return ec.resolvers.Mutation().UpdateUser(rctx, args["id"].(string), args["name"].(*string), args["avatar"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1869,7 +1878,7 @@ func (ec *executionContext) _Mutation_update_phone(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdatePhone(rctx, args["id"].(string), args["phone"].(string), args["password"].(*bool))
+		return ec.resolvers.Mutation().UpdatePhone(rctx, args["id"].(string), args["phone"].(string), args["confirm"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6061,11 +6070,6 @@ func (ec *executionContext) marshalNlogin_response2ᚖgithubᚗcomᚋzolamkᚋtr
 
 func (ec *executionContext) unmarshalNsignup_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐSignupForm(ctx context.Context, v interface{}) (model.SignupForm, error) {
 	res, err := ec.unmarshalInputsignup_form(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNupdate_user_form2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐUpdateUserForm(ctx context.Context, v interface{}) (model.UpdateUserForm, error) {
-	res, err := ec.unmarshalInputupdate_user_form(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
