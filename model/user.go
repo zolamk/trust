@@ -32,6 +32,8 @@ type User struct {
 	PhoneChangedAt               *time.Time `json:"phone_changed_at,omitempty"`
 	EmailChangedAt               *time.Time `json:"email_changed_at,omitempty"`
 	PasswordChangedAt            *time.Time `json:"password_changed_at,omitempty"`
+	IncorrectLoginAttempts       uint8      `json:"-"`
+	LastIncorrectLoginAttemptAt  *time.Time `json:"last_incorrect_login_attempt_at"`
 	IsAdmin                      bool       `json:"-"`
 	Password                     *string    `json:"-"`
 	EmailConfirmationToken       *string    `json:"-"`
@@ -61,7 +63,7 @@ func (u *User) ConfirmEmail(db *gorm.DB) error {
 
 	u.EmailConfirmationToken = nil
 
-	return db.Save(u).Error
+	return u.Save(db)
 
 }
 
@@ -75,7 +77,7 @@ func (u *User) ConfirmPhone(db *gorm.DB) error {
 
 	u.PhoneConfirmationToken = nil
 
-	return db.Save(u).Error
+	return u.Save(db)
 
 }
 
@@ -152,6 +154,28 @@ func (u *User) SignedIn(db *gorm.DB) error {
 	now := time.Now()
 
 	u.LastSigninAt = &now
+
+	u.IncorrectLoginAttempts = 0
+
+	return u.Save(db)
+
+}
+
+func (u *User) ResetAttempt(db *gorm.DB) error {
+
+	u.IncorrectLoginAttempts = 0
+
+	return u.Save(db)
+
+}
+
+func (u *User) IncorrectAttempt(db *gorm.DB) error {
+
+	now := time.Now()
+
+	u.IncorrectLoginAttempts++
+
+	u.LastIncorrectLoginAttemptAt = &now
 
 	return u.Save(db)
 

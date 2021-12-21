@@ -155,4 +155,10 @@ var (
 			"code": "cant_change_own_account",
 		},
 	}
+	ErrAccountLocked = &gqlerror.Error{
+		Message: "account has been locked",
+		Extensions: map[string]interface{}{
+			"code": "account_locked",
+		},
+	}
 )

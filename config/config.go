@@ -58,6 +58,11 @@ type SMSConfig struct {
 	Extra   map[string]string
 }
 
+type LockoutPolicy struct {
+	Attempts uint8         `json:"attempts"`
+	For      time.Duration `json:"for"`
+}
+
 type JWTConfig struct {
 	Aud            string        `json:"audience"`
 	Alg            string        `json:"algorithm"`
@@ -111,6 +116,7 @@ type Config struct {
 	SMS                       *SMSConfig      `json:"sms"`
 	ConfirmationExpiry        time.Duration   `json:"confirmation_expiry"`
 	RefreshTokenCookieName    string          `json:"refresh_token_cookie_name"`
+	LockoutPolicy             LockoutPolicy   `json:"lockout_policy"`
 }
 
 func New() *Config {
@@ -160,6 +166,10 @@ func New() *Config {
 		EmailRule:                 Regexp{*regexp.MustCompile(`^[\w\-\.]+@([\w\-]+\.)+[\w\-]{1,}$`)},
 		PhoneRule:                 Regexp{*regexp.MustCompile(`\+\d{5,15}`)},
 		RefreshTokenCookieName:    "trust_refresh_token",
+		LockoutPolicy: LockoutPolicy{
+			Attempts: 5,
+			For:      60,
+		},
 		ConfirmationTemplate: &TemplateConfig{
 			Subject: "Confirm Your Account",
 			SMS:     default_confirmation_sms,
