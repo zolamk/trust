@@ -25,25 +25,19 @@ type FacebookUser struct {
 	Picture Data    `json:"picture"`
 }
 
-type Facebook struct {
+type FacebookProvider struct {
 	config *config.Config
 }
 
-func NewFacebookProvider(config *config.Config) *Facebook {
-	return &Facebook{
-		config,
-	}
-}
-
-func (f *Facebook) name() string {
+func (f *FacebookProvider) name() string {
 	return "facebook"
 }
 
-func (f *Facebook) enabled() bool {
+func (f *FacebookProvider) enabled() bool {
 	return f.config.FacebookEnabled
 }
 
-func (f *Facebook) get_config() *oauth2.Config {
+func (f *FacebookProvider) get_config() *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     *f.config.FacebookClientID,
 		ClientSecret: *f.config.FacebookClientSecret,
@@ -53,7 +47,7 @@ func (f *Facebook) get_config() *oauth2.Config {
 	}
 }
 
-func (f *Facebook) get_user_data(access_token string) (*UserData, error) {
+func (f *FacebookProvider) get_user_data(access_token string) (*UserData, error) {
 
 	req, err := http.NewRequest("GET", "https://graph.facebook.com/me?fields=name,email,picture{url,is_silhouette}", nil)
 

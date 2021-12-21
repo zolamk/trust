@@ -1,6 +1,8 @@
 package reset
 
 import (
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
@@ -26,9 +28,13 @@ func ConfirmReset(db *gorm.DB, config *config.Config, recovery_token string, pwd
 
 	user.SetPassword(pwd, int(config.PasswordHashCost))
 
+	now := time.Now()
+
 	user.RecoveryToken = nil
 
 	user.RecoveryTokenSentAt = nil
+
+	user.PasswordChangedAt = &now
 
 	if err := user.Save(db); err != nil {
 		logrus.Error(err)

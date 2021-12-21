@@ -22,13 +22,19 @@ func Authorize(db *gorm.DB, config *config.Config) http.Handler {
 				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
 				return
 			}
-			oauth_provider = NewFacebookProvider(config)
+			oauth_provider = &FacebookProvider{config}
 		case "google":
 			if !config.GoogleEnabled {
 				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
 				return
 			}
-			oauth_provider = NewGoogleProvider(config)
+			oauth_provider = &GoogleProvider{config}
+		case "github":
+			if !config.GithubEnabled {
+				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
+				return
+			}
+			oauth_provider = &GithubProvider{config}
 		default:
 			redirect_url := fmt.Sprintf("%s/%s?error=unknown_provider", config.SiteURL, config.SocialRedirectPage)
 			http.Redirect(res, req, redirect_url, http.StatusTemporaryRedirect)

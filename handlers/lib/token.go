@@ -76,6 +76,11 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 		return nil, handlers.ErrInternal
 	}
 
+	if err := user.SignedIn(db); err != nil {
+		logrus.Error(err)
+		return nil, handlers.ErrInternal
+	}
+
 	refresh_token := model.RefreshToken{
 		Token:  randstr.String(50),
 		UserID: user.ID,

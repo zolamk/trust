@@ -147,6 +147,16 @@ func (u *User) AcceptEmailInvite(db *gorm.DB) error {
 
 }
 
+func (u *User) SignedIn(db *gorm.DB) error {
+
+	now := time.Now()
+
+	u.LastSigninAt = &now
+
+	return u.Save(db)
+
+}
+
 func (u *User) SetPassword(password string, cost int) error {
 
 	pwd, err := bcrypt.GenerateFromPassword([]byte(password), cost)
