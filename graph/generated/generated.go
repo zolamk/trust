@@ -71,16 +71,15 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Me      func(childComplexity int) int
-		Refresh func(childComplexity int, token string) int
+		Refresh func(childComplexity int) int
 		Token   func(childComplexity int, username string, password string) int
 		User    func(childComplexity int, id string) int
 		Users   func(childComplexity int, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) int
 	}
 
 	LoginResponse struct {
-		AccessToken  func(childComplexity int) int
-		ID           func(childComplexity int) int
-		RefreshToken func(childComplexity int) int
+		AccessToken func(childComplexity int) int
+		ID          func(childComplexity int) int
 	}
 
 	User struct {
@@ -140,7 +139,7 @@ type QueryResolver interface {
 	Users(ctx context.Context, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) ([]*model.User, error)
 	Me(ctx context.Context) (*model.User, error)
 	Token(ctx context.Context, username string, password string) (*model.LoginResponse, error)
-	Refresh(ctx context.Context, token string) (*model.LoginResponse, error)
+	Refresh(ctx context.Context) (*model.LoginResponse, error)
 }
 
 type executableSchema struct {
@@ -434,12 +433,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		args, err := ec.field_Query_refresh_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Refresh(childComplexity, args["token"].(string)), true
+		return e.complexity.Query.Refresh(childComplexity), true
 
 	case "Query.token":
 		if e.complexity.Query.Token == nil {
@@ -490,13 +484,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.LoginResponse.ID(childComplexity), true
-
-	case "login_response.refresh_token":
-		if e.complexity.LoginResponse.RefreshToken == nil {
-			break
-		}
-
-		return e.complexity.LoginResponse.RefreshToken(childComplexity), true
 
 	case "user.avatar":
 		if e.complexity.User.Avatar == nil {
@@ -792,7 +779,7 @@ input users_order_by {
   users(where: users_bool_exp, order_by: users_order_by, offset: Int!, limit: Int!): [user!]
   me: user!
   token(username: String!, password: String!): login_response!
-  refresh(token: String!): login_response!
+  refresh: login_response!
 }`, BuiltIn: false},
 	{Name: "graph/types.graphqls", Input: `input create_user_form {
   email: String
@@ -813,7 +800,6 @@ input signup_form {
 
 type login_response {
   access_token: String!
-  refresh_token: String!
   id: String!
 }
 
@@ -1389,21 +1375,6 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_refresh_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["token"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["token"] = arg0
 	return args, nil
 }
 
@@ -2624,16 +2595,9 @@ func (ec *executionContext) _Query_refresh(ctx context.Context, field graphql.Co
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_refresh_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Refresh(rctx, args["token"].(string))
+		return ec.resolvers.Query().Refresh(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3858,41 +3822,6 @@ func (ec *executionContext) _login_response_access_token(ctx context.Context, fi
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.AccessToken, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _login_response_refresh_token(ctx context.Context, field graphql.CollectedField, obj *model.LoginResponse) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "login_response",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.RefreshToken, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5491,11 +5420,6 @@ func (ec *executionContext) _login_response(ctx context.Context, sel ast.Selecti
 			out.Values[i] = graphql.MarshalString("login_response")
 		case "access_token":
 			out.Values[i] = ec._login_response_access_token(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "refresh_token":
-			out.Values[i] = ec._login_response_refresh_token(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

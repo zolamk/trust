@@ -27,9 +27,8 @@ type CreateUserForm struct {
 }
 
 type LoginResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ID           string `json:"id"`
+	AccessToken string `json:"access_token"`
+	ID          string `json:"id"`
 }
 
 type SignupForm struct {

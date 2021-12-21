@@ -13,9 +13,11 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/graph/generated"
+	"github.com/zolamk/trust/handlers/provider"
 	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/resolver"
 	"gorm.io/driver/postgres"
@@ -77,9 +79,21 @@ func main() {
 
 	graphql := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &resolver.Resolver{DB: db, Config: config}}))
 
-	http.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql"))
+	router := mux.NewRouter()
 
-	http.Handle("/graphql", middleware.Authenticated(config)(graphql))
+	router.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql")).Methods("GET")
+
+	router.Handle("/graphql",
+		middleware.ExtractRefresh(config)(
+			middleware.Authenticated(config)(graphql),
+		),
+	).Methods("POST")
+
+	router.Handle("/authorize", provider.Authorize(db, config)).Methods("GET")
+
+	router.Handle("/authorize/callback", provider.Callback(db, config)).Methods("GET")
+
+	http.Handle("/", router)
 
 	host := fmt.Sprintf("%s:%d", config.Host, config.Port)
 

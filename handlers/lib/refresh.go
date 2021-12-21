@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"net/http"
+
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
@@ -11,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginResponse, error) {
+func RefreshToken(db *gorm.DB, config *config.Config, rt string, provider string, writer http.ResponseWriter) (*model.LoginResponse, error) {
 
 	var refresh_token model.RefreshToken
 
@@ -28,7 +30,7 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 
 	payload := &map[string]interface{}{
 		"event":    "login",
-		"provider": "email",
+		"provider": provider,
 		"user":     user,
 	}
 
@@ -39,7 +41,7 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 		return nil, handlers.ErrWebHook
 	}
 
-	token := jwt.New(user, hook_response, config.JWT)
+	token := jwt.New(provider, user, hook_response, config.JWT)
 
 	signed_token, err := token.Sign()
 
@@ -53,9 +55,17 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string) (*model.LoginRe
 		return nil, handlers.ErrInternal
 	}
 
+	cookie := &http.Cookie{
+		HttpOnly: true,
+		Name:     config.RefreshTokenCookieName,
+		Value:    refresh_token.Token,
+	}
+
+	http.SetCookie(writer, cookie)
+
 	return &model.LoginResponse{
-		AccessToken:  signed_token,
-		RefreshToken: refresh_token.Token,
-		ID:           user.ID,
+		AccessToken: signed_token,
+		ID:          user.ID,
 	}, nil
+
 }

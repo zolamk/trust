@@ -16,10 +16,11 @@ type JWT struct {
 	Email    *string      `json:"email,omitempty"`
 	Phone    *string      `json:"phone,omitempty"`
 	Metadata *interface{} `json:"metadata,omitempty"`
+	Provider string       `json:"provider"`
 	config   *config.JWTConfig
 }
 
-func New(user *model.User, metadata *interface{}, config *config.JWTConfig) *JWT {
+func New(provider string, user *model.User, metadata *interface{}, config *config.JWTConfig) *JWT {
 
 	now := time.Now()
 
@@ -34,6 +35,7 @@ func New(user *model.User, metadata *interface{}, config *config.JWTConfig) *JWT
 		user.Email,
 		user.Phone,
 		metadata,
+		provider,
 		config,
 	}
 

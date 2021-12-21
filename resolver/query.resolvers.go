@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/zolamk/trust/graph/generated"
@@ -13,6 +14,7 @@ import (
 	"github.com/zolamk/trust/handlers/lib/user"
 	"github.com/zolamk/trust/handlers/lib/users"
 	"github.com/zolamk/trust/jwt"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 )
 
@@ -49,11 +51,19 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 }
 
 func (r *queryResolver) Token(ctx context.Context, username string, password string) (*model.LoginResponse, error) {
-	return lib.Token(r.DB, r.Config, username, password)
+	writer := ctx.Value(middleware.WriterKey).(http.ResponseWriter)
+
+	return lib.Token(r.DB, r.Config, username, password, writer)
 }
 
-func (r *queryResolver) Refresh(ctx context.Context, token string) (*model.LoginResponse, error) {
-	return lib.RefreshToken(r.DB, r.Config, token)
+func (r *queryResolver) Refresh(ctx context.Context) (*model.LoginResponse, error) {
+	writer := ctx.Value(middleware.WriterKey).(http.ResponseWriter)
+
+	refresh_token := ctx.Value(middleware.RefreshTokenKey).(string)
+
+	provider := ctx.Value(middleware.ProviderKey).(string)
+
+	return lib.RefreshToken(r.DB, r.Config, refresh_token, provider, writer)
 }
 
 // Query returns generated.QueryResolver implementation.

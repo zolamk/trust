@@ -35,12 +35,18 @@ func Authenticated(config *config.Config) func(http.Handler) http.Handler {
 			token, err := jwt.Decode(authorization, config.JWT)
 
 			if err != nil {
+
 				logrus.Error(err)
+
 				next.ServeHTTP(res, req)
+
 				return
+
 			}
 
-			ctx := context.WithValue(req.Context(), "token", token)
+			ctx := context.WithValue(req.Context(), TokenKey, token)
+
+			ctx = context.WithValue(ctx, ProviderKey, token.Provider)
 
 			req = req.WithContext(ctx)
 

@@ -110,6 +110,7 @@ type Config struct {
 	SocialRedirectPage        string          `json:"social_redirect_page"`
 	SMS                       *SMSConfig      `json:"sms"`
 	ConfirmationExpiry        time.Duration   `json:"confirmation_expiry"`
+	RefreshTokenCookieName    string          `json:"refresh_token_cookie_name"`
 }
 
 func New() *Config {
@@ -158,6 +159,7 @@ func New() *Config {
 		PasswordRule:              Regexp{*regexp.MustCompile(".{8,1000}")},
 		EmailRule:                 Regexp{*regexp.MustCompile(`^[\w\-\.]+@([\w\-]+\.)+[\w\-]{1,}$`)},
 		PhoneRule:                 Regexp{*regexp.MustCompile(`\+\d{5,15}`)},
+		RefreshTokenCookieName:    "trust_refresh_token",
 		ConfirmationTemplate: &TemplateConfig{
 			Subject: "Confirm Your Account",
 			SMS:     default_confirmation_sms,

@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"net/http"
+
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
@@ -12,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Token(db *gorm.DB, config *config.Config, username string, password string) (*model.LoginResponse, error) {
+func Token(db *gorm.DB, config *config.Config, username string, password string, writer http.ResponseWriter) (*model.LoginResponse, error) {
 
 	user := &model.User{}
 
@@ -65,7 +67,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 		return nil, handlers.ErrWebHook
 	}
 
-	token := jwt.New(user, hook_response, config.JWT)
+	token := jwt.New("password", user, hook_response, config.JWT)
 
 	signed_token, err := token.Sign()
 
@@ -84,10 +86,17 @@ func Token(db *gorm.DB, config *config.Config, username string, password string)
 		return nil, handlers.ErrInternal
 	}
 
+	cookie := &http.Cookie{
+		HttpOnly: true,
+		Name:     config.RefreshTokenCookieName,
+		Value:    refresh_token.Token,
+	}
+
+	http.SetCookie(writer, cookie)
+
 	return &model.LoginResponse{
-		AccessToken:  signed_token,
-		RefreshToken: refresh_token.Token,
-		ID:           user.ID,
+		AccessToken: signed_token,
+		ID:          user.ID,
 	}, nil
 
 }
