@@ -2,16 +2,18 @@ package update
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/lib/mail"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, new_email string, confirm *bool) (*model.User, error) {
+func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, new_email string, confirm *bool, log_data *middleware.LogData) (*model.User, error) {
+
+	user := &model.User{}
 
 	is_admin, err := token.IsAdmin(db)
 
@@ -28,68 +30,79 @@ func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 		return nil, handlers.ErrCantChangeOwnAccount
 	}
 
-	user := &model.User{}
-
-	tx := db.First(user, "email = ?", new_email)
-
-	if tx.Error != nil {
-
-		if tx.Error != gorm.ErrRecordNotFound {
-			logrus.Error(tx.Error)
-			return nil, handlers.ErrInternal
-		}
-
-	} else {
-
-		err := handlers.ErrEmailRegistered
-
-		err.Extensions["email"] = user.Email
-
-		err.Extensions["phone"] = user.Phone
-
-		err.Extensions["id"] = user.ID
-
-		return nil, err
-
-	}
-
-	if tx := db.Find(user, "id = ?", id); tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, handlers.ErrUserNotFound
-		}
-		logrus.Error(tx.Error)
-		return nil, handlers.ErrInternal
-	}
-
-	if !config.EmailRule.MatchString(new_email) {
-		return nil, handlers.ErrInvalidEmail
-	}
-
 	err = db.Transaction(func(tx *gorm.DB) error {
 
-		user.NewEmail = &new_email
+		res := tx.First(user, "email = ?", new_email)
 
-		if err := user.Save(db); err != nil {
-			logrus.Error(err)
-			return handlers.ErrInternal
+		if res.Error != nil {
+
+			if res.Error != gorm.ErrRecordNotFound {
+
+				logrus.Error(tx.Error)
+
+				return handlers.ErrInternal
+
+			}
+
+		} else {
+
+			err := handlers.ErrEmailRegistered
+
+			err.Extensions["email"] = user.Email
+
+			err.Extensions["phone"] = user.Phone
+
+			err.Extensions["id"] = user.ID
+
+			return err
+
 		}
 
-		if config.AutoConfirm || (confirm != nil && *confirm) {
+		if tx := db.Find(user, "id = ?", id); tx.Error != nil {
 
-			if err := user.ConfirmEmailChange(tx); err != nil {
+			if tx.Error == gorm.ErrRecordNotFound {
+
+				return handlers.ErrUserNotFound
+
+			}
+
+			logrus.Error(tx.Error)
+
+			return handlers.ErrInternal
+
+		}
+
+		if !config.EmailRule.MatchString(new_email) {
+
+			return handlers.ErrInvalidEmail
+
+		}
+
+		log := model.NewLog(user.ID, "email change inititated by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+
+		if err := user.ChangeEmail(tx, log, new_email); err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
+		if confirm != nil && *confirm {
+
+			log := model.NewLog(user.ID, "email change confirmed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+
+			if err := user.ConfirmEmailChange(tx, log); err != nil {
+
 				logrus.Error(err)
+
 				return handlers.ErrInternal
+
 			}
 
 			return nil
 
 		}
-
-		token := randstr.String(100)
-
-		user.EmailChangeToken = &token
-
-		user.NewEmail = &new_email
 
 		context := &map[string]string{
 			"site_url":           config.SiteURL,
@@ -99,8 +112,11 @@ func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 		}
 
 		if err := mail.SendEmail(config.ChangeTemplate, context, user.NewEmail, config); err != nil {
+
 			logrus.Error(err)
+
 			return handlers.ErrInternal
+
 		}
 
 		return nil

@@ -2,16 +2,18 @@ package update
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/lib/sms"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, phone string, confirm *bool) (*model.User, error) {
+func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, phone string, confirm *bool, log_data *middleware.LogData) (*model.User, error) {
+
+	user := &model.User{}
 
 	is_admin, err := token.IsAdmin(db)
 
@@ -28,68 +30,79 @@ func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 		return nil, handlers.ErrCantChangeOwnAccount
 	}
 
-	user := &model.User{}
-
-	tx := db.First(user, "phone = ?", phone)
-
-	if tx.Error != nil {
-
-		if tx.Error != gorm.ErrRecordNotFound {
-			logrus.Error(tx.Error)
-			return nil, handlers.ErrInternal
-		}
-
-	} else {
-
-		err := handlers.ErrPhoneRegistered
-
-		err.Extensions["email"] = user.Email
-
-		err.Extensions["phone"] = user.Phone
-
-		err.Extensions["id"] = user.ID
-
-		return nil, err
-
-	}
-
-	if tx := db.Find(user, "id = ?", id); tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, handlers.ErrUserNotFound
-		}
-		logrus.Error(tx.Error)
-		return nil, handlers.ErrInternal
-	}
-
-	if !config.PhoneRule.MatchString(phone) {
-		return nil, handlers.ErrInvalidPhone
-	}
-
 	db.Transaction(func(tx *gorm.DB) error {
 
-		user.NewPhone = &phone
+		err := tx.First(user, "phone = ?", phone).Error
 
-		if err := user.Save(db); err != nil {
-			logrus.Error(err)
-			return handlers.ErrInternal
+		if err != nil {
+
+			if err != gorm.ErrRecordNotFound {
+
+				logrus.Error(err)
+
+				return handlers.ErrInternal
+
+			}
+
+		} else {
+
+			err := handlers.ErrPhoneRegistered
+
+			err.Extensions["email"] = user.Email
+
+			err.Extensions["phone"] = user.Phone
+
+			err.Extensions["id"] = user.ID
+
+			return err
+
 		}
 
-		if config.AutoConfirm || (confirm != nil && *confirm) {
+		if tx := db.Find(user, "id = ?", id); tx.Error != nil {
 
-			if err := user.ConfirmPhoneChange(tx); err != nil {
+			if tx.Error == gorm.ErrRecordNotFound {
+
+				return handlers.ErrUserNotFound
+
+			}
+
+			logrus.Error(tx.Error)
+
+			return handlers.ErrInternal
+
+		}
+
+		if !config.PhoneRule.MatchString(phone) {
+
+			return handlers.ErrInvalidPhone
+
+		}
+
+		log := model.NewLog(user.ID, "phone change inititated by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+
+		if err := user.ChangePhone(tx, log, phone); err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
+		if confirm != nil && *confirm {
+
+			log := model.NewLog(user.ID, "phone change confirmed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+
+			if err := user.ConfirmPhoneChange(tx, log); err != nil {
+
 				logrus.Error(err)
+
 				return handlers.ErrInternal
+
 			}
 
 			return nil
 
 		}
-
-		token := randstr.String(6)
-
-		user.PhoneChangeToken = &token
-
-		user.NewPhone = &phone
 
 		context := &map[string]string{
 			"site_url":           config.SiteURL,
@@ -99,8 +112,11 @@ func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 		}
 
 		if err := sms.SendSMS(config.ChangeTemplate, user.NewPhone, context, config.SMS); err != nil {
+
 			logrus.Error(err)
+
 			return handlers.ErrInternal
+
 		}
 
 		return nil

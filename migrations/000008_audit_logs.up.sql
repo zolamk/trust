@@ -18,6 +18,6 @@ CREATE TABLE trust.logs (
     url VARCHAR NOT NULL,
     string VARCHAR NOT NULL,
     admin_id VARCHAR,
-    CONSTRAINT fk_audit_log_user FOREIGN KEY(user_id) REFERENCES trust.users(id),
+    CONSTRAINT fk_audit_log_user FOREIGN KEY(user_id) REFERENCES trust.users(id) ON DELETE CASCADE,
     CONSTRAINT fk_audit_log_admin FOREIGN KEY(admin_id) REFERENCES trust.users(id)
 );

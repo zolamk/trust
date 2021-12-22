@@ -50,8 +50,54 @@ func (u *User) Create(db *gorm.DB) error {
 	return db.Create(u).Error
 }
 
-func (u *User) Save(db *gorm.DB) error {
-	return db.Save(u).Error
+func (u *User) Save(tx *gorm.DB) error {
+	return tx.Save(u).Error
+}
+
+func (u *User) SaveWithLog(tx *gorm.DB, log *Log) error {
+
+	if err := tx.Create(log).Error; err != nil {
+		return err
+	}
+
+	return tx.Save(u).Error
+
+}
+
+func (u *User) InviteByEmail(tx *gorm.DB, name string, email string) error {
+
+	now := time.Now()
+
+	invitation_token := randstr.String(100)
+
+	u.Name = &name
+
+	u.Email = &email
+
+	u.EmailInvitationToken = &invitation_token
+
+	u.InvitationTokenSentAt = &now
+
+	return tx.Save(u).Error
+
+}
+
+func (u *User) InviteByPhone(tx *gorm.DB, name string, phone string) error {
+
+	now := time.Now()
+
+	invitation_token := randstr.String(6)
+
+	u.Name = &name
+
+	u.Phone = &phone
+
+	u.PhoneInvitationToken = &invitation_token
+
+	u.InvitationTokenSentAt = &now
+
+	return tx.Save(u).Error
+
 }
 
 func (u *User) ResetByEmail(tx *gorm.DB, log *Log) error {
@@ -90,6 +136,64 @@ func (u *User) ResetByPhone(tx *gorm.DB, log *Log) error {
 
 }
 
+func (u *User) ChangePassword(tx *gorm.DB, log *Log, password string, cost int) error {
+
+	now := time.Now()
+
+	if err := u.SetPassword(password, cost); err != nil {
+		return err
+	}
+
+	u.PasswordChangedAt = &now
+
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return tx.Save(u).Error
+
+}
+
+func (u *User) ChangeEmail(tx *gorm.DB, log *Log, email string) error {
+
+	now := time.Now()
+
+	token := randstr.String(100)
+
+	u.EmailChangeToken = &token
+
+	u.NewEmail = &email
+
+	u.EmailChangeTokenSentAt = &now
+
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return tx.Save(u).Error
+
+}
+
+func (u *User) ChangePhone(tx *gorm.DB, log *Log, phone string) error {
+
+	now := time.Now()
+
+	token := randstr.String(6)
+
+	u.PhoneChangeToken = &token
+
+	u.NewPhone = &phone
+
+	u.PhoneChangeTokenSentAt = &now
+
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return tx.Save(u).Error
+
+}
+
 func (u *User) ConfirmReset(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
@@ -108,7 +212,7 @@ func (u *User) ConfirmReset(tx *gorm.DB, log *Log) error {
 
 }
 
-func (u *User) ConfirmEmail(db *gorm.DB, log *Log) error {
+func (u *User) ConfirmEmail(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -118,11 +222,11 @@ func (u *User) ConfirmEmail(db *gorm.DB, log *Log) error {
 
 	u.EmailConfirmationToken = nil
 
-	if tx := db.Create(log); tx.Error != nil {
+	if tx := tx.Create(log); tx.Error != nil {
 		return tx.Error
 	}
 
-	return u.Save(db)
+	return tx.Save(u).Error
 
 }
 
@@ -140,11 +244,11 @@ func (u *User) ConfirmPhone(tx *gorm.DB, log *Log) error {
 		return tx.Error
 	}
 
-	return u.Save(tx)
+	return tx.Save(u).Error
 
 }
 
-func (u *User) ConfirmPhoneChange(db *gorm.DB) error {
+func (u *User) ConfirmPhoneChange(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -158,11 +262,15 @@ func (u *User) ConfirmPhoneChange(db *gorm.DB) error {
 
 	u.PhoneChangeTokenSentAt = nil
 
-	return u.Save(db)
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return tx.Save(u).Error
 
 }
 
-func (u *User) ConfirmEmailChange(db *gorm.DB) error {
+func (u *User) ConfirmEmailChange(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -176,11 +284,15 @@ func (u *User) ConfirmEmailChange(db *gorm.DB) error {
 
 	u.EmailChangeTokenSentAt = nil
 
-	return u.Save(db)
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return tx.Save(u).Error
 
 }
 
-func (u *User) AcceptPhoneInvite(db *gorm.DB, log *Log) error {
+func (u *User) AcceptPhoneInvite(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -192,15 +304,15 @@ func (u *User) AcceptPhoneInvite(db *gorm.DB, log *Log) error {
 
 	u.PhoneConfirmed = true
 
-	if tx := db.Create(log); tx.Error != nil {
+	if tx := tx.Create(log); tx.Error != nil {
 		return tx.Error
 	}
 
-	return u.Save(db)
+	return tx.Save(u).Error
 
 }
 
-func (u *User) AcceptEmailInvite(db *gorm.DB, log *Log) error {
+func (u *User) AcceptEmailInvite(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -212,15 +324,15 @@ func (u *User) AcceptEmailInvite(db *gorm.DB, log *Log) error {
 
 	u.EmailConfirmed = true
 
-	if tx := db.Create(log); tx.Error != nil {
+	if tx := tx.Create(log); tx.Error != nil {
 		return tx.Error
 	}
 
-	return u.Save(db)
+	return tx.Save(u).Error
 
 }
 
-func (u *User) SignedIn(db *gorm.DB, log *Log) error {
+func (u *User) SignedIn(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -228,23 +340,23 @@ func (u *User) SignedIn(db *gorm.DB, log *Log) error {
 
 	u.IncorrectLoginAttempts = 0
 
-	if tx := db.Create(log); tx.Error != nil {
+	if tx := tx.Create(log); tx.Error != nil {
 		return tx.Error
 	}
 
-	return u.Save(db)
+	return tx.Save(u).Error
 
 }
 
-func (u *User) ResetAttempt(db *gorm.DB) error {
+func (u *User) ResetAttempt(tx *gorm.DB) error {
 
 	u.IncorrectLoginAttempts = 0
 
-	return u.Save(db)
+	return tx.Save(u).Error
 
 }
 
-func (u *User) IncorrectAttempt(db *gorm.DB, log *Log) error {
+func (u *User) IncorrectAttempt(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -252,11 +364,11 @@ func (u *User) IncorrectAttempt(db *gorm.DB, log *Log) error {
 
 	u.LastIncorrectLoginAttemptAt = &now
 
-	if tx := db.Create(log); tx.Error != nil {
+	if tx := tx.Create(log); tx.Error != nil {
 		return tx.Error
 	}
 
-	return u.Save(db)
+	return tx.Save(u).Error
 
 }
 

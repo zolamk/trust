@@ -20,7 +20,7 @@ import (
 )
 
 func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error) {
-	token, ok := ctx.Value("token").(*jwt.JWT)
+	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
 		return nil, handlers.ErrInvalidJWT
@@ -30,7 +30,7 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 }
 
 func (r *queryResolver) Users(ctx context.Context, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) ([]*model.User, error) {
-	token, ok := ctx.Value("token").(*jwt.JWT)
+	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
 		return nil, handlers.ErrInvalidJWT
@@ -42,7 +42,7 @@ func (r *queryResolver) Users(ctx context.Context, where map[string]interface{},
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	token, ok := ctx.Value("token").(*jwt.JWT)
+	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
 		return nil, handlers.ErrInvalidJWT

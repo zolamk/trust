@@ -1,18 +1,17 @@
 package user
 
 import (
-	"time"
-
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-func ChangePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, old_password, new_password string) (*model.User, error) {
+func ChangePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, old_password, new_password string, log_data *middleware.LogData) (*model.User, error) {
 
 	user := &model.User{}
 
@@ -20,42 +19,50 @@ func ChangePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, old_pass
 		return nil, handlers.ErrInvalidPassword
 	}
 
-	if tx := db.First(user, "id = ?", token.Subject); tx.Error != nil {
+	err := db.Transaction(func(tx *gorm.DB) error {
 
-		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, handlers.ErrUserNotFound
+		if tx := tx.First(user, "id = ?", token.Subject); tx.Error != nil {
+
+			if tx.Error == gorm.ErrRecordNotFound {
+				return handlers.ErrUserNotFound
+			}
+
+			logrus.Error(tx.Error)
+
+			return handlers.ErrInternal
+
 		}
 
-		logrus.Error(tx.Error)
+		if err := user.VerifyPassword(old_password); err != nil {
 
-		return nil, handlers.ErrInternal
+			if err == bcrypt.ErrMismatchedHashAndPassword {
 
-	}
+				return handlers.ErrIncorrectOldPassword
 
-	if err := bcrypt.CompareHashAndPassword([]byte(*user.Password), []byte(old_password)); err != nil {
+			}
 
-		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return nil, handlers.ErrIncorrectOldPassword
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
 		}
 
-		logrus.Error(err)
+		log := model.NewLog(user.ID, "password changed", log_data.IP, nil, log_data.Location, log_data.UserAgent)
 
-		return nil, handlers.ErrInternal
+		if err := user.ChangePassword(tx, log, new_password, int(config.PasswordHashCost)); err != nil {
 
-	}
+			logrus.Error(err)
 
-	user.SetPassword(new_password, int(config.PasswordHashCost))
+			return handlers.ErrInternal
 
-	now := time.Now()
+		}
 
-	user.PasswordChangedAt = &now
+		return nil
 
-	if err := user.Save(db); err != nil {
+	})
 
-		logrus.Error(err)
-
-		return nil, handlers.ErrInternal
-
+	if err != nil {
+		return nil, err
 	}
 
 	return user, nil

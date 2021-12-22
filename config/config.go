@@ -77,7 +77,6 @@ type JWTConfig struct {
 }
 
 type Config struct {
-	AutoConfirm               bool            `json:"auto_confirm"`
 	DatabaseURL               string          `json:"database_url"`
 	DisableSignup             bool            `json:"disable_signup"`
 	FacebookEnabled           bool            `json:"facebook_enabled"`

@@ -7,11 +7,12 @@ import (
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func UpdatePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, password string) (*model.User, error) {
+func UpdatePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, password string, log_data *middleware.LogData) (*model.User, error) {
 
 	is_admin, err := token.IsAdmin(db)
 
@@ -28,29 +29,50 @@ func UpdatePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, id strin
 		return nil, handlers.ErrCantChangeOwnAccount
 	}
 
-	user := &model.User{}
-
-	if tx := db.Find(user, "id = ?", id); tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, handlers.ErrUserNotFound
-		}
-		logrus.Error(tx.Error)
-		return nil, handlers.ErrInternal
-	}
-
 	if !config.PasswordRule.MatchString(password) {
 		return nil, handlers.ErrInvalidPassword
 	}
 
-	user.SetPassword(password, int(config.PasswordHashCost))
+	user := &model.User{}
 
-	now := time.Now()
+	err = db.Transaction(func(tx *gorm.DB) error {
 
-	user.PasswordChangedAt = &now
+		if tx := db.Find(user, "id = ?", id); tx.Error != nil {
 
-	if err := user.Save(db); err != nil {
-		logrus.Error(err)
-		return nil, handlers.ErrInternal
+			if tx.Error == gorm.ErrRecordNotFound {
+
+				return handlers.ErrUserNotFound
+
+			}
+
+			logrus.Error(tx.Error)
+
+			return handlers.ErrInternal
+
+		}
+
+		user.SetPassword(password, int(config.PasswordHashCost))
+
+		now := time.Now()
+
+		user.PasswordChangedAt = &now
+
+		log := model.NewLog(user.ID, "password changed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+
+		if err := user.ChangePassword(tx, log, password, int(config.PasswordHashCost)); err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
+		return nil
+
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return user, nil

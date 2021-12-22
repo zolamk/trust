@@ -1,19 +1,17 @@
 package users
 
 import (
-	"time"
-
 	"github.com/sirupsen/logrus"
-	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/lib/sms"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func InvitePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, name string, phone string) (*model.User, error) {
+func InvitePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, name string, phone string, log_data *middleware.LogData) (*model.User, error) {
 
 	if config.DisableEmail {
 		return nil, handlers.ErrEmailDisabled
@@ -34,31 +32,42 @@ func InvitePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, name string
 		return nil, handlers.ErrAdminOnly
 	}
 
-	if tx := db.First(&model.User{}, "phone = ?", phone); tx.Error == nil {
-		return nil, handlers.ErrPhoneRegistered
-	} else {
-		if tx.Error != gorm.ErrRecordNotFound {
-			logrus.Error(tx.Error)
-			return nil, handlers.ErrInternal
-		}
-	}
-
-	now := time.Now()
-
-	invitation_token := randstr.String(6)
-
-	user := &model.User{
-		Name:                  &name,
-		Phone:                 &phone,
-		PhoneInvitationToken:  &invitation_token,
-		InvitationTokenSentAt: &now,
-	}
+	user := &model.User{}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 
-		if err := user.Save(tx); err != nil {
+		if tx := db.First(user, "phone = ?", phone); tx.Error == nil {
+
+			return handlers.ErrPhoneRegistered
+
+		} else {
+
+			if tx.Error != gorm.ErrRecordNotFound {
+
+				logrus.Error(tx.Error)
+
+				return handlers.ErrInternal
+
+			}
+
+		}
+
+		if err := user.InviteByPhone(tx, name, phone); err != nil {
+
 			logrus.Error(err)
+
 			return handlers.ErrInternal
+
+		}
+
+		log := model.NewLog(user.ID, "invited by phone", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+
+		if err := tx.Create(log).Error; err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
 		}
 
 		context := &map[string]string{
