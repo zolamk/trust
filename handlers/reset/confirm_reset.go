@@ -1,44 +1,58 @@
 package reset
 
 import (
-	"time"
-
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func ConfirmReset(db *gorm.DB, config *config.Config, recovery_token string, pwd string) (bool, error) {
+func ConfirmReset(db *gorm.DB, config *config.Config, recovery_token string, pwd string, log_data *middleware.LogData) (bool, error) {
 
 	user := &model.User{}
 
-	if !config.PasswordRule.MatchString(pwd) {
-		return false, handlers.ErrInvalidPassword
-	}
+	err := db.Transaction(func(tx *gorm.DB) error {
 
-	if tx := db.First(user, "recovery_token = ?", recovery_token); tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
-			return false, handlers.ErrRecoveryTokenNotFound
+		if !config.PasswordRule.MatchString(pwd) {
+
+			return handlers.ErrInvalidPassword
+
 		}
-		logrus.Error(tx.Error)
-		return false, handlers.ErrInternal
-	}
 
-	user.SetPassword(pwd, int(config.PasswordHashCost))
+		if tx := db.First(user, "recovery_token = ?", recovery_token); tx.Error != nil {
 
-	now := time.Now()
+			if tx.Error == gorm.ErrRecordNotFound {
 
-	user.RecoveryToken = nil
+				return handlers.ErrRecoveryTokenNotFound
 
-	user.RecoveryTokenSentAt = nil
+			}
 
-	user.PasswordChangedAt = &now
+			logrus.Error(tx.Error)
 
-	if err := user.Save(db); err != nil {
-		logrus.Error(err)
-		return false, handlers.ErrInternal
+			return handlers.ErrInternal
+
+		}
+
+		user.SetPassword(pwd, int(config.PasswordHashCost))
+
+		log := model.NewLog(user.ID, "password reset confirmed", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+
+		if err := user.ConfirmReset(tx, log); err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
+		return nil
+
+	})
+
+	if err != nil {
+		return false, err
 	}
 
 	return true, nil

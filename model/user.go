@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	"github.com/thanhpk/randstr"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -51,6 +52,60 @@ func (u *User) Create(db *gorm.DB) error {
 
 func (u *User) Save(db *gorm.DB) error {
 	return db.Save(u).Error
+}
+
+func (u *User) ResetByEmail(tx *gorm.DB, log *Log) error {
+
+	token := randstr.String(100)
+
+	now := time.Now()
+
+	u.RecoveryToken = &token
+
+	u.RecoveryTokenSentAt = &now
+
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return tx.Save(u).Error
+
+}
+
+func (u *User) ResetByPhone(tx *gorm.DB, log *Log) error {
+
+	token := randstr.String(6)
+
+	now := time.Now()
+
+	u.RecoveryToken = &token
+
+	u.RecoveryTokenSentAt = &now
+
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return tx.Save(u).Error
+
+}
+
+func (u *User) ConfirmReset(tx *gorm.DB, log *Log) error {
+
+	now := time.Now()
+
+	u.RecoveryToken = nil
+
+	u.RecoveryTokenSentAt = nil
+
+	u.PasswordChangedAt = &now
+
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return tx.Save(u).Error
+
 }
 
 func (u *User) ConfirmEmail(db *gorm.DB, log *Log) error {

@@ -4,18 +4,16 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/lib/mail"
 	"github.com/zolamk/trust/lib/sms"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
-
-	now := time.Now()
+func Reset(db *gorm.DB, config *config.Config, username string, log_data *middleware.LogData) (bool, error) {
 
 	user := &model.User{}
 
@@ -31,21 +29,17 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 	}
 
+	if user.RecoveryTokenSentAt != nil && time.Since(*user.RecoveryTokenSentAt).Minutes() < float64(config.MinutesBetweenResend) {
+		return true, nil
+	}
+
 	err := db.Transaction(func(tx *gorm.DB) error {
 
 		if user.Email != nil && *user.Email == username && user.EmailConfirmed {
 
-			if user.RecoveryTokenSentAt != nil && time.Since(*user.RecoveryTokenSentAt).Minutes() < float64(config.MinutesBetweenResend) {
-				return nil
-			}
+			log := model.NewLog(user.ID, "reset by email initiated", log_data.IP, nil, log_data.Location, log_data.UserAgent)
 
-			token := randstr.String(100)
-
-			user.RecoveryToken = &token
-
-			user.RecoveryTokenSentAt = &now
-
-			if err := user.Save(db); err != nil {
+			if err := user.ResetByEmail(tx, log); err != nil {
 				logrus.Error(err)
 				return handlers.ErrInternal
 			}
@@ -65,17 +59,9 @@ func Reset(db *gorm.DB, config *config.Config, username string) (bool, error) {
 
 		if user.Phone != nil && *user.Phone == username && user.PhoneConfirmed {
 
-			if user.RecoveryTokenSentAt != nil && time.Since(*user.RecoveryTokenSentAt).Minutes() < float64(config.MinutesBetweenResend) {
-				return nil
-			}
+			log := model.NewLog(user.ID, "reset by phone initiated", log_data.IP, nil, log_data.Location, log_data.UserAgent)
 
-			token := randstr.String(6)
-
-			user.RecoveryToken = &token
-
-			user.RecoveryTokenSentAt = &now
-
-			if err := user.Save(db); err != nil {
+			if err := user.ResetByPhone(tx, log); err != nil {
 				logrus.Error(err)
 				return handlers.ErrInternal
 			}

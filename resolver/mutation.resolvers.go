@@ -179,6 +179,7 @@ func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, token string)
 }
 
 func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, token string) (*model.User, error) {
+
 	jwt, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
@@ -186,14 +187,23 @@ func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, token string)
 	}
 
 	return user.ConfirmEmailChange(r.DB, r.Config, jwt, token)
+
 }
 
 func (r *mutationResolver) Reset(ctx context.Context, username string) (bool, error) {
-	return reset.Reset(r.DB, r.Config, username)
+
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
+
+	return reset.Reset(r.DB, r.Config, username, &log_data)
+
 }
 
 func (r *mutationResolver) ConfirmReset(ctx context.Context, token string, password string) (bool, error) {
-	return reset.ConfirmReset(r.DB, r.Config, token, password)
+
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
+
+	return reset.ConfirmReset(r.DB, r.Config, token, password, &log_data)
+
 }
 
 func (r *mutationResolver) ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error) {
