@@ -14,6 +14,7 @@ import (
 	"github.com/zolamk/trust/handlers/users"
 	"github.com/zolamk/trust/handlers/users/update"
 	"github.com/zolamk/trust/jwt"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 )
 
@@ -22,11 +23,17 @@ func (r *mutationResolver) Signup(ctx context.Context, object model.SignupForm) 
 }
 
 func (r *mutationResolver) ConfirmEmail(ctx context.Context, token string) (*model.User, error) {
-	return anonymous.ConfirmEmail(r.DB, r.Config, token)
+
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
+
+	return anonymous.ConfirmEmail(r.DB, r.Config, token, &log_data)
 }
 
 func (r *mutationResolver) ConfirmPhone(ctx context.Context, token string) (*model.User, error) {
-	return anonymous.ConfirmPhone(r.DB, r.Config, token)
+
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
+
+	return anonymous.ConfirmPhone(r.DB, r.Config, token, &log_data)
 }
 
 func (r *mutationResolver) InviteByEmail(ctx context.Context, name string, email string) (*model.User, error) {
@@ -50,24 +57,37 @@ func (r *mutationResolver) InviteByPhone(ctx context.Context, name string, phone
 }
 
 func (r *mutationResolver) AcceptPhoneInvite(ctx context.Context, token string, password string) (*model.User, error) {
-	return anonymous.AcceptPhoneInvite(r.DB, r.Config, token, password)
+
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
+
+	return anonymous.AcceptPhoneInvite(r.DB, r.Config, token, password, &log_data)
+
 }
 
 func (r *mutationResolver) AcceptEmailInvite(ctx context.Context, token string, password string) (*model.User, error) {
-	return anonymous.AcceptEmailInvite(r.DB, r.Config, token, password)
+
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
+
+	return anonymous.AcceptEmailInvite(r.DB, r.Config, token, password, &log_data)
+
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error) {
+
 	jwt, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
 		return nil, handlers.ErrInvalidJWT
 	}
 
-	return users.CreateUser(r.DB, r.Config, jwt, object)
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
+
+	return users.CreateUser(r.DB, r.Config, jwt, object, &log_data)
+
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, id string, name *string, avatar *string) (*model.User, error) {
+
 	jwt, ok := ctx.Value("token").(*jwt.JWT)
 
 	if !ok {
@@ -75,6 +95,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, name *stri
 	}
 
 	return update.UpdateUser(r.DB, r.Config, jwt, id, name, avatar)
+
 }
 
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.User, error) {

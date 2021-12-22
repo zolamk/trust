@@ -55,11 +55,9 @@ func (r *queryResolver) Token(ctx context.Context, username string, password str
 
 	writer := ctx.Value(middleware.WriterKey).(http.ResponseWriter)
 
-	ip := ctx.Value(middleware.IPKey).(string)
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
-	user_agent := ctx.Value(middleware.UserAgentKey).(string)
-
-	return anonymous.Token(r.DB, r.Config, r.IP2LocationDB, username, password, writer, ip, user_agent)
+	return anonymous.Token(r.DB, r.Config, username, password, writer, &log_data)
 
 }
 

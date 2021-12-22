@@ -4,34 +4,58 @@ import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/ip2location/ip2location-go/v9"
+	ua "github.com/mileusna/useragent"
+	"github.com/sirupsen/logrus"
 )
 
-func Headers(next http.Handler) http.Handler {
+type LogData struct {
+	IP        string
+	Location  *ip2location.IP2Locationrecord
+	UserAgent *ua.UserAgent
+}
 
-	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+func Headers(ip2location_db *ip2location.DB) func(http.Handler) http.Handler {
 
-		ip := req.Header.Get("x-real-ip")
+	return func(next http.Handler) http.Handler {
 
-		if ip == "" {
+		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 
-			ip = req.Header.Get("x-forwarded-for")
+			ip := req.Header.Get("x-real-ip")
 
 			if ip == "" {
 
-				ip = strings.Split(req.RemoteAddr, ":")[0]
+				ip = req.Header.Get("x-forwarded-for")
+
+				if ip == "" {
+
+					ip = strings.Split(req.RemoteAddr, ":")[0]
+
+				}
 
 			}
 
-		}
+			location, err := ip2location_db.Get_all(ip)
 
-		ctx := context.WithValue(req.Context(), IPKey, ip)
+			if err != nil {
+				logrus.Error(err)
+			}
 
-		ctx = context.WithValue(ctx, UserAgentKey, req.UserAgent())
+			ua := ua.Parse(req.UserAgent())
 
-		req = req.WithContext(ctx)
+			ctx := context.WithValue(req.Context(), LogDataKey, LogData{
+				ip,
+				&location,
+				&ua,
+			})
 
-		next.ServeHTTP(res, req)
+			req = req.WithContext(ctx)
 
-	})
+			next.ServeHTTP(res, req)
+
+		})
+
+	}
 
 }

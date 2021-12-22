@@ -139,7 +139,6 @@ func New() *Config {
 	default_change_sms, _ := parseStringTemplate("Phone change code -  {{ phone_change_token }}")
 
 	config := Config{
-		AutoConfirm:     false,
 		DisableSignup:   false,
 		FacebookEnabled: false,
 		GoogleEnabled:   false,

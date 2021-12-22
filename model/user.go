@@ -53,7 +53,7 @@ func (u *User) Save(db *gorm.DB) error {
 	return db.Save(u).Error
 }
 
-func (u *User) ConfirmEmail(db *gorm.DB) error {
+func (u *User) ConfirmEmail(db *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -63,11 +63,15 @@ func (u *User) ConfirmEmail(db *gorm.DB) error {
 
 	u.EmailConfirmationToken = nil
 
+	if tx := db.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
 	return u.Save(db)
 
 }
 
-func (u *User) ConfirmPhone(db *gorm.DB) error {
+func (u *User) ConfirmPhone(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -77,7 +81,11 @@ func (u *User) ConfirmPhone(db *gorm.DB) error {
 
 	u.PhoneConfirmationToken = nil
 
-	return u.Save(db)
+	if tx := tx.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
+	return u.Save(tx)
 
 }
 
@@ -117,7 +125,7 @@ func (u *User) ConfirmEmailChange(db *gorm.DB) error {
 
 }
 
-func (u *User) AcceptPhoneInvite(db *gorm.DB) error {
+func (u *User) AcceptPhoneInvite(db *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -129,11 +137,15 @@ func (u *User) AcceptPhoneInvite(db *gorm.DB) error {
 
 	u.PhoneConfirmed = true
 
+	if tx := db.Create(log); tx.Error != nil {
+		return tx.Error
+	}
+
 	return u.Save(db)
 
 }
 
-func (u *User) AcceptEmailInvite(db *gorm.DB) error {
+func (u *User) AcceptEmailInvite(db *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
@@ -144,6 +156,10 @@ func (u *User) AcceptEmailInvite(db *gorm.DB) error {
 	u.EmailConfirmedAt = &now
 
 	u.EmailConfirmed = true
+
+	if tx := db.Create(log); tx.Error != nil {
+		return tx.Error
+	}
 
 	return u.Save(db)
 

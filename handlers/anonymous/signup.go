@@ -85,75 +85,52 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 		if user.Email != nil {
 
-			if config.AutoConfirm {
+			token := randstr.String(100)
 
-				if err := user.ConfirmEmail(tx); err != nil {
-					logrus.Error(err)
-					return handlers.ErrInternal
-				}
+			user.EmailConfirmationToken = &token
 
-			} else {
+			user.EmailConfirmationTokenSentAt = &now
 
-				token := randstr.String(100)
+			if err := user.Save(tx); err != nil {
+				logrus.Error(err)
+				return handlers.ErrInternal
+			}
 
-				user.EmailConfirmationToken = &token
+			context := &map[string]string{
+				"site_url":                 config.SiteURL,
+				"email_confirmation_token": *user.EmailConfirmationToken,
+				"instance_url":             config.InstanceURL,
+			}
 
-				user.EmailConfirmationTokenSentAt = &now
-
-				if err := user.Save(tx); err != nil {
-					logrus.Error(err)
-					return handlers.ErrInternal
-				}
-
-				context := &map[string]string{
-					"site_url":                 config.SiteURL,
-					"email_confirmation_token": *user.EmailConfirmationToken,
-					"instance_url":             config.InstanceURL,
-				}
-
-				if err := mail.SendEmail(config.ConfirmationTemplate, context, user.Email, config); err != nil {
-					return err
-				}
-
+			if err := mail.SendEmail(config.ConfirmationTemplate, context, user.Email, config); err != nil {
+				return err
 			}
 
 		}
 
 		if user.Phone != nil {
 
-			if config.AutoConfirm {
+			token := randstr.String(6)
 
-				if err := user.ConfirmPhone(tx); err != nil {
-					return err
-				}
+			user.PhoneConfirmationToken = &token
 
-				return nil
+			user.PhoneConfirmationTokenSentAt = &now
 
-			} else {
-
-				token := randstr.String(6)
-
-				user.PhoneConfirmationToken = &token
-
-				user.PhoneConfirmationTokenSentAt = &now
-
-				if err := user.Save(tx); err != nil {
-					return err
-				}
-
-				context := &map[string]string{
-					"site_url":                 config.SiteURL,
-					"phone_confirmation_token": *user.PhoneConfirmationToken,
-					"instance_url":             config.InstanceURL,
-				}
-
-				if err := sms.SendSMS(config.ConfirmationTemplate, user.Phone, context, config.SMS); err != nil {
-					return err
-				}
-
-				return nil
-
+			if err := user.Save(tx); err != nil {
+				return err
 			}
+
+			context := &map[string]string{
+				"site_url":                 config.SiteURL,
+				"phone_confirmation_token": *user.PhoneConfirmationToken,
+				"instance_url":             config.InstanceURL,
+			}
+
+			if err := sms.SendSMS(config.ConfirmationTemplate, user.Phone, context, config.SMS); err != nil {
+				return err
+			}
+
+			return nil
 
 		}
 

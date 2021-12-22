@@ -10,11 +10,12 @@ import (
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/lib/mail"
 	"github.com/zolamk/trust/lib/sms"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.CreateUserForm) (*model.User, error) {
+func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.CreateUserForm, log_data *middleware.LogData) (*model.User, error) {
 
 	is_admin, err := token.IsAdmin(db)
 
@@ -115,11 +116,13 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 			return handlers.ErrInternal
 		}
 
-		if config.AutoConfirm || (form.Confirm != nil && *form.Confirm) {
+		if form.Confirm != nil && *form.Confirm {
 
 			if user.Email != nil {
 
-				if err := user.ConfirmEmail(tx); err != nil {
+				log := model.NewLog(user.ID, "email confirmed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+
+				if err := user.ConfirmEmail(tx, log); err != nil {
 					logrus.Error(err)
 					return handlers.ErrInternal
 				}
@@ -128,9 +131,14 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 			if user.Phone != nil {
 
-				if err := user.ConfirmPhone(tx); err != nil {
+				log := model.NewLog(user.ID, "phone confirmed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+
+				if err := user.ConfirmPhone(tx, log); err != nil {
+
 					logrus.Error(err)
+
 					return handlers.ErrInternal
+
 				}
 
 			}
@@ -150,8 +158,11 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 			user.EmailConfirmationTokenSentAt = &now
 
 			if err := user.Save(tx); err != nil {
+
 				logrus.Error(err)
+
 				return handlers.ErrInternal
+
 			}
 
 			context := &map[string]string{

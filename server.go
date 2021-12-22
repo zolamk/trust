@@ -97,7 +97,7 @@ func main() {
 	router.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql")).Methods("GET")
 
 	router.Handle("/graphql",
-		middleware.Headers(
+		middleware.Headers(ip2location_db)(
 			middleware.Response(
 				middleware.ExtractRefresh(config)(
 					middleware.Authenticated(config)(graphql),
@@ -109,7 +109,7 @@ func main() {
 	router.Handle("/authorize", provider.Authorize(db, config)).Methods("GET")
 
 	router.Handle("/authorize/callback",
-		middleware.Headers(
+		middleware.Headers(ip2location_db)(
 			provider.Callback(db, config, ip2location_db),
 		),
 	).Methods("GET")

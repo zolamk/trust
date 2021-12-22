@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ip2location/ip2location-go/v9"
-	ua "github.com/mileusna/useragent"
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
@@ -22,7 +21,7 @@ func Callback(db *gorm.DB, config *config.Config, ip2location_db *ip2location.DB
 
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 
-		ip := req.Context().Value(middleware.IPKey).(string)
+		log_data := req.Context().Value(middleware.LogDataKey).(middleware.LogData)
 
 		internal_redirect := fmt.Sprintf("%s/%s?error=internal_error", config.SiteURL, config.SocialRedirectPage)
 
@@ -62,14 +61,6 @@ func Callback(db *gorm.DB, config *config.Config, ip2location_db *ip2location.DB
 
 			return
 
-		}
-
-		location, err := ip2location_db.Get_all(ip)
-
-		ua := ua.Parse(req.UserAgent())
-
-		if err != nil {
-			logrus.Error(err)
 		}
 
 		provider_config := oauth_provider.get_config()
@@ -207,7 +198,7 @@ func Callback(db *gorm.DB, config *config.Config, ip2location_db *ip2location.DB
 
 			}
 
-			log := model.NewLog(user.ID, "login", ip, nil, &location, &ua)
+			log := model.NewLog(user.ID, "login", log_data.IP, nil, log_data.Location, log_data.UserAgent)
 
 			if err := user.SignedIn(tx, log); err != nil {
 

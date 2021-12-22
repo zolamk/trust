@@ -4,34 +4,25 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ip2location/ip2location-go/v9"
-	ua "github.com/mileusna/useragent"
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/hook"
 	"github.com/zolamk/trust/jwt"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-func Token(db *gorm.DB, config *config.Config, ip2location_db *ip2location.DB, username string, password string, writer http.ResponseWriter, ip string, user_agent string) (*model.LoginResponse, error) {
+func Token(db *gorm.DB, config *config.Config, username string, password string, writer http.ResponseWriter, log_data *middleware.LogData) (*model.LoginResponse, error) {
 
 	user := &model.User{}
 
 	var signed_token string
 
 	var err error
-
-	location, err := ip2location_db.Get_all(ip)
-
-	ua := ua.Parse(user_agent)
-
-	if err != nil {
-		logrus.Error(err)
-	}
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 
@@ -85,7 +76,7 @@ func Token(db *gorm.DB, config *config.Config, ip2location_db *ip2location.DB, u
 
 			if err == bcrypt.ErrMismatchedHashAndPassword {
 
-				log := model.NewLog(user.ID, "incorrect login", ip, nil, &location, &ua)
+				log := model.NewLog(user.ID, "incorrect login", log_data.IP, nil, log_data.Location, log_data.UserAgent)
 
 				if err = user.IncorrectAttempt(db, log); err != nil {
 
@@ -152,7 +143,7 @@ func Token(db *gorm.DB, config *config.Config, ip2location_db *ip2location.DB, u
 
 		}
 
-		log := model.NewLog(user.ID, "login", ip, nil, &location, &ua)
+		log := model.NewLog(user.ID, "login", log_data.IP, nil, log_data.Location, log_data.UserAgent)
 
 		if err = user.SignedIn(tx, log); err != nil {
 
