@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func Response(next http.Handler) http.Handler {
+func AttachResponse(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 

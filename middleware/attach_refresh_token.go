@@ -7,7 +7,7 @@ import (
 	"github.com/zolamk/trust/config"
 )
 
-func ExtractRefresh(config *config.Config) func(http.Handler) http.Handler {
+func AttachRefreshToken(config *config.Config) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 

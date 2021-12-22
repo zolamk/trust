@@ -16,7 +16,7 @@ type LogData struct {
 	UserAgent *ua.UserAgent
 }
 
-func Headers(ip2location_db *ip2location.DB) func(http.Handler) http.Handler {
+func AttachLogData(ip2location_db *ip2location.DB) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 
