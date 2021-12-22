@@ -12,33 +12,26 @@ func Authorize(db *gorm.DB, config *config.Config) http.Handler {
 
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 
-		var oauth_provider Provider
+		oauth_provider, err := get_provider(req.URL.Query().Get("provider"), config)
 
-		provider_disabled := fmt.Sprintf("%s/%s?error=provider_disabled", config.SiteURL, config.SocialRedirectPage)
+		if err != nil {
 
-		switch req.URL.Query().Get("provider") {
-		case "facebook":
-			if !config.FacebookEnabled {
-				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
-				return
-			}
-			oauth_provider = &FacebookProvider{config}
-		case "google":
-			if !config.GoogleEnabled {
-				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
-				return
-			}
-			oauth_provider = &GoogleProvider{config}
-		case "github":
-			if !config.GithubEnabled {
-				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
-				return
-			}
-			oauth_provider = &GithubProvider{config}
-		default:
 			redirect_url := fmt.Sprintf("%s/%s?error=unknown_provider", config.SiteURL, config.SocialRedirectPage)
+
 			http.Redirect(res, req, redirect_url, http.StatusTemporaryRedirect)
+
 			return
+
+		}
+
+		if !oauth_provider.enabled() {
+
+			provider_disabled := fmt.Sprintf("%s/%s?error=provider_disabled", config.SiteURL, config.SocialRedirectPage)
+
+			http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
+
+			return
+
 		}
 
 		provider := &providerState{

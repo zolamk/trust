@@ -6,18 +6,23 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ip2location/ip2location-go/v9"
+	ua "github.com/mileusna/useragent"
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/hook"
 	"github.com/zolamk/trust/jwt"
+	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
 
-func Callback(db *gorm.DB, config *config.Config) http.Handler {
+func Callback(db *gorm.DB, config *config.Config, ip2location_db *ip2location.DB) http.Handler {
 
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+
+		ip := req.Context().Value(middleware.IPKey).(string)
 
 		internal_redirect := fmt.Sprintf("%s/%s?error=internal_error", config.SiteURL, config.SocialRedirectPage)
 
@@ -25,39 +30,46 @@ func Callback(db *gorm.DB, config *config.Config) http.Handler {
 
 		state, err := verify(req.URL.Query().Get("state"), config)
 
-		provider_disabled := fmt.Sprintf("%s/%s?error=provider_disabled", config.SiteURL, config.SocialRedirectPage)
+		if err != nil {
+
+			logrus.Error(err)
+
+			redirect_url := fmt.Sprintf("%s/%s?error=invalid_state", config.SiteURL, config.SocialRedirectPage)
+
+			http.Redirect(res, req, redirect_url, http.StatusTemporaryRedirect)
+
+			return
+
+		}
+
+		oauth_provider, err := get_provider(state.Provider, config)
+
+		if err != nil {
+
+			redirect_url := fmt.Sprintf("%s/%s?error=unknown_provider", config.SiteURL, config.SocialRedirectPage)
+
+			http.Redirect(res, req, redirect_url, http.StatusTemporaryRedirect)
+
+			return
+
+		}
+
+		if !oauth_provider.enabled() {
+
+			provider_disabled := fmt.Sprintf("%s/%s?error=provider_disabled", config.SiteURL, config.SocialRedirectPage)
+
+			http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
+
+			return
+
+		}
+
+		location, err := ip2location_db.Get_all(ip)
+
+		ua := ua.Parse(req.UserAgent())
 
 		if err != nil {
 			logrus.Error(err)
-			http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
-			return
-		}
-
-		var oauth_provider Provider
-
-		switch state.Provider {
-		case "facebook":
-			if !config.FacebookEnabled {
-				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
-				return
-			}
-			oauth_provider = &FacebookProvider{config}
-		case "google":
-			if !config.GoogleEnabled {
-				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
-				return
-			}
-			oauth_provider = &GoogleProvider{config}
-		case "github":
-			if !config.GithubEnabled {
-				http.Redirect(res, req, provider_disabled, http.StatusTemporaryRedirect)
-				return
-			}
-			oauth_provider = &GithubProvider{config}
-		default:
-			redirect_url := fmt.Sprintf("%s/%s?error=unknown_provider", config.SiteURL, config.SocialRedirectPage)
-			http.Redirect(res, req, redirect_url, http.StatusTemporaryRedirect)
-			return
 		}
 
 		provider_config := oauth_provider.get_config()
@@ -77,6 +89,8 @@ func Callback(db *gorm.DB, config *config.Config) http.Handler {
 		user_data, err := oauth_provider.get_user_data(token.AccessToken)
 
 		if err != nil {
+
+			logrus.Error(err)
 
 			redirect_url := fmt.Sprintf("%s/%s?error=error_getting_user_data", config.SiteURL, config.SocialRedirectPage)
 
@@ -108,84 +122,118 @@ func Callback(db *gorm.DB, config *config.Config) http.Handler {
 
 		user := &model.User{}
 
-		if tx := db.First(user, "email = ?", user_data.Email); tx.Error != nil {
+		err = db.Transaction(func(tx *gorm.DB) error {
 
-			if tx.Error != gorm.ErrRecordNotFound {
+			if tx := tx.First(user, "email = ?", user_data.Email); tx.Error != nil {
 
-				logrus.Error(tx.Error)
+				if tx.Error != gorm.ErrRecordNotFound {
 
-				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
+					logrus.Error(tx.Error)
 
-				return
+					http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
+
+					return tx.Error
+
+				}
+
+				now := time.Now()
+
+				user.Name = user_data.Name
+
+				user.Email = user_data.Email
+
+				user.Avatar = user_data.Avatar
+
+				user.EmailConfirmed = true
+
+				user.EmailConfirmedAt = &now
+
+				if err = user.Create(tx); err != nil {
+
+					logrus.Error(err)
+
+					http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
+
+					return err
+
+				}
 
 			}
 
-			now := time.Now()
+			payload := &map[string]interface{}{
+				"event":    "login",
+				"provider": oauth_provider.name(),
+				"user":     user,
+			}
 
-			user.Name = user_data.Name
+			hook_response, err := hook.TriggerHook("login", payload, config)
 
-			user.Email = user_data.Email
+			if err != nil {
 
-			user.Avatar = user_data.Avatar
-
-			user.EmailConfirmed = true
-
-			user.EmailConfirmedAt = &now
-
-			if err = user.Create(db); err != nil {
 				logrus.Error(err)
+
 				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
-				return
+
+				return err
+
 			}
 
-		}
+			jwt := jwt.New(state.Provider, user, hook_response, config.JWT)
 
-		payload := &map[string]interface{}{
-			"event":    "login",
-			"provider": oauth_provider.name(),
-			"user":     user,
-		}
+			signed_token, err := jwt.Sign()
 
-		hook_response, err := hook.TriggerHook("login", payload, config)
+			if err != nil {
 
-		if err != nil {
-			logrus.Error(err)
-			http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
-			return
-		}
+				logrus.Error(err)
 
-		jwt := jwt.New(state.Provider, user, hook_response, config.JWT)
+				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
 
-		signed_token, err := jwt.Sign()
+				return err
 
-		if err != nil {
-			logrus.Error(err)
-			http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
-			return
-		}
+			}
 
-		refresh_token := model.RefreshToken{
-			Token:  randstr.String(50),
-			UserID: user.ID,
-		}
+			refresh_token := model.RefreshToken{
+				Token:  randstr.String(50),
+				UserID: user.ID,
+			}
 
-		if err := refresh_token.Create(db); err != nil {
-			logrus.Error(err)
-			http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
-			return
-		}
+			if err := refresh_token.Create(db); err != nil {
 
-		cookie := &http.Cookie{
-			HttpOnly: true,
-			Name:     config.RefreshTokenCookieName,
-			Value:    refresh_token.Token,
-		}
+				logrus.Error(err)
 
-		http.SetCookie(res, cookie)
+				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
 
-		redirect_url := fmt.Sprintf("%s/%s?access_token=%s&id=%s", config.SiteURL, config.SocialRedirectPage, signed_token, user.ID)
+				return err
 
-		http.Redirect(res, req, redirect_url, http.StatusTemporaryRedirect)
+			}
+
+			log := model.NewLog(user.ID, "login", ip, nil, &location, &ua)
+
+			if err := user.SignedIn(tx, log); err != nil {
+
+				logrus.Error(err)
+
+				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
+
+				return err
+
+			}
+
+			cookie := &http.Cookie{
+				HttpOnly: true,
+				Name:     config.RefreshTokenCookieName,
+				Value:    refresh_token.Token,
+			}
+
+			http.SetCookie(res, cookie)
+
+			redirect_url := fmt.Sprintf("%s/%s?access_token=%s&id=%s", config.SiteURL, config.SocialRedirectPage, signed_token, user.ID)
+
+			http.Redirect(res, req, redirect_url, http.StatusTemporaryRedirect)
+
+			return nil
+
+		})
 
 	})
 

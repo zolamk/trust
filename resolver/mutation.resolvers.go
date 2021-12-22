@@ -8,25 +8,25 @@ import (
 
 	"github.com/zolamk/trust/graph/generated"
 	"github.com/zolamk/trust/handlers"
-	"github.com/zolamk/trust/handlers/lib"
-	"github.com/zolamk/trust/handlers/lib/reset"
-	"github.com/zolamk/trust/handlers/lib/user"
-	"github.com/zolamk/trust/handlers/lib/users"
-	"github.com/zolamk/trust/handlers/lib/users/update"
+	"github.com/zolamk/trust/handlers/anonymous"
+	"github.com/zolamk/trust/handlers/reset"
+	"github.com/zolamk/trust/handlers/user"
+	"github.com/zolamk/trust/handlers/users"
+	"github.com/zolamk/trust/handlers/users/update"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/model"
 )
 
 func (r *mutationResolver) Signup(ctx context.Context, object model.SignupForm) (*model.User, error) {
-	return lib.Signup(r.DB, r.Config, object)
+	return anonymous.Signup(r.DB, r.Config, object)
 }
 
 func (r *mutationResolver) ConfirmEmail(ctx context.Context, token string) (*model.User, error) {
-	return lib.ConfirmEmail(r.DB, r.Config, token)
+	return anonymous.ConfirmEmail(r.DB, r.Config, token)
 }
 
 func (r *mutationResolver) ConfirmPhone(ctx context.Context, token string) (*model.User, error) {
-	return lib.ConfirmPhone(r.DB, r.Config, token)
+	return anonymous.ConfirmPhone(r.DB, r.Config, token)
 }
 
 func (r *mutationResolver) InviteByEmail(ctx context.Context, name string, email string) (*model.User, error) {
@@ -50,11 +50,11 @@ func (r *mutationResolver) InviteByPhone(ctx context.Context, name string, phone
 }
 
 func (r *mutationResolver) AcceptPhoneInvite(ctx context.Context, token string, password string) (*model.User, error) {
-	return lib.AcceptPhoneInvite(r.DB, r.Config, token, password)
+	return anonymous.AcceptPhoneInvite(r.DB, r.Config, token, password)
 }
 
 func (r *mutationResolver) AcceptEmailInvite(ctx context.Context, token string, password string) (*model.User, error) {
-	return lib.AcceptEmailInvite(r.DB, r.Config, token, password)
+	return anonymous.AcceptEmailInvite(r.DB, r.Config, token, password)
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error) {
@@ -176,11 +176,11 @@ func (r *mutationResolver) ConfirmReset(ctx context.Context, token string, passw
 }
 
 func (r *mutationResolver) ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error) {
-	return lib.ResendPhone(r.DB, r.Config, phone)
+	return anonymous.ResendPhone(r.DB, r.Config, phone)
 }
 
 func (r *mutationResolver) ResendEmailConfirmation(ctx context.Context, email string) (bool, error) {
-	return lib.ResendEmail(r.DB, r.Config, email)
+	return anonymous.ResendEmail(r.DB, r.Config, email)
 }
 
 // Mutation returns generated.MutationResolver implementation.

@@ -1,11 +1,11 @@
 package jwt
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
@@ -54,13 +54,13 @@ func Decode(signed_string string, config *config.JWTConfig) (*JWT, error) {
 	}
 
 	if !token.Valid {
-		return nil, handlers.ErrInvalidJWT
+		return nil, errors.New("invalid jwt")
 	}
 
 	claims, ok := token.Claims.(*JWT)
 
 	if !ok {
-		return nil, handlers.ErrInvalidJWT
+		return nil, errors.New("couldn't case jwt claims")
 	}
 
 	return claims, nil

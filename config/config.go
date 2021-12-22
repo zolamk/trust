@@ -117,6 +117,7 @@ type Config struct {
 	ConfirmationExpiry        time.Duration   `json:"confirmation_expiry"`
 	RefreshTokenCookieName    string          `json:"refresh_token_cookie_name"`
 	LockoutPolicy             LockoutPolicy   `json:"lockout_policy"`
+	IP2LocationDBPath         string          `json:"ip2location_db_path"`
 }
 
 func New() *Config {

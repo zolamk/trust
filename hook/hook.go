@@ -3,6 +3,7 @@ package hook
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/handlers"
 )
 
 func TriggerHook(event string, payload *map[string]interface{}, config *config.Config) (*interface{}, error) {
@@ -70,7 +70,7 @@ func TriggerHook(event string, payload *map[string]interface{}, config *config.C
 	}
 
 	if res.StatusCode >= 400 {
-		return nil, handlers.ErrWebHook
+		return nil, errors.New("webhook error")
 	}
 
 	if res.Header.Get("content-type") != "application/json" {

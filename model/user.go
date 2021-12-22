@@ -149,13 +149,17 @@ func (u *User) AcceptEmailInvite(db *gorm.DB) error {
 
 }
 
-func (u *User) SignedIn(db *gorm.DB) error {
+func (u *User) SignedIn(db *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
 	u.LastSigninAt = &now
 
 	u.IncorrectLoginAttempts = 0
+
+	if tx := db.Create(log); tx.Error != nil {
+		return tx.Error
+	}
 
 	return u.Save(db)
 
@@ -169,13 +173,17 @@ func (u *User) ResetAttempt(db *gorm.DB) error {
 
 }
 
-func (u *User) IncorrectAttempt(db *gorm.DB) error {
+func (u *User) IncorrectAttempt(db *gorm.DB, log *Log) error {
 
 	now := time.Now()
 
 	u.IncorrectLoginAttempts++
 
 	u.LastIncorrectLoginAttemptAt = &now
+
+	if tx := db.Create(log); tx.Error != nil {
+		return tx.Error
+	}
 
 	return u.Save(db)
 
@@ -194,5 +202,15 @@ func (u *User) SetPassword(password string, cost int) error {
 	u.Password = &hash
 
 	return nil
+
+}
+
+func (u *User) VerifyPassword(password string) error {
+
+	if u.Password == nil {
+		return bcrypt.ErrMismatchedHashAndPassword
+	}
+
+	return bcrypt.CompareHashAndPassword([]byte(*u.Password), []byte(password))
 
 }

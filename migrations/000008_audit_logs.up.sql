@@ -1,0 +1,23 @@
+CREATE TABLE trust.logs (
+    user_id VARCHAR NOT NULL,
+    event VARCHAR NOT NULL,
+    at TIMESTAMPTZ DEFAULT now(),
+    ip_address INET NOT NULL,
+    country VARCHAR NOT NULL,
+    region VARCHAR NOT NULL,
+    city VARCHAR NOT NULL,
+    name VARCHAR NOT NULL,
+    version VARCHAR NOT NULL,
+    os VARCHAR NOT NULL,
+    os_version VARCHAR NOT NULL,
+    device VARCHAR NOT NULL,
+    mobile BOOLEAN NOT NULL,
+    tablet BOOLEAN NOT NULL,
+    desktop BOOLEAN NOT NULL,
+    bot BOOLEAN NOT NULL,
+    url VARCHAR NOT NULL,
+    string VARCHAR NOT NULL,
+    admin_id VARCHAR,
+    CONSTRAINT fk_audit_log_user FOREIGN KEY(user_id) REFERENCES trust.users(id),
+    CONSTRAINT fk_audit_log_admin FOREIGN KEY(admin_id) REFERENCES trust.users(id)
+);

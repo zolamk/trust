@@ -14,6 +14,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/gorilla/mux"
+	"github.com/ip2location/ip2location-go/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/graph/generated"
@@ -27,13 +28,11 @@ import (
 )
 
 //go:embed migrations/*.sql
-var migrations embed.FS
+var files embed.FS
 
 func main() {
 
 	config := config.New()
-
-	migrations, err := iofs.New(migrations, "migrations")
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 
@@ -41,8 +40,10 @@ func main() {
 
 	logrus.SetLevel(config.LogLevel)
 
+	migrations, err := iofs.New(files, "migrations")
+
 	if err != nil {
-		log.Fatalln(err)
+		logrus.Fatalln(err)
 	}
 
 	db, err := gorm.Open(postgres.Open(config.DatabaseURL), &gorm.Config{
@@ -77,21 +78,41 @@ func main() {
 		logrus.Fatalln(err)
 	}
 
-	graphql := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &resolver.Resolver{DB: db, Config: config}}))
+	ip2location_db, err := ip2location.OpenDB(config.IP2LocationDBPath)
+
+	if err != nil {
+		logrus.Fatalln(err)
+	}
+
+	defer ip2location_db.Close()
+
+	graphql := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &resolver.Resolver{
+		DB:            db,
+		Config:        config,
+		IP2LocationDB: ip2location_db,
+	}}))
 
 	router := mux.NewRouter()
 
 	router.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql")).Methods("GET")
 
 	router.Handle("/graphql",
-		middleware.ExtractRefresh(config)(
-			middleware.Authenticated(config)(graphql),
+		middleware.Headers(
+			middleware.Response(
+				middleware.ExtractRefresh(config)(
+					middleware.Authenticated(config)(graphql),
+				),
+			),
 		),
 	).Methods("POST")
 
 	router.Handle("/authorize", provider.Authorize(db, config)).Methods("GET")
 
-	router.Handle("/authorize/callback", provider.Callback(db, config)).Methods("GET")
+	router.Handle("/authorize/callback",
+		middleware.Headers(
+			provider.Callback(db, config, ip2location_db),
+		),
+	).Methods("GET")
 
 	http.Handle("/", router)
 

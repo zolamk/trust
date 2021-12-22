@@ -1,4 +1,4 @@
-package lib
+package anonymous
 
 import (
 	"github.com/sirupsen/logrus"

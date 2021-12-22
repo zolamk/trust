@@ -1,0 +1,20 @@
+type log {
+    user_id: String!
+    event: String!
+    at: Time!
+    ip_address: String!
+    country: String!
+    region: String!
+    city: String!
+    name: String!
+    version: String!
+    os: String!
+    os_version: String!
+    device: String!
+    mobile: Boolean!
+    tablet: Boolean!
+    desktop: Boolean!
+    bot: Boolean!
+    url: String!
+    string: String!
+}

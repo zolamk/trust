@@ -5,14 +5,15 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/zolamk/trust/graph/generated"
 	"github.com/zolamk/trust/handlers"
-	"github.com/zolamk/trust/handlers/lib"
-	"github.com/zolamk/trust/handlers/lib/user"
-	"github.com/zolamk/trust/handlers/lib/users"
+	"github.com/zolamk/trust/handlers/anonymous"
+	"github.com/zolamk/trust/handlers/user"
+	"github.com/zolamk/trust/handlers/users"
 	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
@@ -51,9 +52,15 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 }
 
 func (r *queryResolver) Token(ctx context.Context, username string, password string) (*model.LoginResponse, error) {
+
 	writer := ctx.Value(middleware.WriterKey).(http.ResponseWriter)
 
-	return lib.Token(r.DB, r.Config, username, password, writer)
+	ip := ctx.Value(middleware.IPKey).(string)
+
+	user_agent := ctx.Value(middleware.UserAgentKey).(string)
+
+	return anonymous.Token(r.DB, r.Config, r.IP2LocationDB, username, password, writer, ip, user_agent)
+
 }
 
 func (r *queryResolver) Refresh(ctx context.Context) (*model.LoginResponse, error) {
@@ -63,7 +70,11 @@ func (r *queryResolver) Refresh(ctx context.Context) (*model.LoginResponse, erro
 
 	provider := ctx.Value(middleware.ProviderKey).(string)
 
-	return lib.RefreshToken(r.DB, r.Config, refresh_token, provider, writer)
+	return anonymous.RefreshToken(r.DB, r.Config, refresh_token, provider, writer)
+}
+
+func (r *queryResolver) AuditLogs(ctx context.Context) ([]*model.Log, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Query returns generated.QueryResolver implementation.

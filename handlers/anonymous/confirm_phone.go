@@ -1,4 +1,4 @@
-package lib
+package anonymous
 
 import (
 	"errors"
@@ -9,13 +9,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func ConfirmEmail(db *gorm.DB, config *config.Config, token string) (*model.User, error) {
+func ConfirmPhone(db *gorm.DB, config *config.Config, token string) (*model.User, error) {
 
 	internal_error := errors.New("internal server error")
 
 	user := &model.User{}
 
-	if tx := db.First(user, "email_confirmation_token = ?", token); tx.Error != nil {
+	if tx := db.First(user, "phone_confirmation_token = ?", token); tx.Error != nil {
 		if tx.Error == gorm.ErrRecordNotFound {
 			return nil, errors.New("user not found")
 		}
@@ -23,7 +23,7 @@ func ConfirmEmail(db *gorm.DB, config *config.Config, token string) (*model.User
 		return nil, internal_error
 	}
 
-	if err := user.ConfirmEmail(db); err != nil {
+	if err := user.ConfirmPhone(db); err != nil {
 		logrus.Error(err)
 		return nil, internal_error
 	}

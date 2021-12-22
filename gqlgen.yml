@@ -1,40 +1,20 @@
-# Where are all the schema files located? globs are supported eg  src/**/*.graphqls
 schema:
   - graph/*.graphqls
 
-# Where should the generated server code go?
 exec:
   filename: graph/generated/generated.go
   package: generated
 
-# Uncomment to enable federation
-# federation:
-#   filename: graph/generated/federation.go
-#   package: generated
-
-# Where should any generated models go?
 model:
   filename: model/models.go
   package: model
 
-# Where should the resolver implementations go?
 resolver:
   layout: follow-schema
   dir: resolver
   package: resolver
   filename_template: "{name}.resolvers.go"
 
-# Optional: turn on use `gqlgen:"fieldName"` tags in your models
-struct_tag: gorm
-
-# Optional: turn on to use []Thing instead of []*Thing
-# omit_slice_element_pointers: false
-
-# Optional: set to speed up generation time by not performing a final validation pass.
-# skip_validation: true
-
-# gqlgen will search for any type names in the schema in these go packages
-# if they match it will use them, otherwise it will generate them.
 autobind:
   - "github.com/zolamk/trust/model"
 
@@ -47,6 +27,9 @@ models:
   user:
     model:
       - github.com/zolamk/trust/model.User
+  audit_log:
+    model: 
+      - github.com/zolamk/trust/model.AuditLog
   users_order_by:
     model: "map[string]interface{}"
   users_bool_exp:

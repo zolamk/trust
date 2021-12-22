@@ -7,6 +7,8 @@ require (
 	github.com/cbroglie/mustache v1.3.0
 	github.com/golang-jwt/jwt/v4 v4.2.0
 	github.com/gorilla/mux v1.8.0
+	github.com/ip2location/ip2location-go/v9 v9.2.0
+	github.com/mileusna/useragent v1.0.2
 	github.com/sirupsen/logrus v1.8.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/vektah/gqlparser/v2 v2.2.0
