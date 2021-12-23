@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ip2location/ip2location-go/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
@@ -17,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Callback(db *gorm.DB, config *config.Config, ip2location_db *ip2location.DB) http.Handler {
+func Callback(db *gorm.DB, config *config.Config) http.Handler {
 
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 

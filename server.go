@@ -12,9 +12,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	_ "github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/gorilla/mux"
-	"github.com/ip2location/ip2location-go/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/graph/generated"
@@ -32,7 +30,11 @@ var files embed.FS
 
 func main() {
 
-	config := config.New()
+	config, err := config.New("./.conf")
+
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 
@@ -78,18 +80,9 @@ func main() {
 		logrus.Fatalln(err)
 	}
 
-	ip2location_db, err := ip2location.OpenDB(config.IP2LocationDBPath)
-
-	if err != nil {
-		logrus.Fatalln(err)
-	}
-
-	defer ip2location_db.Close()
-
 	graphql := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &resolver.Resolver{
-		DB:            db,
-		Config:        config,
-		IP2LocationDB: ip2location_db,
+		DB:     db,
+		Config: config,
 	}}))
 
 	router := mux.NewRouter()
@@ -97,7 +90,7 @@ func main() {
 	router.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql")).Methods("GET")
 
 	router.Handle("/graphql",
-		middleware.AttachLogData(ip2location_db)(
+		middleware.AttachLogData(config.IP2LocationDB)(
 			middleware.AttachResponse(
 				middleware.AttachRefreshToken(config)(
 					middleware.Authenticated(config)(graphql),
@@ -109,8 +102,8 @@ func main() {
 	router.Handle("/authorize", provider.Authorize(db, config)).Methods("GET")
 
 	router.Handle("/authorize/callback",
-		middleware.AttachLogData(ip2location_db)(
-			provider.Callback(db, config, ip2location_db),
+		middleware.AttachLogData(config.IP2LocationDB)(
+			provider.Callback(db, config),
 		),
 	).Methods("GET")
 

@@ -19,7 +19,7 @@ func TriggerHook(event string, payload *map[string]interface{}, config *config.C
 
 	now := time.Now()
 
-	if url == nil {
+	if url == "" {
 		return nil, nil
 	}
 
@@ -53,7 +53,7 @@ func TriggerHook(event string, payload *map[string]interface{}, config *config.C
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, *url, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 
 	if err != nil {
 		return nil, err

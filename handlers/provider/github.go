@@ -36,8 +36,8 @@ func (g *GithubProvider) enabled() bool {
 
 func (g *GithubProvider) get_config() *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     *g.c.GithubClientID,
-		ClientSecret: *g.c.GithubClientSecret,
+		ClientID:     g.c.GithubClientID,
+		ClientSecret: g.c.GithubClientSecret,
 		Endpoint:     github.Endpoint,
 		Scopes:       []string{"user:email"},
 		RedirectURL:  fmt.Sprintf("%s/authorize/callback", g.c.InstanceURL),

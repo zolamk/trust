@@ -1,13 +1,12 @@
 package config
 
 import (
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"os"
 	"regexp"
 	"time"
 
+	"github.com/ip2location/ip2location-go/v9"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,7 +28,7 @@ func (r *Regexp) MarshalText() ([]byte, error) {
 }
 
 type TemplateConfig struct {
-	Path    *string
+	Path    string
 	Subject string
 	Email   *Template
 	SMS     *Template
@@ -68,58 +67,59 @@ type JWTConfig struct {
 	Alg            string        `json:"algorithm"`
 	Exp            time.Duration `json:"expiry"`
 	Iss            string        `json:"issuer"`
-	PrivateKeyPath *string       `json:"private_key_path"`
-	PublicKeyPath  *string       `json:"public_key_path"`
-	Secret         *string       `json:"secret"`
+	PrivateKeyPath string        `json:"private_key_path"`
+	PublicKeyPath  string        `json:"public_key_path"`
+	Secret         string        `json:"secret"`
 	Type           string        `json:"-"`
 	privateKey     interface{}
 	publicKey      interface{}
 }
 
 type Config struct {
+	AdminOnlyList             bool            `json:"admin_only_list"`
+	ChangeTemplate            *TemplateConfig `json:"change_template"`
+	ConfirmationExpiry        time.Duration   `json:"confirmation_expiry"`
+	ConfirmationTemplate      *TemplateConfig `json:"confirmation_template"`
 	DatabaseURL               string          `json:"database_url"`
+	DisableEmail              bool            `json:"disable_email"`
+	DisablePhone              bool            `json:"disable_phone"`
 	DisableSignup             bool            `json:"disable_signup"`
+	EmailRule                 Regexp          `json:"email_rule"`
+	FacebookClientID          string          `json:"facebook_client_id"`
+	FacebookClientSecret      string          `json:"facebook_client_secret"`
 	FacebookEnabled           bool            `json:"facebook_enabled"`
-	GoogleEnabled             bool            `json:"google_enabled"`
+	GithubClientID            string          `json:"github_client_id"`
+	GithubClientSecret        string          `json:"github_client_secret"`
 	GithubEnabled             bool            `json:"github_enabled"`
-	FacebookClientID          *string         `json:"facebook_client_id"`
-	FacebookClientSecret      *string         `json:"facebook_client_secret"`
-	GoogleClientID            *string         `json:"google_client_id"`
-	GoogleClientSecret        *string         `json:"google_client_secret"`
-	GithubClientID            *string         `json:"github_client_id"`
-	GithubClientSecret        *string         `json:"github_client_secret"`
+	GoogleClientID            string          `json:"google_client_id"`
+	GoogleClientSecret        string          `json:"google_client_secret"`
+	GoogleEnabled             bool            `json:"google_enabled"`
 	Host                      string          `json:"host"`
 	InstanceURL               string          `json:"instance_url"`
-	JWT                       *JWTConfig      `json:"jwt"`
-	LogLevel                  logrus.Level    `json:"log_level"`
-	ConfirmationTemplate      *TemplateConfig `json:"confirmation_template"`
-	RecoveryTemplate          *TemplateConfig `json:"recovery_template"`
-	ChangeTemplate            *TemplateConfig `json:"change_template"`
 	InvitationTemplate        *TemplateConfig `json:"invitation_template"`
-	Port                      uint16          `json:"port"`
-	PasswordRule              Regexp          `json:"password_rule"`
-	EmailRule                 Regexp          `json:"email_rule"`
-	PhoneRule                 Regexp          `json:"phone_rule"`
-	SiteURL                   string          `json:"site_url"`
-	SMTP                      *SMTPConfig     `json:"smtp"`
-	DisablePhone              bool            `json:"disable_phone"`
-	DisableEmail              bool            `json:"disable_email"`
-	PasswordHashCost          uint8           `json:"password_hash_cost"`
-	MaxConnectionPoolSize     int             `json:"max_connection_pool_size"`
-	AdminOnlyList             bool            `json:"admin_only_list"`
-	MinutesBetweenResend      time.Duration   `json:"minutes_between_resend"`
-	MinutesBetweenPhoneChange time.Duration   `json:"minutes_between_phone_change"`
-	MinutesBetweenEmailChange time.Duration   `json:"minutes_between_email_change"`
-	LoginHook                 *string         `json:"login_hook"`
-	SocialRedirectPage        string          `json:"social_redirect_page"`
-	SMS                       *SMSConfig      `json:"sms"`
-	ConfirmationExpiry        time.Duration   `json:"confirmation_expiry"`
-	RefreshTokenCookieName    string          `json:"refresh_token_cookie_name"`
-	LockoutPolicy             LockoutPolicy   `json:"lockout_policy"`
+	IP2LocationDB             *ip2location.DB `json:"-"`
 	IP2LocationDBPath         string          `json:"ip2location_db_path"`
+	JWT                       *JWTConfig      `json:"jwt"`
+	LockoutPolicy             LockoutPolicy   `json:"lockout_policy"`
+	LoginHook                 string          `json:"login_hook"`
+	LogLevel                  logrus.Level    `json:"log_level"`
+	MaxConnectionPoolSize     int             `json:"max_connection_pool_size"`
+	MinutesBetweenEmailChange time.Duration   `json:"minutes_between_email_change"`
+	MinutesBetweenPhoneChange time.Duration   `json:"minutes_between_phone_change"`
+	MinutesBetweenResend      time.Duration   `json:"minutes_between_resend"`
+	PasswordHashCost          uint8           `json:"password_hash_cost"`
+	PasswordRule              Regexp          `json:"password_rule"`
+	PhoneRule                 Regexp          `json:"phone_rule"`
+	Port                      uint16          `json:"port"`
+	RecoveryTemplate          *TemplateConfig `json:"recovery_template"`
+	RefreshTokenCookieName    string          `json:"refresh_token_cookie_name"`
+	SiteURL                   string          `json:"site_url"`
+	SMS                       *SMSConfig      `json:"sms"`
+	SMTP                      *SMTPConfig     `json:"smtp"`
+	SocialRedirectPage        string          `json:"social_redirect_page"`
 }
 
-func New() *Config {
+func New(path string) (*Config, error) {
 
 	default_confirmation, _ := parseStringTemplate("<h2>Confirm your email</h2><p>Follow this link to confirm your email</p><p><a href='{{ site_url }}?token={{ email_confirmation_token }}'>Confirm</a></p>")
 
@@ -127,7 +127,7 @@ func New() *Config {
 
 	default_recovery, _ := parseStringTemplate("<h2>Recover Your Account</h2><p>Follow this link to recover you account</p><p><a href='{{ site_url }}?token={{ email_recovery_token }}'>Recover</a></p>")
 
-	default_change, _ := parseStringTemplate("<h2>Change Your Email Address<h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?token={{ email_change_token }}'>Confirm</a></p>")
+	default_change, _ := parseStringTemplate("<h2>Change Your Email Address</h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?token={{ email_change_token }}'>Confirm</a></p>")
 
 	default_confirmation_sms, _ := parseStringTemplate("Phone confirmation code - {{ phone_confirmation_token }}")
 
@@ -191,72 +191,72 @@ func New() *Config {
 		},
 	}
 
-	file, err := os.ReadFile("./.conf")
+	file, err := os.ReadFile(path)
 
 	if err != nil {
-		logrus.Fatalln(err)
+		return nil, err
 	}
 
 	if err = json.Unmarshal(file, &config); err != nil {
-		logrus.Fatalln(err)
+		return nil, err
 	}
 
 	switch config.JWT.Alg {
 	case "RS256", "RS384", "RS512", "ES256", "ES384", "ES512":
 
-		var public_key []byte
-
-		var private_key []byte
-
-		if config.JWT.PrivateKeyPath == nil || config.JWT.PublicKeyPath == nil {
-			logrus.Fatalln("expected jwt_private_key_path and jwt_public_key_path to be set for all supported assymetric algorithms")
+		if config.JWT.PrivateKeyPath == "" || config.JWT.PublicKeyPath == "" {
+			return nil, ErrAssymetricKeyPathsNotSet
 		}
-
-		if private_key, err = os.ReadFile(*config.JWT.PrivateKeyPath); err != nil {
-			logrus.Fatalln("unable to read private key file " + err.Error())
-		}
-
-		if public_key, err = os.ReadFile(*config.JWT.PublicKeyPath); err != nil {
-			logrus.Fatalln("unable to read public key file " + err.Error())
-		}
-
-		private_block, _ := pem.Decode(private_key)
-
-		public_block, _ := pem.Decode(public_key)
 
 		switch config.JWT.Alg {
 		case "RS256", "RS384", "RS512":
 
-			private_key, err := x509.ParsePKCS8PrivateKey(private_block.Bytes)
+			private_key, err := parsePKCS8PrivateKey(config.JWT.PrivateKeyPath)
 
 			if err != nil {
-				logrus.Fatalln(err)
+
+				logrus.Error(err)
+
+				return nil, ErrParsingPrivateKey
+
 			}
 
 			config.JWT.privateKey = private_key
 
-			public_key, err := x509.ParsePKIXPublicKey(public_block.Bytes)
+			public_key, err := parsePKIXPublicKey(config.JWT.PublicKeyPath)
 
 			if err != nil {
-				logrus.Fatalln(err)
+
+				logrus.Error(err)
+
+				return nil, ErrParsingPublicKey
+
 			}
 
 			config.JWT.publicKey = public_key
 
 		case "ES256", "ES384", "ES512":
 
-			private_key, err := x509.ParseECPrivateKey(private_block.Bytes)
+			private_key, err := parseECPrivateKey(config.JWT.PrivateKeyPath)
 
 			if err != nil {
-				logrus.Fatalln(err)
+
+				logrus.Error(err)
+
+				return nil, ErrParsingPrivateKey
+
 			}
 
 			config.JWT.privateKey = private_key
 
-			public_key, err := x509.ParsePKIXPublicKey(public_block.Bytes)
+			public_key, err := parsePKIXPublicKey(config.JWT.PublicKeyPath)
 
 			if err != nil {
-				logrus.Fatalln(err)
+
+				logrus.Error(err)
+
+				return nil, ErrParsingPublicKey
+
 			}
 
 			config.JWT.publicKey = public_key
@@ -265,93 +265,108 @@ func New() *Config {
 
 	case "HS256", "HS384", "HS512":
 
-		if config.JWT.Secret == nil {
-			logrus.Fatalln("expected jwt_secret to be set for all symmetric algorithms")
+		if config.JWT.Secret == "" {
+			return nil, ErrSymmetricSecretNotSet
 		}
 
 		config.JWT.Type = "symmetric"
 
 	default:
-		logrus.Fatalln("unsupported algorithm " + config.JWT.Alg)
+		return nil, ErrUnsupportedAlgorithm
 	}
 
-	if config.ConfirmationTemplate.Path != nil {
+	if config.ConfirmationTemplate.Path != "" {
 
-		if config.ConfirmationTemplate.Email, err = parseFileTemplate(*config.ConfirmationTemplate.Path); err != nil {
+		if config.ConfirmationTemplate.Email, err = parseFileTemplate(config.ConfirmationTemplate.Path); err != nil {
 
-			logrus.Fatalln("unable to read confirmation email template " + err.Error())
+			logrus.Error(err)
+
+			return nil, ErrUnableToReadTemplate
 
 		}
 
 	}
 
-	if config.ChangeTemplate.Path != nil {
+	if config.ChangeTemplate.Path != "" {
 
-		if config.ChangeTemplate.Email, err = parseFileTemplate(*config.ChangeTemplate.Path); err != nil {
+		if config.ChangeTemplate.Email, err = parseFileTemplate(config.ChangeTemplate.Path); err != nil {
 
-			logrus.Fatalln("unable to read change email template " + err.Error())
+			logrus.Error(err)
 
-		}
-
-	}
-
-	if config.RecoveryTemplate.Path != nil {
-
-		if config.RecoveryTemplate.Email, err = parseFileTemplate(*config.RecoveryTemplate.Path); err != nil {
-
-			logrus.Fatalln("unable to read recovery email template", err.Error())
+			return nil, ErrUnableToReadTemplate
 
 		}
 
 	}
 
-	if config.InvitationTemplate.Path != nil {
+	if config.RecoveryTemplate.Path != "" {
 
-		if config.InvitationTemplate.Email, err = parseFileTemplate(*config.InvitationTemplate.Path); err != nil {
+		if config.RecoveryTemplate.Email, err = parseFileTemplate(config.RecoveryTemplate.Path); err != nil {
 
-			logrus.Fatalln("unable to read invitation email ", err.Error())
+			logrus.Error(err)
+
+			return nil, ErrUnableToReadTemplate
 
 		}
 
 	}
 
-	if config.GoogleEnabled && (config.GoogleClientID == nil || config.GoogleClientSecret == nil) {
+	if config.InvitationTemplate.Path != "" {
 
-		logrus.Fatalln("expected google_client_id, google_client_secret to be set if google provider is enabled")
+		if config.InvitationTemplate.Email, err = parseFileTemplate(config.InvitationTemplate.Path); err != nil {
+
+			logrus.Error(err)
+
+			return nil, ErrUnableToReadTemplate
+
+		}
 
 	}
 
-	if config.FacebookEnabled && (config.FacebookClientID == nil || config.FacebookClientSecret == nil) {
+	if config.GoogleEnabled && (config.GoogleClientID == "" || config.GoogleClientSecret == "") {
 
-		logrus.Fatalln("expected facebook_client_id, facebook_client_secret to be set if facebook provider is enabled")
+		return nil, ErrGoogleConfig
 
 	}
 
-	if config.GithubEnabled && (config.GithubClientID == nil || config.GithubClientSecret == nil) {
+	if config.FacebookEnabled && (config.FacebookClientID == "" || config.FacebookClientSecret == "") {
 
-		logrus.Fatalln("expected github_client_id, github_client_secret to be set if github providder is enabled")
+		return nil, ErrFacebookConfig
+
+	}
+
+	if config.GithubEnabled && (config.GithubClientID == "" || config.GithubClientSecret == "") {
+
+		return nil, ErrGithubConfig
 
 	}
 
 	if config.DisableEmail && config.DisablePhone {
 
-		logrus.Fatalln("can't disable email and phone at the same time")
+		return nil, ErrPhoneEmailDisabled
 
 	}
 
 	if !config.DisablePhone && config.SMS == nil {
 
-		logrus.Fatalln("expected sms to be set if phone support is enabled")
+		return nil, ErrSMSNotConfigured
 
 	}
 
 	if !config.DisableEmail && config.SMTP == nil {
 
-		logrus.Fatalln("expected smtp to be set if email support is enabled")
+		return nil, ErrEmailNotConfigured
 
 	}
 
-	return &config
+	config.IP2LocationDB, err = ip2location.OpenDB(config.IP2LocationDBPath)
+
+	if err != nil {
+		logrus.Error(err)
+		return nil, ErrUnableToReadLocationDB
+	}
+
+	return &config, nil
 
 }
 

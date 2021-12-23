@@ -37,8 +37,8 @@ func (g *GoogleProvider) enabled() bool {
 
 func (g *GoogleProvider) get_config() *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     *g.c.GoogleClientID,
-		ClientSecret: *g.c.GoogleClientSecret,
+		ClientID:     g.c.GoogleClientID,
+		ClientSecret: g.c.GoogleClientSecret,
 		Endpoint:     google.Endpoint,
 		Scopes:       []string{"email", "profile"},
 		RedirectURL:  fmt.Sprintf("%s/authorize/callback", g.c.InstanceURL),
