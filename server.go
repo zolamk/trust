@@ -87,25 +87,21 @@ func main() {
 
 	router := mux.NewRouter()
 
+	router.Use(middleware.AttachResponse)
+
+	router.Use(middleware.AttachLogData(config.IP2LocationDB))
+
+	router.Use(middleware.AttachRefreshToken(config))
+
+	router.Use(middleware.Authenticated(config))
+
 	router.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql")).Methods("GET")
 
-	router.Handle("/graphql",
-		middleware.AttachLogData(config.IP2LocationDB)(
-			middleware.AttachResponse(
-				middleware.AttachRefreshToken(config)(
-					middleware.Authenticated(config)(graphql),
-				),
-			),
-		),
-	).Methods("POST")
+	router.Handle("/graphql", graphql).Methods("POST")
 
 	router.Handle("/authorize", provider.Authorize(db, config)).Methods("GET")
 
-	router.Handle("/authorize/callback",
-		middleware.AttachLogData(config.IP2LocationDB)(
-			provider.Callback(db, config),
-		),
-	).Methods("GET")
+	router.Handle("/authorize/callback", provider.Callback(db, config)).Methods("GET")
 
 	http.Handle("/", router)
 

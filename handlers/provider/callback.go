@@ -16,9 +16,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func Callback(db *gorm.DB, config *config.Config) http.Handler {
+func Callback(db *gorm.DB, config *config.Config) http.HandlerFunc {
 
-	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	return func(res http.ResponseWriter, req *http.Request) {
 
 		log_data := req.Context().Value(middleware.LogDataKey).(middleware.LogData)
 
@@ -225,6 +225,6 @@ func Callback(db *gorm.DB, config *config.Config) http.Handler {
 
 		})
 
-	})
+	}
 
 }

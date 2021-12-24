@@ -27,6 +27,7 @@ func (r *mutationResolver) ConfirmEmail(ctx context.Context, token string) (*mod
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return anonymous.ConfirmEmail(r.DB, r.Config, token, &log_data)
+
 }
 
 func (r *mutationResolver) ConfirmPhone(ctx context.Context, token string) (*model.User, error) {
