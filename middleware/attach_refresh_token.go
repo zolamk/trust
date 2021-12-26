@@ -13,18 +13,14 @@ func AttachRefreshToken(config *config.Config) func(http.Handler) http.Handler {
 
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 
-			cookies := req.Cookies()
+			cookie, err := req.Cookie(config.RefreshTokenCookieName)
 
-			var refresh_token string
-
-			for _, cookie := range cookies {
-				if cookie.Name == config.RefreshTokenCookieName {
-					refresh_token = cookie.Value
-					break
-				}
+			if err != nil {
+				next.ServeHTTP(res, req)
+				return
 			}
 
-			ctx := context.WithValue(req.Context(), RefreshTokenKey, refresh_token)
+			ctx := context.WithValue(req.Context(), RefreshTokenKey, cookie.Value)
 
 			req = req.WithContext(ctx)
 

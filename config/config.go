@@ -38,7 +38,7 @@ type SMTPConfig struct {
 	Email    string
 	Host     string
 	Password string
-	Port     uint8
+	Port     uint16
 	Username string
 }
 
@@ -76,6 +76,8 @@ type JWTConfig struct {
 }
 
 type Config struct {
+	AccessTokenCookieName     string          `json:"access_token_cookie_name"`
+	AccessTokenCookieDomain   string          `json:"access_token_cookie_domain"`
 	AdminOnlyList             bool            `json:"admin_only_list"`
 	ChangeTemplate            *TemplateConfig `json:"change_template"`
 	ConfirmationExpiry        time.Duration   `json:"confirmation_expiry"`
@@ -165,6 +167,7 @@ func New(path string) (*Config, error) {
 		EmailRule:                 Regexp{*regexp.MustCompile(`^[\w\-\.]+@([\w\-]+\.)+[\w\-]{1,}$`)},
 		PhoneRule:                 Regexp{*regexp.MustCompile(`\+\d{5,15}`)},
 		RefreshTokenCookieName:    "trust_refresh_token",
+		AccessTokenCookieName:     "trust_access_token",
 		LockoutPolicy: LockoutPolicy{
 			Attempts: 5,
 			For:      60,

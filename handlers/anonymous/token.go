@@ -26,13 +26,13 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 
-		if tx := tx.First(user, "phone = ? or email = ?", username, username); tx.Error != nil {
+		if err = tx.First(user, "phone = ? or email = ?", username, username).Error; err != nil {
 
-			if tx.Error == gorm.ErrRecordNotFound {
+			if err == gorm.ErrRecordNotFound {
 				return handlers.ErrIncorrectUsernameOrPassword
 			}
 
-			logrus.Error(tx.Error)
+			logrus.Error(err)
 
 			return handlers.ErrInternal
 
@@ -157,7 +157,20 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 			HttpOnly: true,
 			Secure:   true,
 			Name:     config.RefreshTokenCookieName,
+			SameSite: http.SameSiteStrictMode,
 			Value:    refresh_token.Token,
+		}
+
+		http.SetCookie(writer, cookie)
+
+		cookie = &http.Cookie{
+			HttpOnly: true,
+			Secure:   true,
+			Name:     config.AccessTokenCookieName,
+			SameSite: http.SameSiteStrictMode,
+			Value:    signed_token,
+			Expires:  token.ExpiresAt.Time,
+			Domain:   config.AccessTokenCookieDomain,
 		}
 
 		http.SetCookie(writer, cookie)

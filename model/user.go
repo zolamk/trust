@@ -212,6 +212,34 @@ func (u *User) ConfirmReset(tx *gorm.DB, log *Log) error {
 
 }
 
+func (u *User) InitEmailConfirmation(tx *gorm.DB) error {
+
+	now := time.Now()
+
+	token := randstr.String(100)
+
+	u.EmailConfirmationToken = &token
+
+	u.EmailConfirmationTokenSentAt = &now
+
+	return tx.Save(u).Error
+
+}
+
+func (u *User) InitPhoneConfirmation(tx *gorm.DB) error {
+
+	now := time.Now()
+
+	token := randstr.String(6)
+
+	u.PhoneConfirmationToken = &token
+
+	u.PhoneConfirmationTokenSentAt = &now
+
+	return tx.Save(u).Error
+
+}
+
 func (u *User) ConfirmEmail(tx *gorm.DB, log *Log) error {
 
 	now := time.Now()

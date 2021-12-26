@@ -19,18 +19,32 @@ func Authenticated(config *config.Config) func(http.Handler) http.Handler {
 			authorization := req.Header.Get("authorization")
 
 			if authorization == "" {
-				next.ServeHTTP(res, req)
-				return
+
+				cookie, err := req.Cookie(config.AccessTokenCookieName)
+
+				if err != nil {
+
+					next.ServeHTTP(res, req)
+
+					return
+
+				}
+
+				authorization = cookie.Value
+
 			}
 
-			parts := strings.Split(authorization, " ")
+			parts := strings.Split(authorization, "Bearer ")
 
-			if len(parts) != 2 {
+			if len(parts) == 0 {
+
 				next.ServeHTTP(res, req)
+
 				return
+
 			}
 
-			authorization = parts[1]
+			authorization = parts[len(parts)-1]
 
 			token, err := jwt.Decode(authorization, config.JWT)
 

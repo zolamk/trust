@@ -1,10 +1,7 @@
 package anonymous
 
 import (
-	"time"
-
 	"github.com/sirupsen/logrus"
-	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/lib/mail"
@@ -15,7 +12,7 @@ import (
 
 func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.User, error) {
 
-	now := time.Now()
+	var err error
 
 	user := &model.User{
 		Name:   form.Name,
@@ -38,15 +35,21 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 			return nil, handlers.ErrEmailDisabled
 		}
 
-		tx := db.First(user, "email = ?", *form.Email)
+		err = db.First(user, "email = ?", *form.Email).Error
 
-		if tx.Error != nil {
-			if tx.Error != gorm.ErrRecordNotFound {
-				logrus.Error(tx.Error)
+		if err != nil {
+			if err != gorm.ErrRecordNotFound {
+
+				logrus.Error(err)
+
 				return nil, handlers.ErrInternal
+
 			}
+
 		} else {
+
 			return nil, handlers.ErrEmailRegistered
+
 		}
 
 	}
@@ -61,39 +64,46 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 			return nil, handlers.ErrPhoneDisabled
 		}
 
-		tx := db.First(user, "phone = ?", *form.Phone)
+		err = db.First(user, "phone = ?", *form.Phone).Error
 
-		if tx.Error != nil {
-			if tx.Error != gorm.ErrRecordNotFound {
-				logrus.Error(tx.Error)
+		if err != nil {
+
+			if err != gorm.ErrRecordNotFound {
+
+				logrus.Error(err)
+
 				return nil, handlers.ErrInternal
+
 			}
+
 		} else {
+
 			return nil, handlers.ErrPhoneRegistered
+
 		}
 
 	}
 
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err = db.Transaction(func(tx *gorm.DB) error {
 
 		user.SetPassword(form.Password, int(config.PasswordHashCost))
 
-		if err := user.Create(tx); err != nil {
+		if err = user.Create(tx); err != nil {
+
 			logrus.Error(err)
+
 			return handlers.ErrInternal
+
 		}
 
 		if user.Email != nil {
 
-			token := randstr.String(100)
+			if err = user.InitEmailConfirmation(tx); err != nil {
 
-			user.EmailConfirmationToken = &token
-
-			user.EmailConfirmationTokenSentAt = &now
-
-			if err := user.Save(tx); err != nil {
 				logrus.Error(err)
+
 				return handlers.ErrInternal
+
 			}
 
 			context := &map[string]string{
@@ -102,22 +112,24 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 				"instance_url":             config.InstanceURL,
 			}
 
-			if err := mail.SendEmail(config.ConfirmationTemplate, context, user.Email, config); err != nil {
-				return err
+			if err = mail.SendEmail(config.ConfirmationTemplate, context, user.Email, config); err != nil {
+
+				logrus.Error(err)
+
+				return handlers.ErrInternal
+
 			}
 
 		}
 
 		if user.Phone != nil {
 
-			token := randstr.String(6)
+			if err = user.InitPhoneConfirmation(tx); err != nil {
 
-			user.PhoneConfirmationToken = &token
+				logrus.Error(err)
 
-			user.PhoneConfirmationTokenSentAt = &now
+				return handlers.ErrInternal
 
-			if err := user.Save(tx); err != nil {
-				return err
 			}
 
 			context := &map[string]string{
@@ -126,8 +138,12 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 				"instance_url":             config.InstanceURL,
 			}
 
-			if err := sms.SendSMS(config.ConfirmationTemplate, user.Phone, context, config.SMS); err != nil {
-				return err
+			if err = sms.SendSMS(config.ConfirmationTemplate, user.Phone, context, config.SMS); err != nil {
+
+				logrus.Error(err)
+
+				return handlers.ErrInternal
+
 			}
 
 			return nil
@@ -138,6 +154,10 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 	})
 
-	return user, err
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 
 }
