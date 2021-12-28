@@ -9,8 +9,8 @@
     "log_level": "info",
     "auto_confirm": false,
     "facebook_enabled": true,
-    "facebook_client_id": "facebook_client_id",
     "facebook_client_secret": "facebook_client_secret",
+    "facebook_client_id": "facebook_client_id",
     "google_enabled": true,
     "google_client_id": "google_client_id",
     "google_client_secret": "google_client_secret",
@@ -18,18 +18,18 @@
     "github_client_id": "github_client_id",
     "github_client_secret": "github_client_secret",
     "smtp": {
-        "host": "example.com",
-        "port": 25,
-        "username": "example_username",
-        "password": "example_password",
-        "email": "no-reply@smtp.server"
+        "host": "smtp.mailtrap.io",
+        "port": 2525,
+        "username": "username",
+        "password": "password",
+        "email": "no-reply@zelalem.me"
     },
     "jwt": {
         "audience": "trust",
         "algorithm": "ES512",
         "private_key_path": "./test/keys/es512-private.pem",
         "public_key_path": "./test/keys/es512-public.pem",
-        "issuer": "trust",
+        "issuer": "zede",
         "expiry": 900
     },
     "password_rule": ".{8,1000}",
@@ -37,15 +37,25 @@
     "email_rule": ".+@.+\\..+",
     "sms": {
         "headers": {
-            "Authorization": "token"
+            "Authorization": "Basic token"
         },
         "url": "https://api.example.com/send_message",
         "method": "POST",
-        "source": "+251900000000",
+        "source": "+251912669408",
         "mapping": {
             "source": "src",
             "destination": "dst",
             "message": "text"
         }
-    }
+    },
+    "lockout_policy": {
+        "for": 5,
+        "attempts": 3
+    },
+    "ip2location_db_path": "./test/ip2location-lite-db3.ipv6.bin",
+    "minutes_between_phone_change": 1,
+    "minutes_between_email_change": 1,
+    "access_token_cookie_name": "zelalem_access_token",
+    "refresh_token_cookie_name": "zelalem_refresh_token",
+    "login_hook": "https://api.example.com/login_hook"
 }
