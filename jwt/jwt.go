@@ -86,4 +86,5 @@ func (j *JWT) IsAdmin(db *gorm.DB) (bool, error) {
 	}
 
 	return is_admin, nil
+
 }
