@@ -32,13 +32,13 @@ func (g *GoogleProvider) name() string {
 }
 
 func (g *GoogleProvider) enabled() bool {
-	return g.c.GoogleEnabled
+	return g.c.Google.Enabled
 }
 
 func (g *GoogleProvider) get_config() *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     g.c.GoogleClientID,
-		ClientSecret: g.c.GoogleClientSecret,
+		ClientID:     g.c.Google.ID,
+		ClientSecret: g.c.Google.Secret,
 		Endpoint:     google.Endpoint,
 		Scopes:       []string{"email", "profile"},
 		RedirectURL:  fmt.Sprintf("%s/authorize/callback", g.c.InstanceURL),

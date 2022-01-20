@@ -34,13 +34,13 @@ func (f *FacebookProvider) name() string {
 }
 
 func (f *FacebookProvider) enabled() bool {
-	return f.config.FacebookEnabled
+	return f.config.Facebook.Enabled
 }
 
 func (f *FacebookProvider) get_config() *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     f.config.FacebookClientID,
-		ClientSecret: f.config.FacebookClientSecret,
+		ClientID:     f.config.Facebook.ID,
+		ClientSecret: f.config.Facebook.Secret,
 		Scopes:       []string{"email"},
 		Endpoint:     facebook.Endpoint,
 		RedirectURL:  fmt.Sprintf("%s/authorize/callback", f.config.InstanceURL),

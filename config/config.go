@@ -28,33 +28,33 @@ func (r *Regexp) MarshalText() ([]byte, error) {
 }
 
 type TemplateConfig struct {
-	Path    string
-	Subject string
-	Email   *Template
-	SMS     *Template
+	Path    string    `json:"path"`
+	Subject string    `json:"subject"`
+	Email   *Template `json:"-"`
+	SMS     *Template `json:"sms"`
 }
 
 type SMTPConfig struct {
-	Email    string
-	Host     string
-	Password string
-	Port     uint16
-	Username string
+	Email    string `json:"email"`
+	Host     string `json:"host"`
+	Password string `json:"password"`
+	Port     uint16 `json:"port"`
+	Username string `json:"username"`
 }
 
 type SMSMapping struct {
-	Source      string
-	Destination string
-	Message     string
+	Source      string `json:"source"`
+	Destination string `json:"destination"`
+	Message     string `json:"message"`
 }
 
 type SMSConfig struct {
-	URL     string
-	Method  string
-	Source  string
-	Mapping *SMSMapping
-	Headers map[string]string
-	Extra   map[string]string
+	URL     string            `json:"url"`
+	Method  string            `json:"method"`
+	Source  string            `json:"source"`
+	Mapping *SMSMapping       `json:"mapping"`
+	Headers map[string]string `json:"headers"`
+	Extra   map[string]string `json:"extra"`
 }
 
 type LockoutPolicy struct {
@@ -75,6 +75,12 @@ type JWTConfig struct {
 	publicKey      interface{}
 }
 
+type SocialConfig struct {
+	Enabled bool   `json:"enabled"`
+	ID      string `json:"id"`
+	Secret  string `json:"secret"`
+}
+
 type Config struct {
 	AccessTokenCookieName     string          `json:"access_token_cookie_name"`
 	AccessTokenCookieDomain   string          `json:"access_token_cookie_domain"`
@@ -87,15 +93,9 @@ type Config struct {
 	DisablePhone              bool            `json:"disable_phone"`
 	DisableSignup             bool            `json:"disable_signup"`
 	EmailRule                 Regexp          `json:"email_rule"`
-	FacebookClientID          string          `json:"facebook_client_id"`
-	FacebookClientSecret      string          `json:"facebook_client_secret"`
-	FacebookEnabled           bool            `json:"facebook_enabled"`
-	GithubClientID            string          `json:"github_client_id"`
-	GithubClientSecret        string          `json:"github_client_secret"`
-	GithubEnabled             bool            `json:"github_enabled"`
-	GoogleClientID            string          `json:"google_client_id"`
-	GoogleClientSecret        string          `json:"google_client_secret"`
-	GoogleEnabled             bool            `json:"google_enabled"`
+	Facebook                  SocialConfig    `json:"facebook"`
+	Google                    SocialConfig    `json:"google"`
+	Github                    SocialConfig    `json:"github"`
 	Host                      string          `json:"host"`
 	InstanceURL               string          `json:"instance_url"`
 	InvitationTemplate        *TemplateConfig `json:"invitation_template"`
@@ -123,28 +123,34 @@ type Config struct {
 
 func New(path string) (*Config, error) {
 
-	default_confirmation, _ := parseStringTemplate("<h2>Confirm your email</h2><p>Follow this link to confirm your email</p><p><a href='{{ site_url }}?token={{ email_confirmation_token }}'>Confirm</a></p>")
+	default_confirmation, _ := parseStringTemplate("<h2>Confirm Your Email Address</h2><p>Follow this link to confirm your email</p><p><a href='{{ site_url }}?token={{ email_confirmation_token }}'>Confirm</a></p>")
 
-	default_invitation, _ := parseStringTemplate("<h2>You have been invited</h2><p>Follow this link to accept your invitation</p><p><a href='{{ site_url }}?token={{ email_invitation_token }}'>Accept Invite</a></p>")
+	default_invitation, _ := parseStringTemplate("<h2>You Have Been Invited</h2><p>Follow this link to accept your invitation</p><p><a href='{{ site_url }}?token={{ email_invitation_token }}'>Accept Invite</a></p>")
 
 	default_recovery, _ := parseStringTemplate("<h2>Recover Your Account</h2><p>Follow this link to recover you account</p><p><a href='{{ site_url }}?token={{ email_recovery_token }}'>Recover</a></p>")
 
 	default_change, _ := parseStringTemplate("<h2>Change Your Email Address</h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?token={{ email_change_token }}'>Confirm</a></p>")
 
-	default_confirmation_sms, _ := parseStringTemplate("Phone confirmation code - {{ phone_confirmation_token }}")
+	default_confirmation_sms, _ := parseStringTemplate("Phone Confirmation Code - {{ phone_confirmation_token }}")
 
-	default_invitation_sms, _ := parseStringTemplate("Invitation acceptance code - {{ phone_invitation_token }}")
+	default_invitation_sms, _ := parseStringTemplate("Phone Invitation Code - {{ phone_invitation_token }}")
 
-	default_recovery_sms, _ := parseStringTemplate("Phone recovery code - {{ phone_recovery_token }}")
+	default_recovery_sms, _ := parseStringTemplate("Phone Recovery Code - {{ phone_recovery_token }}")
 
-	default_change_sms, _ := parseStringTemplate("Phone change code -  {{ phone_change_token }}")
+	default_change_sms, _ := parseStringTemplate("Phone Change Code -  {{ phone_change_token }}")
 
 	config := Config{
-		DisableSignup:   false,
-		FacebookEnabled: false,
-		GoogleEnabled:   false,
-		GithubEnabled:   false,
-		Host:            "localhost",
+		DisableSignup: false,
+		Facebook: SocialConfig{
+			Enabled: false,
+		},
+		Google: SocialConfig{
+			Enabled: false,
+		},
+		Github: SocialConfig{
+			Enabled: false,
+		},
+		Host: "localhost",
 		JWT: &JWTConfig{
 			Exp:  900,
 			Type: "assymetric",
@@ -326,19 +332,19 @@ func New(path string) (*Config, error) {
 
 	}
 
-	if config.GoogleEnabled && (config.GoogleClientID == "" || config.GoogleClientSecret == "") {
+	if config.Google.Enabled && (config.Google.ID == "" || config.Google.Secret == "") {
 
 		return nil, ErrGoogleConfig
 
 	}
 
-	if config.FacebookEnabled && (config.FacebookClientID == "" || config.FacebookClientSecret == "") {
+	if config.Facebook.Enabled && (config.Facebook.ID == "" || config.Facebook.Secret == "") {
 
 		return nil, ErrFacebookConfig
 
 	}
 
-	if config.GithubEnabled && (config.GithubClientID == "" || config.GithubClientSecret == "") {
+	if config.Github.Enabled && (config.Github.ID == "" || config.Github.Secret == "") {
 
 		return nil, ErrGithubConfig
 

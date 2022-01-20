@@ -31,13 +31,13 @@ func (g *GithubProvider) name() string {
 }
 
 func (g *GithubProvider) enabled() bool {
-	return g.c.GithubEnabled
+	return g.c.Github.Enabled
 }
 
 func (g *GithubProvider) get_config() *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     g.c.GithubClientID,
-		ClientSecret: g.c.GithubClientSecret,
+		ClientID:     g.c.Github.ID,
+		ClientSecret: g.c.Github.Secret,
 		Endpoint:     github.Endpoint,
 		Scopes:       []string{"user:email"},
 		RedirectURL:  fmt.Sprintf("%s/authorize/callback", g.c.InstanceURL),
