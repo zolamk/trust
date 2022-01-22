@@ -27,7 +27,7 @@ func New(provider string, user *model.User, metadata *interface{}, config *confi
 	return &JWT{
 		jwt.RegisteredClaims{
 			Audience:  jwt.ClaimStrings{config.Aud},
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Second * config.Exp)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute * config.Exp)),
 			Issuer:    config.Iss,
 			Subject:   user.ID,
 		},
