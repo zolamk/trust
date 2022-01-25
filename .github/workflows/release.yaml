@@ -1,0 +1,38 @@
+on:
+  release:
+    types: [created]
+
+jobs:
+
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      
+      - name: Test
+        run: go test -v ./...
+
+  release:
+    name: Release Go Binary
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: ["amd64", "arm64"]
+    steps:
+      - uses: actions/checkout@v2
+      
+      - uses: wangyoucao577/go-release-action@v1.22
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          goversion: 1.17
+          binary_name: trust
+          executable_compression: upx
+          ldflags: -s -w
