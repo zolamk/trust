@@ -43,3 +43,4 @@ jobs:
           binary_name: trust
           executable_compression: upx
           ldflags: -s -w
+          build_command: CGO_ENABLED=0 go build
