@@ -150,10 +150,20 @@ func Callback(db *gorm.DB, config *config.Config) http.HandlerFunc {
 
 			}
 
+			hook_user := *user
+
+			if !hook_user.EmailConfirmed {
+				hook_user.Email = nil
+			}
+
+			if !hook_user.PhoneConfirmed {
+				hook_user.Phone = nil
+			}
+
 			payload := &map[string]interface{}{
 				"event":    "login",
 				"provider": oauth_provider.name(),
-				"user":     user,
+				"user":     hook_user,
 			}
 
 			hook_response, err := hook.TriggerHook("login", payload, config)

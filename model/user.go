@@ -34,7 +34,7 @@ type User struct {
 	EmailChangedAt               *time.Time `json:"email_changed_at,omitempty"`
 	PasswordChangedAt            *time.Time `json:"password_changed_at,omitempty"`
 	IncorrectLoginAttempts       uint8      `json:"-"`
-	LastIncorrectLoginAttemptAt  *time.Time `json:"last_incorrect_login_attempt_at"`
+	LastIncorrectLoginAttemptAt  *time.Time `json:"last_incorrect_login_attempt_at,omitempty"`
 	IsAdmin                      bool       `json:"-"`
 	Password                     *string    `json:"-"`
 	EmailConfirmationToken       *string    `json:"-"`

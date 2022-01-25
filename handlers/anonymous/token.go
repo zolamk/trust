@@ -102,10 +102,20 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 
 		}
 
+		hook_user := *user
+
+		if !hook_user.EmailConfirmed {
+			hook_user.Email = nil
+		}
+
+		if !hook_user.PhoneConfirmed {
+			hook_user.Phone = nil
+		}
+
 		payload := &map[string]interface{}{
 			"event":    "login",
 			"provider": "email",
-			"user":     user,
+			"user":     hook_user,
 		}
 
 		hook_response, err := hook.TriggerHook("login", payload, config)

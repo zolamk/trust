@@ -28,10 +28,20 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string, provider string
 
 	refresh_token.Token = randstr.String(50)
 
+	hook_user := *user
+
+	if !hook_user.EmailConfirmed {
+		hook_user.Email = nil
+	}
+
+	if !hook_user.PhoneConfirmed {
+		hook_user.Phone = nil
+	}
+
 	payload := &map[string]interface{}{
 		"event":    "login",
 		"provider": provider,
-		"user":     user,
+		"user":     hook_user,
 	}
 
 	hook_response, err := hook.TriggerHook("login", payload, config)
