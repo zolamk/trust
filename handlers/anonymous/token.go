@@ -114,7 +114,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 
 		payload := &map[string]interface{}{
 			"event":    "login",
-			"provider": "email",
+			"provider": "password",
 			"user":     hook_user,
 		}
 
