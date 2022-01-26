@@ -9,8 +9,6 @@ jobs:
   test:
     name: Test
     runs-on: ${{ matrix.os }}
-    env:
-      GO111MODULE: on
     strategy:
       fail-fast: true
       matrix:
@@ -26,6 +24,8 @@ jobs:
 
       - name: Test
         run: go test -cover ./...
+        env:
+          GO111MODULE: "on"
 
   release:
     name: Release Go Binary
