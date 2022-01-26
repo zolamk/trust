@@ -8,7 +8,6 @@ jobs:
 
   test:
     name: Test
-    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
