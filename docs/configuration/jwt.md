@@ -74,7 +74,7 @@ sets the [https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.1](iss) fiel
 {% hint style="info" %}
 Type - String
 
-Required Conditionally
+**Conditinally Required**
 {% endhint %}
 
 determines the private key to be used when signing json web tokens, the value for `private_key_path` should be a path to a file containing a private key encoded in PEM format, `private_key_path` is only required for assymetric algorithms(RS256, RS384, RS512, ES256, ES384, ES512) only.
@@ -84,7 +84,7 @@ determines the private key to be used when signing json web tokens, the value fo
 {% hint style="info" %}
 Type - String
 
-Required Conditionally
+**Conditinally Required**
 {% endhint %}
 
 determines the public key to be used when verifying json web tokens, the value for `public_key_path` should be a path to a file containing a public key encoded in PEM format, `public_key_path` is only required for assymetric algorithms(RS256, RS384, RS512, ES256, ES384, ES512) only.
@@ -94,7 +94,7 @@ determines the public key to be used when verifying json web tokens, the value f
 {% hint style="info" %}
 Type - String
 
-Required Conditionally
+**Conditinally Required**
 {% endhint %}
 
 determines the secret key to be used when signing and verifying json web tokens, `secret` is only required for symmetric algorithms(HS256, HS384, HS512) only.
