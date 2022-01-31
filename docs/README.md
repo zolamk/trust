@@ -34,3 +34,5 @@ finally run your binary
 ```
 /usr/bin/trust run --config ./config.json
 ```
+
+then you can access the GraphQL playground at http://{host}:{port}

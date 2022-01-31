@@ -90,7 +90,7 @@ func Run(config_file string, files embed.FS) {
 
 	router.Use(middleware.Authenticated(config))
 
-	router.Handle("/graphiql", playground.Handler("GraphQL playground", "/graphql")).Methods("GET")
+	router.Handle("/", playground.Handler("GraphQL playground", "/graphql")).Methods("GET")
 
 	router.Handle("/graphql", graphql).Methods("POST")
 
@@ -102,7 +102,7 @@ func Run(config_file string, files embed.FS) {
 
 	host := fmt.Sprintf("%s:%d", config.Host, config.Port)
 
-	logrus.WithField("host", host).Info("started trust server")
+	logrus.WithField("host", "http://"+host).Info("started trust server")
 
 	logrus.Fatalln(http.ListenAndServe(host, nil))
 }

@@ -91,16 +91,6 @@ Phone change code -  {{ phone_change_token }}
 
 phone change template will be passed `site_url`, `phone_change_token`, `new_phone`, `instance_url`
 
-### confirmation\_expiry
-
-{% hint style="info" %}
-Type - Number
-
-Default - **60**
-{% endhint %}
-
-Determines how long in `minutes` the confirmation email and/or confirmation sms will be valid for
-
 ### **confirmation\_template**
 
 {% hint style="info" %}

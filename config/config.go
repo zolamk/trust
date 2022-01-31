@@ -86,7 +86,6 @@ type Config struct {
 	AccessTokenCookieDomain   string          `json:"access_token_cookie_domain"`
 	AdminOnlyList             bool            `json:"admin_only_list"`
 	ChangeTemplate            *TemplateConfig `json:"change_template"`
-	ConfirmationExpiry        time.Duration   `json:"confirmation_expiry"`
 	ConfirmationTemplate      *TemplateConfig `json:"confirmation_template"`
 	DatabaseURL               string          `json:"database_url"`
 	DisableEmail              bool            `json:"disable_email"`
@@ -157,7 +156,7 @@ func New(path string) (*Config, error) {
 			Aud:  "trust",
 			Iss:  "trust",
 		},
-		LogLevel:                  logrus.ErrorLevel,
+		LogLevel:                  logrus.InfoLevel,
 		Port:                      1995,
 		DisablePhone:              false,
 		DisableEmail:              false,
@@ -168,7 +167,6 @@ func New(path string) (*Config, error) {
 		MinutesBetweenResend:      10,
 		MinutesBetweenPhoneChange: 1440,
 		MinutesBetweenEmailChange: 1440,
-		ConfirmationExpiry:        60,
 		PasswordRule:              Regexp{*regexp.MustCompile(".{8,1000}")},
 		EmailRule:                 Regexp{*regexp.MustCompile(`^[\w\-\.]+@([\w\-]+\.)+[\w\-]{1,}$`)},
 		PhoneRule:                 Regexp{*regexp.MustCompile(`\+\d{5,15}`)},
