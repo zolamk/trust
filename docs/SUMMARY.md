@@ -8,5 +8,5 @@
   * [Lockout Policy](configuration/lockout-policy.md)
   * [Templating](configuration/template.md)
   * [Social Authentication](configuration/social-authentication.md)
-* Hooks
+* [Hooks](hooks/README.md)
   * [Login](hooks/login-hook.md)
