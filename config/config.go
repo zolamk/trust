@@ -385,7 +385,7 @@ func (c *JWTConfig) GetSigningKey() interface{} {
 		return c.privateKey
 	}
 
-	return c.Secret
+	return []byte(c.Secret)
 
 }
 
@@ -395,6 +395,6 @@ func (c *JWTConfig) GetDecodingKey() interface{} {
 		return c.publicKey
 	}
 
-	return c.Secret
+	return []byte(c.Secret)
 
 }

@@ -6,6 +6,27 @@ description: Trust Configuration Documentation
 
 Trust is configurable using a json file, your json configuration file will look something like the following
 
+```json
+{
+    "disable_phone": true,
+    "site_url": "http://localhost:3002",
+    "instance_url": "http://localhost:8082",
+    "database_url": "postgres://postgres:password@localhost:5432/trust",
+    "smtp": {
+        "host": "smtp.mailtrap.io",
+        "port": 2525,
+        "username": "username",
+        "password": "password",
+        "email": "no-reply@zelalem.me"
+    },
+    "jwt": {
+        "algorithm": "HS256",
+        "secret": "super_duper_tipper_secret"
+    },
+    "ip2location_db_path": "./test/ip2location-lite-db3.ipv6.bin"
+}
+```
+
 ## Field List
 
 ### access\_token\_cookie\_name
