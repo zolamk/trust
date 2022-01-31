@@ -19,14 +19,20 @@ For example, assuming version `X.Y.Z` of the server and a `Linux AMD64`:
 curl -L https://github.com/zolamk/trust/releases/download/vX.Y.Z/trust-vX.Y.Z-linux-amd64.tar.gz
 ```
 
-Then extract the archive
+then extract the archive
 
 ```
 tar -xf trust-vX.Y.Z-linux-amd64.tar.gz --one-top-level
 ```
 
-Finally move/copy the extracted binary to a location of your choice
+move/copy the extracted binary to a location of your choice
 
 ```
 mv trust-vX.Y.Z-linux-amd64/trust /usr/bin/
+```
+
+finally run your binary
+
+```
+/usr/bin/trust run --config ./config.json
 ```
