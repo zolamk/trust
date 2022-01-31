@@ -4,7 +4,7 @@ description: Trust Configuration Documentation
 
 # Configuration
 
-Trust is configurable using a json file, your json configuration file will look something like the following
+Trust is configurable using a json file, a minimal json configuration file will look something like the following
 
 ```json
 {
