@@ -6,8 +6,6 @@ description: Trust installation documentation
 
 Trust installation is simple. installation is just a matter of decompressing a zip file and copying the binary to an appropriate directory; you can also use the package manager that came with your OS. here is a list of the ways you can install and run Trust
 
-* Release Build
-
 ## Downloading a release build
 
 * You can find the latest release of Trust on the [github releases page](https://github.com/zolamk/trust/releases).
