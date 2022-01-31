@@ -188,7 +188,7 @@ func New(path string) (*Config, error) {
 		},
 		RecoveryTemplate: &TemplateConfig{
 			SMS:     default_recovery_sms,
-			Subject: "Recovery Your Account",
+			Subject: "Recover Your Account",
 			Email:   default_recovery,
 		},
 		ChangeTemplate: &TemplateConfig{
