@@ -22,3 +22,10 @@ Trust documentation can be found at [https://trust.zelalem.me](https://trust.zel
 - Various JWT Algorithms (HS256, HS384, HS512, RS256, RS384, RS512, ES256, E384, ES512, more coming soon)
 - Admin Queries & Mutation For User Management
 - And more [checkout the docs](https://trust.zelalem.me)
+
+## Upcoming Features
+
+- 2FA
+- Custom Data With Schema
+- EdDSA Alogrithm
+- ...
