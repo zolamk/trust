@@ -10,3 +10,4 @@
   * [Social Authentication](configuration/social-authentication.md)
 * [Hooks](hooks/README.md)
   * [Login](hooks/login-hook.md)
+* [Endpoints](endpoints/README.md)
