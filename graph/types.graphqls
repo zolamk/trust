@@ -5,6 +5,7 @@ input create_user_form {
   name: String
   avatar: String
   confirm: Boolean
+  data: object
 }
 
 input signup_form {
@@ -13,6 +14,7 @@ input signup_form {
   email: String
   phone: String
   password: String!
+  data: object
 }
 
 type login_response {
@@ -21,3 +23,5 @@ type login_response {
 }
 
 scalar Time
+
+scalar object

@@ -52,13 +52,11 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 }
 
 func (r *queryResolver) Token(ctx context.Context, username string, password string) (*model.LoginResponse, error) {
-
 	writer := ctx.Value(middleware.WriterKey).(http.ResponseWriter)
 
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return anonymous.Token(r.DB, r.Config, username, password, writer, &log_data)
-
 }
 
 func (r *queryResolver) Refresh(ctx context.Context) (*model.LoginResponse, error) {
@@ -71,7 +69,7 @@ func (r *queryResolver) Refresh(ctx context.Context) (*model.LoginResponse, erro
 	return anonymous.RefreshToken(r.DB, r.Config, refresh_token, provider, writer)
 }
 
-func (r *queryResolver) AuditLogs(ctx context.Context) ([]*model.Log, error) {
+func (r *queryResolver) Logs(ctx context.Context, offset int, limit int) ([]*model.Log, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

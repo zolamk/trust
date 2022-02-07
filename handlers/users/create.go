@@ -17,6 +17,8 @@ import (
 
 func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.CreateUserForm, log_data *middleware.LogData) (*model.User, error) {
 
+	var err error
+
 	is_admin, err := token.IsAdmin(db)
 
 	if err != nil {
@@ -39,11 +41,19 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 	}
 
+	err = form.Data.Validate(config.CustomDataSchema)
+
+	if err != nil {
+		logrus.Error(err)
+		return nil, handlers.ErrObjectDoesntMatchSchema
+	}
+
 	user := &model.User{
 		Name:   form.Name,
 		Avatar: form.Avatar,
 		Email:  form.Email,
 		Phone:  form.Phone,
+		Data:   &form.Data,
 	}
 
 	if form.Email != nil {

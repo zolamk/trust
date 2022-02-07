@@ -161,4 +161,10 @@ var (
 			"code": "account_locked",
 		},
 	}
+	ErrObjectDoesntMatchSchema = &gqlerror.Error{
+		Message: "custom data doesn't match custom data schema",
+		Extensions: map[string]interface{}{
+			"code": "custom_data_doesnt_match_schema",
+		},
+	}
 )

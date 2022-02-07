@@ -24,6 +24,12 @@ autobind:
 # modelgen, the others will be allowed when binding to fields. Configure them to
 # your liking
 models:
+  log:
+    model:
+      - github.com/zolamk/trust/model.Log
+  object:
+    model:
+      - github.com/zolamk/trust/model.Object
   user:
     model:
       - github.com/zolamk/trust/model.User

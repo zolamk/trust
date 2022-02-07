@@ -24,6 +24,7 @@ type CreateUserForm struct {
 	Name     *string `json:"name"`
 	Avatar   *string `json:"avatar"`
 	Confirm  *bool   `json:"confirm"`
+	Data     Object  `json:"data"`
 }
 
 type LoginResponse struct {
@@ -37,6 +38,7 @@ type SignupForm struct {
 	Email    *string `json:"email"`
 	Phone    *string `json:"phone"`
 	Password string  `json:"password"`
+	Data     Object  `json:"data"`
 }
 
 type StringExpression struct {

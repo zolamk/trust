@@ -1,5 +1,7 @@
 package resolver
 
+//go:generate go run github.com/99designs/gqlgen generate
+
 import (
 	"github.com/ip2location/ip2location-go/v9"
 	"github.com/zolamk/trust/config"

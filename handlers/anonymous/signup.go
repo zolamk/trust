@@ -14,15 +14,23 @@ func Signup(db *gorm.DB, config *config.Config, form model.SignupForm) (*model.U
 
 	var err error
 
+	err = form.Data.Validate(config.CustomDataSchema)
+
+	if err != nil {
+		logrus.Error(err)
+		return nil, handlers.ErrObjectDoesntMatchSchema
+	}
+
+	if !config.PasswordRule.MatchString(form.Password) {
+		return nil, handlers.ErrInvalidPassword
+	}
+
 	user := &model.User{
 		Name:   form.Name,
 		Email:  form.Email,
 		Phone:  form.Phone,
 		Avatar: form.Avatar,
-	}
-
-	if !config.PasswordRule.MatchString(form.Password) {
-		return nil, handlers.ErrInvalidPassword
+		Data:   &form.Data,
 	}
 
 	if form.Email != nil {

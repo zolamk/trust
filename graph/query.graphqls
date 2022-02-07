@@ -4,5 +4,5 @@ type Query {
   me: user!
   token(username: String!, password: String!): login_response!
   refresh: login_response!
-  logs: [log!]
+  logs(offset: Int!, limit: Int!): [log!]
 }

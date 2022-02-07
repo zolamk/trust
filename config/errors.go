@@ -15,3 +15,4 @@ var ErrEmailNotConfigured = errors.New("expected smtp to be set if email support
 var ErrParsingPrivateKey = errors.New("unable to parse private key")
 var ErrParsingPublicKey = errors.New("unable to parse public key")
 var ErrUnableToReadLocationDB = errors.New("unable to read ip2location db")
+var ErrInvalidCustomDataSchema = errors.New("invalid custom data schema")

@@ -44,6 +44,7 @@ type User struct {
 	PhoneChangeToken             *string    `json:"-"`
 	EmailInvitationToken         *string    `json:"-"`
 	PhoneInvitationToken         *string    `json:"-"`
+	Data                         *Object    `json:"data,omitempty"`
 }
 
 func (u *User) Create(db *gorm.DB) error {

@@ -23,22 +23,18 @@ func (r *mutationResolver) Signup(ctx context.Context, object model.SignupForm) 
 }
 
 func (r *mutationResolver) ConfirmEmail(ctx context.Context, token string) (*model.User, error) {
-
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return anonymous.ConfirmEmail(r.DB, r.Config, token, &log_data)
-
 }
 
 func (r *mutationResolver) ConfirmPhone(ctx context.Context, token string) (*model.User, error) {
-
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return anonymous.ConfirmPhone(r.DB, r.Config, token, &log_data)
 }
 
 func (r *mutationResolver) InviteByEmail(ctx context.Context, name string, email string) (*model.User, error) {
-
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -48,11 +44,9 @@ func (r *mutationResolver) InviteByEmail(ctx context.Context, name string, email
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return users.InviteEmail(r.DB, r.Config, jwt, name, email, &log_data)
-
 }
 
 func (r *mutationResolver) InviteByPhone(ctx context.Context, name string, phone string) (*model.User, error) {
-
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -62,27 +56,21 @@ func (r *mutationResolver) InviteByPhone(ctx context.Context, name string, phone
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return users.InvitePhone(r.DB, r.Config, jwt, name, phone, &log_data)
-
 }
 
 func (r *mutationResolver) AcceptPhoneInvite(ctx context.Context, token string, password string) (*model.User, error) {
-
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return anonymous.AcceptPhoneInvite(r.DB, r.Config, token, password, &log_data)
-
 }
 
 func (r *mutationResolver) AcceptEmailInvite(ctx context.Context, token string, password string) (*model.User, error) {
-
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return anonymous.AcceptEmailInvite(r.DB, r.Config, token, password, &log_data)
-
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error) {
-
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -92,11 +80,9 @@ func (r *mutationResolver) CreateUser(ctx context.Context, object model.CreateUs
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return users.CreateUser(r.DB, r.Config, jwt, object, &log_data)
-
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, id string, name *string, avatar *string) (*model.User, error) {
-
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -104,7 +90,6 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, name *stri
 	}
 
 	return update.UpdateUser(r.DB, r.Config, jwt, id, name, avatar)
-
 }
 
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.User, error) {
@@ -118,7 +103,6 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.Us
 }
 
 func (r *mutationResolver) UpdateEmail(ctx context.Context, id string, email string, confirm *bool) (*model.User, error) {
-
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -128,7 +112,6 @@ func (r *mutationResolver) UpdateEmail(ctx context.Context, id string, email str
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return update.UpdateEmail(r.DB, r.Config, jwt, id, email, confirm, &log_data)
-
 }
 
 func (r *mutationResolver) UpdatePhone(ctx context.Context, id string, phone string, confirm *bool) (*model.User, error) {
@@ -156,7 +139,6 @@ func (r *mutationResolver) UpdatePassword(ctx context.Context, id string, passwo
 }
 
 func (r *mutationResolver) ChangePassword(ctx context.Context, oldPassword string, newPassword string) (*model.User, error) {
-
 	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -166,11 +148,9 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, oldPassword strin
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return user.ChangePassword(r.DB, r.Config, token, oldPassword, newPassword, &log_data)
-
 }
 
 func (r *mutationResolver) ChangeEmail(ctx context.Context, email string) (*model.User, error) {
-
 	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -180,11 +160,9 @@ func (r *mutationResolver) ChangeEmail(ctx context.Context, email string) (*mode
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return user.ChangeEmail(r.DB, r.Config, token, email, &log_data)
-
 }
 
 func (r *mutationResolver) ChangePhone(ctx context.Context, phone string) (*model.User, error) {
-
 	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -194,11 +172,9 @@ func (r *mutationResolver) ChangePhone(ctx context.Context, phone string) (*mode
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return user.ChangePhone(r.DB, r.Config, token, phone, &log_data)
-
 }
 
 func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, token string) (*model.User, error) {
-
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -208,11 +184,9 @@ func (r *mutationResolver) ConfirmPhoneChange(ctx context.Context, token string)
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return user.ConfirmPhoneChange(r.DB, r.Config, jwt, token, &log_data)
-
 }
 
 func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, token string) (*model.User, error) {
-
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -222,23 +196,18 @@ func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, token string)
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return user.ConfirmEmailChange(r.DB, r.Config, jwt, token, &log_data)
-
 }
 
 func (r *mutationResolver) Reset(ctx context.Context, username string) (bool, error) {
-
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return reset.Reset(r.DB, r.Config, username, &log_data)
-
 }
 
 func (r *mutationResolver) ConfirmReset(ctx context.Context, token string, password string) (bool, error) {
-
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
 	return reset.ConfirmReset(r.DB, r.Config, token, password, &log_data)
-
 }
 
 func (r *mutationResolver) ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error) {
