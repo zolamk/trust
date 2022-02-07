@@ -198,7 +198,7 @@ func TestFieldFormat(t *testing.T) {
 	f := Field{
 		Type: String,
 		Format: &Regexp{
-			*regexp.MustCompile("ID\\d{5,10}"),
+			*regexp.MustCompile(`ID\d{5,10}`),
 		},
 	}
 

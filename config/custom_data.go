@@ -18,8 +18,8 @@ type Choices []string
 type Field struct {
 	Type     FieldType `json:"type"`
 	Required bool      `json:"required"`
-	Max      *float64  `json:"max"`
-	Min      *float64  `json:"min"`
+	Max      *float64  `json:"maximum"`
+	Min      *float64  `json:"minimum"`
 	Format   *Regexp   `json:"format"`
 	Choices  *Choices  `json:"choices"`
 }

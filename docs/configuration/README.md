@@ -121,6 +121,14 @@ Phone confirmation code - {{ phone_confirmation_token }}
 
 phone confirmation template will be passed `site_url`, `phone_confirmation_token`, `instance_url`
 
+### custom_data_schema
+
+{% hint style="info" %}
+Type - Object
+{% endhint %}
+
+trust supports storing and querying custom data, you can specify the schema of your custom data using the `custom_data_schema` field in your configuration file, more information on [custom data](./custom-data.md)
+
 ### database\_url
 
 {% hint style="info" %}

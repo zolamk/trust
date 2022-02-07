@@ -8,6 +8,7 @@
   * [Lockout Policy](configuration/lockout-policy.md)
   * [Templating](configuration/template.md)
   * [Social Authentication](configuration/social-authentication.md)
+  * [Custom Data](configuration/custom-data.md)
 * [Hooks](hooks/README.md)
   * [Login](hooks/login-hook.md)
 * [Endpoints](endpoints/README.md)
