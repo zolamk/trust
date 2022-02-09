@@ -5,7 +5,6 @@ package resolver
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -70,7 +69,15 @@ func (r *queryResolver) Refresh(ctx context.Context) (*model.LoginResponse, erro
 }
 
 func (r *queryResolver) Logs(ctx context.Context, offset int, limit int) ([]*model.Log, error) {
-	panic(fmt.Errorf("not implemented"))
+
+	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
+
+	if !ok {
+		return nil, handlers.ErrInvalidJWT
+	}
+
+	return user.Logs(r.DB, r.Config, token, offset, limit)
+
 }
 
 // Query returns generated.QueryResolver implementation.

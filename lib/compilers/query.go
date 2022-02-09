@@ -1,60 +1,87 @@
 package compilers
 
 import (
-	"fmt"
-	"strings"
+	"github.com/doug-martin/goqu/v9"
 )
+
+var mapping = map[string]string{
+	"_eq":      "eq",
+	"_neq":     "neq",
+	"_gt":      "gt",
+	"_gte":     "get",
+	"_like":    "like",
+	"_ilike":   "ilike",
+	"_nlike":   "notlike",
+	"_nilike":  "notilike",
+	"_lt":      "lt",
+	"_lte":     "lte",
+	"_is_null": "_is_null",
+}
 
 func CompileQuery(fields []string, where map[string]interface{}, order_by map[string]interface{}, offset, limit int) (*string, []interface{}, error) {
 
-	var query strings.Builder
+	i_fields := make([]interface{}, len(fields))
 
-	query.WriteString(`SELECT `)
+	for _, field := range fields {
+		i_fields = append(i_fields, field)
+	}
 
-	fields_count := len(fields) - 1
+	builder := goqu.From("trust.users").Prepared(true).Select(i_fields...)
 
-	for i, field := range fields {
+	operations := []goqu.Expression{}
 
-		if i == fields_count {
-			query.WriteString(fmt.Sprintf(`"%s"`, field))
+	for key, value := range where {
+
+		for op, value := range value.(map[string]interface{}) {
+
+			op = mapping[op]
+
+			// since goqu doesn't handle is_null expressions
+			// convert to _eq and _neq until support is provided
+			// by goqu
+			if op == "_is_null" {
+
+				if value.(bool) {
+
+					op = "eq"
+
+					value = nil
+
+				} else {
+
+					op = "neq"
+
+					value = nil
+
+				}
+
+			}
+
+			operations = append(operations, goqu.Ex{
+				key: goqu.Op{op: value},
+			})
+
+		}
+
+	}
+
+	builder = builder.Where(operations...)
+
+	for key, value := range order_by {
+
+		if value == "asc" {
+			builder = builder.OrderAppend(goqu.I(key).Asc())
 			continue
 		}
 
-		query.WriteString(fmt.Sprintf(`"%s", `, field))
-	}
-
-	query.WriteString(` FROM "trust"."users"`)
-
-	if len(where) > 0 {
-		query.WriteString(` WHERE `)
-	}
-
-	where_clause, params, err := compileWhere(where)
-
-	if err != nil {
-		return nil, []interface{}{}, err
-	}
-
-	query.WriteString(where_clause)
-
-	if len(order_by) > 0 {
-
-		order_by_clause := compileOrderBy(order_by)
-
-		query.WriteString(` ORDER BY `)
-
-		query.WriteString(order_by_clause)
+		builder = builder.OrderAppend(goqu.I(key).Desc())
 
 	}
 
-	params_count := len(params)
+	builder = builder.Offset(uint(offset)).Limit(uint(limit))
 
-	query.WriteString(fmt.Sprintf(` OFFSET $%d LIMIT $%d`, params_count+1, params_count+2))
+	sql, params, err := builder.ToSQL()
 
-	params = append(params, offset, limit)
-
-	sql := query.String()
-
-	return &sql, params, nil
+	return &sql, params, err
 
 }

@@ -1,8 +1,6 @@
 package users
 
 import (
-	"log"
-
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
@@ -38,7 +36,7 @@ func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, 
 		return nil, handlers.ErrInternal
 	}
 
-	log.Println(*query)
+	logrus.WithField("params", params).Debug(*query)
 
 	if tx := db.Raw(*query, params...).Scan(&users); tx.Error != nil {
 		logrus.Error(tx.Error)

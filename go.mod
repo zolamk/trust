@@ -28,6 +28,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/docker v20.10.10+incompatible // indirect
+	github.com/doug-martin/goqu/v9 v9.18.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
