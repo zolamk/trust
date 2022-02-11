@@ -75,7 +75,7 @@ type ComplexityRoot struct {
 		Refresh func(childComplexity int) int
 		Token   func(childComplexity int, username string, password string) int
 		User    func(childComplexity int, id string) int
-		Users   func(childComplexity int, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) int
+		Users   func(childComplexity int, where map[string]interface{}, orderBy []model.Object, offset int, limit int) int
 	}
 
 	Log struct {
@@ -160,11 +160,37 @@ type MutationResolver interface {
 }
 type QueryResolver interface {
 	User(ctx context.Context, id string) (*model.User, error)
-	Users(ctx context.Context, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) ([]*model.User, error)
+	Users(ctx context.Context, where map[string]interface{}, orderBy []model.Object, offset int, limit int) ([]*model.User, error)
 	Me(ctx context.Context) (*model.User, error)
 	Token(ctx context.Context, username string, password string) (*model.LoginResponse, error)
 	Refresh(ctx context.Context) (*model.LoginResponse, error)
 	Logs(ctx context.Context, offset int, limit int) ([]*model.Log, error)
+}
+
+type users_order_byResolver interface {
+	Avatar(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	CreatedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	Email(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	EmailChangeTokenSentAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	EmailChangedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	EmailConfirmationTokenSentAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	EmailConfirmed(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	EmailConfirmedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	ID(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	InvitationAcceptedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	InvitationTokenSentAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	IsAdmin(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	LastSigninAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	Name(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	NewEmail(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	NewPhone(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	PasswordChangedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	Phone(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	PhoneChangeTokenSentAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	PhoneChangedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	PhoneConfirmationTokenSentAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	PhoneConfirmed(ctx context.Context, obj model.Object, data *model.OrderDirection) error
+	UpdatedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
 }
 
 type executableSchema struct {
@@ -506,7 +532,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Users(childComplexity, args["where"].(map[string]interface{}), args["order_by"].(map[string]interface{}), args["offset"].(int), args["limit"].(int)), true
+		return e.complexity.Query.Users(childComplexity, args["where"].(map[string]interface{}), args["order_by"].([]model.Object), args["offset"].(int), args["limit"].(int)), true
 
 	case "log.at":
 		if e.complexity.Log.At == nil {
@@ -973,7 +999,7 @@ input users_order_by {
 }`, BuiltIn: false},
 	{Name: "graph/query.graphqls", Input: `type Query {
   user(id: String!): user!
-  users(where: users_bool_exp, order_by: users_order_by, offset: Int!, limit: Int!): [user!]
+  users(where: users_bool_exp, order_by: [users_order_by!], offset: Int!, limit: Int!): [user!]
   me: user!
   token(username: String!, password: String!): login_response!
   refresh: login_response!
@@ -1657,10 +1683,10 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["where"] = arg0
-	var arg1 map[string]interface{}
+	var arg1 []model.Object
 	if tmp, ok := rawArgs["order_by"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("order_by"))
-		arg1, err = ec.unmarshalOusers_order_by2map(ctx, tmp)
+		arg1, err = ec.unmarshalOusers_order_by2ᚕgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐObjectᚄ(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2716,7 +2742,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Users(rctx, args["where"].(map[string]interface{}), args["order_by"].(map[string]interface{}), args["offset"].(int), args["limit"].(int))
+		return ec.resolvers.Query().Users(rctx, args["where"].(map[string]interface{}), args["order_by"].([]model.Object), args["offset"].(int), args["limit"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7561,6 +7587,12 @@ func (ec *executionContext) marshalNuser2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmode
 	return ec._user(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNusers_order_by2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐObject(ctx context.Context, v interface{}) (model.Object, error) {
+	var res model.Object
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7996,11 +8028,24 @@ func (ec *executionContext) unmarshalOusers_bool_exp2map(ctx context.Context, v 
 	return v.(map[string]interface{}), nil
 }
 
-func (ec *executionContext) unmarshalOusers_order_by2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) unmarshalOusers_order_by2ᚕgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐObjectᚄ(ctx context.Context, v interface{}) ([]model.Object, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return v.(map[string]interface{}), nil
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]model.Object, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNusers_order_by2githubᚗcomᚋzolamkᚋtrustᚋmodelᚐObject(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 // endregion ***************************** type.gotpl *****************************

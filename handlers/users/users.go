@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, where map[string]interface{}, order_by map[string]interface{}, offset, limit int) ([]*model.User, error) {
+func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, where map[string]interface{}, order_by []model.Object, offset, limit int) ([]*model.User, error) {
 
 	users := []*model.User{}
 

@@ -2,6 +2,7 @@ package compilers
 
 import (
 	"github.com/doug-martin/goqu/v9"
+	"github.com/zolamk/trust/model"
 )
 
 var mapping = map[string]string{
@@ -18,7 +19,7 @@ var mapping = map[string]string{
 	"_is_null": "_is_null",
 }
 
-func CompileQuery(fields []string, where map[string]interface{}, order_by map[string]interface{}, offset, limit int) (*string, []interface{}, error) {
+func CompileQuery(fields []string, where map[string]interface{}, order_by []model.Object, offset, limit int) (*string, []interface{}, error) {
 
 	i_fields := make([]interface{}, len(fields))
 
@@ -67,14 +68,18 @@ func CompileQuery(fields []string, where map[string]interface{}, order_by map[st
 
 	builder = builder.Where(operations...)
 
-	for key, value := range order_by {
+	for _, value := range order_by {
 
-		if value == "asc" {
-			builder = builder.OrderAppend(goqu.I(key).Asc())
-			continue
+		for key, value := range value {
+
+			if value == "asc" {
+				builder = builder.OrderAppend(goqu.I(key).Asc())
+				continue
+			}
+
+			builder = builder.OrderAppend(goqu.I(key).Desc())
+
 		}
-
-		builder = builder.OrderAppend(goqu.I(key).Desc())
 
 	}
 

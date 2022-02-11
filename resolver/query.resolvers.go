@@ -28,7 +28,7 @@ func (r *queryResolver) User(ctx context.Context, id string) (*model.User, error
 	return users.User(r.DB, r.Config, token, id)
 }
 
-func (r *queryResolver) Users(ctx context.Context, where map[string]interface{}, orderBy map[string]interface{}, offset int, limit int) ([]*model.User, error) {
+func (r *queryResolver) Users(ctx context.Context, where map[string]interface{}, orderBy []model.Object, offset int, limit int) ([]*model.User, error) {
 	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -69,7 +69,6 @@ func (r *queryResolver) Refresh(ctx context.Context) (*model.LoginResponse, erro
 }
 
 func (r *queryResolver) Logs(ctx context.Context, offset int, limit int) ([]*model.Log, error) {
-
 	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -77,7 +76,6 @@ func (r *queryResolver) Logs(ctx context.Context, offset int, limit int) ([]*mod
 	}
 
 	return user.Logs(r.DB, r.Config, token, offset, limit)
-
 }
 
 // Query returns generated.QueryResolver implementation.

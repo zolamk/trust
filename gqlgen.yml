@@ -37,7 +37,7 @@ models:
     model: 
       - github.com/zolamk/trust/model.AuditLog
   users_order_by:
-    model: "map[string]interface{}"
+    model: "github.com/zolamk/trust/model.Object"
   users_bool_exp:
     model: "map[string]interface{}"
   ID:
