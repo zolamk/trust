@@ -44,7 +44,7 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string, provider string
 		"user":     hook_user,
 	}
 
-	hook_response, err := hook.TriggerHook("login", payload, config)
+	hook_response, err := hook.TriggerHook(hook_user.ID, "login", payload, config)
 
 	if err != nil {
 		logrus.Error(err)

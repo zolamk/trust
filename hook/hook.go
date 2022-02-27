@@ -13,7 +13,7 @@ import (
 	"github.com/zolamk/trust/config"
 )
 
-func TriggerHook(event string, payload *map[string]interface{}, config *config.Config) (*interface{}, error) {
+func TriggerHook(user_id string, event string, payload *map[string]interface{}, config *config.Config) (*interface{}, error) {
 
 	url := config.LoginHook
 
@@ -33,6 +33,7 @@ func TriggerHook(event string, payload *map[string]interface{}, config *config.C
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute)),
 			Audience:  jwt.ClaimStrings{config.JWT.Aud},
 			IssuedAt:  jwt.NewNumericDate(now),
+			Subject:   user_id,
 		},
 		map[string][]string{
 			"roles": {"trust"},

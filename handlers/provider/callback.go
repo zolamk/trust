@@ -166,7 +166,7 @@ func Callback(db *gorm.DB, config *config.Config) http.HandlerFunc {
 				"user":     hook_user,
 			}
 
-			hook_response, err := hook.TriggerHook("login", payload, config)
+			hook_response, err := hook.TriggerHook(hook_user.ID, "login", payload, config)
 
 			if err != nil {
 
