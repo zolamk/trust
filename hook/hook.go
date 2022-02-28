@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -27,7 +28,7 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 
 	claims := struct {
 		jwt.RegisteredClaims
-		Metadata map[string][]string `json:"metdata"`
+		Metadata map[string][]string `json:"metadata"`
 	}{
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute)),
@@ -63,6 +64,8 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 	req.Header.Add("content-type", "application/json")
 
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", token_string))
+
+	log.Println(token_string)
 
 	res, err := http.DefaultClient.Do(req)
 
