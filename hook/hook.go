@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -65,8 +65,6 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", token_string))
 
-	log.Println(token_string)
-
 	res, err := http.DefaultClient.Do(req)
 
 	if err != nil {
@@ -77,7 +75,7 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 		return nil, errors.New("webhook error")
 	}
 
-	if res.Header.Get("content-type") != "application/json" {
+	if !strings.Contains(res.Header.Get("content-type"), "application/json") {
 		return nil, nil
 	}
 
