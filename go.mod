@@ -46,6 +46,7 @@ require (
 	github.com/lib/pq v1.10.4 // indirect
 	github.com/matryer/moq v0.2.3 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
+	github.com/ohler55/ojg v1.12.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect

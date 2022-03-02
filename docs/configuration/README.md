@@ -309,6 +309,34 @@ Default - **10**
 
 Determines PostgreSQL connection pool size
 
+### metadata\_path
+
+{% hint style="info" %}
+Type - String
+{% endhint %}
+
+When trust triggers the login hook set whatever response the hook returns is set as `metadata` claim on the JWT generated, the `metadata_path` configuration will allow you to pick the data to be used using [JSONPath](https://goessner.net/articles/JsonPath/)
+
+for example assuming your login hook returns data such as below
+
+```json
+{
+    "id": "user_id",
+    "user": {
+        "roles": ["role_1", "role_2", "role_3"]
+    }
+}
+```
+if you were to set `metadata_path` to `$.user` trust will set the `metadata` claim as
+
+```json
+{
+    "roles": ["role_1", "role_2", "role_3"]
+}
+```
+more information on [JSONPath](https://goessner.net/articles/JsonPath/)
+
+
 ### minutes\_between\_email\_change
 
 {% hint style="info" %}

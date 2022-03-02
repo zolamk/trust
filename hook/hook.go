@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/ohler55/ojg/oj"
 	"github.com/zolamk/trust/config"
 )
 
@@ -79,15 +80,27 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 		return nil, nil
 	}
 
-	decoder := json.NewDecoder(res.Body)
+	var decoder oj.Parser
 
 	var hook_response interface{}
 
-	if err := decoder.Decode(&hook_response); err != nil {
+	if hook_response, err = decoder.ParseReader(res.Body); err != nil {
 		if err == io.EOF {
 			return nil, nil
 		}
 		return nil, err
+	}
+
+	if config.MetadataPath != nil {
+
+		result := config.MetadataPath.Get(hook_response)
+
+		if len(result) > 0 {
+			return &result[0], nil
+		}
+
+		return nil, nil
+
 	}
 
 	return &hook_response, nil

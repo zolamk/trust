@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ip2location/ip2location-go/v9"
+	"github.com/ohler55/ojg/jp"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,6 +26,22 @@ func (r *Regexp) UnmarshalText(text []byte) error {
 
 func (r *Regexp) MarshalText() ([]byte, error) {
 	return []byte(r.Regexp.String()), nil
+}
+
+type JSONPath struct {
+	jp.Expr
+}
+
+func (p *JSONPath) UnmarshalText(text []byte) error {
+
+	p.Expr = jp.MustParse(text)
+
+	return nil
+
+}
+
+func (p *JSONPath) MarshalText() ([]byte, error) {
+	return []byte(p.Expr.String()), nil
 }
 
 type TemplateConfig struct {
@@ -119,6 +136,7 @@ type Config struct {
 	SMTP                      *SMTPConfig      `json:"smtp"`
 	SocialRedirectPage        string           `json:"social_redirect_page"`
 	CustomDataSchema          map[string]Field `json:"custom_data_schema"`
+	MetadataPath              *JSONPath        `json:"metadata_path"`
 }
 
 func New(path string) (*Config, error) {
