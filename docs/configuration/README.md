@@ -313,6 +313,8 @@ Determines PostgreSQL connection pool size
 
 {% hint style="info" %}
 Type - String
+
+Available From - `v0.4.0`
 {% endhint %}
 
 When trust triggers the login hook set whatever response the hook returns is set as `metadata` claim on the JWT generated, the `metadata_path` configuration will allow you to pick the data to be used using [JSONPath](https://goessner.net/articles/JsonPath/)
