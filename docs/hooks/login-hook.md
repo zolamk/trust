@@ -12,6 +12,8 @@ The hook can be used to reject the authentication, reject token refresh or set e
 
 Trust hook calls will contain an `Authorization` header containing a JSON Web Token signed with the configured key, more information on [JWT configuration](../configuration/jwt.md).
 
+Starting from version `0.4.1` Trust will also set a cookie containing a JSON Web Token signed with the configured key, the cookies name is determined by [access_token_cookie_name](../configuration/README.md#accesstokencookiename) configuration
+
 #### Sample Authorization Header
 
 ```
