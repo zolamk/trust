@@ -66,6 +66,12 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 
 	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", token_string))
 
+	req.AddCookie(&http.Cookie{
+		Name:   config.AccessTokenCookieName,
+		Domain: config.AccessTokenCookieDomain,
+		Value:  token_string,
+	})
+
 	res, err := http.DefaultClient.Do(req)
 
 	if err != nil {
