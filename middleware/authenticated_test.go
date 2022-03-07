@@ -22,7 +22,7 @@ func TestAuthenticated(t *testing.T) {
 
 	config, _ := config.New("../test/configs/complete.conf")
 
-	token := jwt.New("password", &model.User{}, nil, config.JWT)
+	token := jwt.New("password", &model.User{}, nil, config)
 
 	signed_token, _ := token.Sign()
 
@@ -50,7 +50,7 @@ func TestAuthenticatedCookie(t *testing.T) {
 
 	config, _ := config.New("../test/configs/complete.conf")
 
-	token := jwt.New("password", &model.User{}, nil, config.JWT)
+	token := jwt.New("password", &model.User{}, nil, config)
 
 	signed_token, _ := token.Sign()
 

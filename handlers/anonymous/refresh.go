@@ -51,7 +51,7 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string, provider string
 		return nil, handlers.ErrWebHook
 	}
 
-	token := jwt.New(provider, user, hook_response, config.JWT)
+	token := jwt.New(provider, user, hook_response, config)
 
 	signed_token, err := token.Sign()
 

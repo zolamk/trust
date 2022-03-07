@@ -19,7 +19,7 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 	var err error
 
-	is_admin, err := token.IsAdmin(db)
+	is_admin, err := token.HasAdminRole()
 
 	if err != nil {
 

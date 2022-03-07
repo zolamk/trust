@@ -1,0 +1,1 @@
+ALTER TABLE "trust"."users" DROP COLUMN is_admin;

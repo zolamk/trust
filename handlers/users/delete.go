@@ -11,7 +11,7 @@ import (
 
 func DeleteUser(db *gorm.DB, config *config.Config, token *jwt.JWT, id string) (*model.User, error) {
 
-	is_admin, err := token.IsAdmin(db)
+	is_admin, err := token.HasAdminRole()
 
 	if err != nil {
 		logrus.Error(err)

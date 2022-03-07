@@ -15,7 +15,7 @@ func User(db *gorm.DB, config *config.Config, token *jwt.JWT, id string) (*model
 
 	if config.AdminOnlyList && id != token.Subject {
 
-		is_admin, err := token.IsAdmin(db)
+		is_admin, err := token.HasAdminRole()
 
 		if err != nil {
 			logrus.Error(err)

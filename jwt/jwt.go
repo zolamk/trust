@@ -7,7 +7,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/model"
-	"gorm.io/gorm"
 )
 
 type JWT struct {
@@ -17,18 +16,18 @@ type JWT struct {
 	Phone    *string      `json:"phone,omitempty"`
 	Metadata *interface{} `json:"metadata,omitempty"`
 	Provider string       `json:"provider"`
-	config   *config.JWTConfig
+	config   *config.Config
 }
 
-func New(provider string, user *model.User, metadata *interface{}, config *config.JWTConfig) *JWT {
+func New(provider string, user *model.User, metadata *interface{}, config *config.Config) *JWT {
 
 	now := time.Now()
 
 	return &JWT{
 		jwt.RegisteredClaims{
-			Audience:  jwt.ClaimStrings{config.Aud},
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute * config.Exp)),
-			Issuer:    config.Iss,
+			Audience:  jwt.ClaimStrings{config.JWT.Aud},
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Minute * config.JWT.Exp)),
+			Issuer:    config.JWT.Iss,
 			Subject:   user.ID,
 		},
 		user.Name,
@@ -41,12 +40,14 @@ func New(provider string, user *model.User, metadata *interface{}, config *confi
 
 }
 
-func Decode(signed_string string, config *config.JWTConfig) (*JWT, error) {
+func Decode(signed_string string, config *config.Config) (*JWT, error) {
 
-	claims := &JWT{}
+	claims := &JWT{
+		config: config,
+	}
 
 	token, err := jwt.ParseWithClaims(signed_string, claims, func(t *jwt.Token) (interface{}, error) {
-		return config.GetDecodingKey(), nil
+		return config.JWT.GetDecodingKey(), nil
 	})
 
 	if err != nil {
@@ -69,22 +70,40 @@ func Decode(signed_string string, config *config.JWTConfig) (*JWT, error) {
 
 func (j *JWT) Sign() (string, error) {
 
-	alg := jwt.GetSigningMethod(j.config.Alg)
+	alg := jwt.GetSigningMethod(j.config.JWT.Alg)
 
 	token := jwt.NewWithClaims(alg, j)
 
-	return token.SignedString(j.config.GetSigningKey())
+	return token.SignedString(j.config.JWT.GetSigningKey())
 
 }
 
-func (j *JWT) IsAdmin(db *gorm.DB) (bool, error) {
+func (j *JWT) HasAdminRole() (bool, error) {
 
-	is_admin := false
-
-	if tx := db.Table("trust.users").Select("is_admin").Where("id = ?", j.Subject).Scan(&is_admin); tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
-		return false, tx.Error
+	if j.Metadata == nil {
+		return false, nil
 	}
 
-	return is_admin, nil
+	results := j.config.RolesPath.Get(*j.Metadata)
+
+	if len(results) == 0 {
+		return false, nil
+	}
+
+	switch results[0].(type) {
+	case []interface{}:
+
+		roles := results[0].([]interface{})
+
+		for _, v := range roles {
+
+			if v == j.config.AdminRoleName {
+				return true, nil
+			}
+
+		}
+	}
+
+	return false, nil
 
 }

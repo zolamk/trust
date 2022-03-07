@@ -46,7 +46,7 @@ func Authenticated(config *config.Config) func(http.Handler) http.Handler {
 
 			authorization = parts[len(parts)-1]
 
-			token, err := jwt.Decode(authorization, config.JWT)
+			token, err := jwt.Decode(authorization, config)
 
 			if err != nil {
 

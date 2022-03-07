@@ -178,7 +178,7 @@ func Callback(db *gorm.DB, config *config.Config) http.HandlerFunc {
 
 			}
 
-			jwt := jwt.New(state.Provider, user, hook_response, config.JWT)
+			jwt := jwt.New(state.Provider, user, hook_response, config)
 
 			signed_token, err := jwt.Sign()
 

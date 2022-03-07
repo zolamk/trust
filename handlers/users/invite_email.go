@@ -21,7 +21,7 @@ func InviteEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, name string
 		return nil, handlers.ErrInvalidEmail
 	}
 
-	is_admin, err := token.IsAdmin(db)
+	is_admin, err := token.HasAdminRole()
 
 	if err != nil {
 		logrus.Error(err)

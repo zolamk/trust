@@ -128,7 +128,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 
 		}
 
-		token := jwt.New("password", user, hook_response, config.JWT)
+		token := jwt.New("password", user, hook_response, config)
 
 		signed_token, err = token.Sign()
 

@@ -14,7 +14,7 @@ import (
 
 func UpdatePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, password string, log_data *middleware.LogData) (*model.User, error) {
 
-	is_admin, err := token.IsAdmin(db)
+	is_admin, err := token.HasAdminRole()
 
 	if err != nil {
 		logrus.Error(err)

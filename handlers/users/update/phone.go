@@ -15,7 +15,7 @@ func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 	user := &model.User{}
 
-	is_admin, err := token.IsAdmin(db)
+	is_admin, err := token.HasAdminRole()
 
 	if err != nil {
 		logrus.Error(err)
