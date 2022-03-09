@@ -70,12 +70,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Logs    func(childComplexity int, offset int, limit int) int
-		Me      func(childComplexity int) int
-		Refresh func(childComplexity int) int
-		Token   func(childComplexity int, username string, password string) int
-		User    func(childComplexity int, id string) int
-		Users   func(childComplexity int, where map[string]interface{}, orderBy []model.Object, offset int, limit int) int
+		Logs       func(childComplexity int, offset int, limit int) int
+		Me         func(childComplexity int) int
+		Refresh    func(childComplexity int) int
+		Token      func(childComplexity int, username string, password string) int
+		User       func(childComplexity int, id string) int
+		Users      func(childComplexity int, where map[string]interface{}, orderBy []model.Object, offset int, limit int) int
+		UsersCount func(childComplexity int, where map[string]interface{}) int
 	}
 
 	Log struct {
@@ -165,6 +166,7 @@ type QueryResolver interface {
 	Token(ctx context.Context, username string, password string) (*model.LoginResponse, error)
 	Refresh(ctx context.Context) (*model.LoginResponse, error)
 	Logs(ctx context.Context, offset int, limit int) ([]*model.Log, error)
+	UsersCount(ctx context.Context, where map[string]interface{}) (int, error)
 }
 
 type users_order_byResolver interface {
@@ -533,6 +535,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Users(childComplexity, args["where"].(map[string]interface{}), args["order_by"].([]model.Object), args["offset"].(int), args["limit"].(int)), true
+
+	case "Query.users_count":
+		if e.complexity.Query.UsersCount == nil {
+			break
+		}
+
+		args, err := ec.field_Query_users_count_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.UsersCount(childComplexity, args["where"].(map[string]interface{})), true
 
 	case "log.at":
 		if e.complexity.Log.At == nil {
@@ -1004,6 +1018,7 @@ input users_order_by {
   token(username: String!, password: String!): login_response!
   refresh: login_response!
   logs(offset: Int!, limit: Int!): [log!]
+  users_count(where: users_bool_exp): Int!
 }`, BuiltIn: false},
 	{Name: "graph/types.graphqls", Input: `input create_user_form {
   email: String
@@ -1115,6 +1130,7 @@ input string_expression {
 }
 
 input users_bool_exp {
+  _or: users_bool_exp
   avatar: string_expression
   created_at: string_expression
   email: string_expression
@@ -1710,6 +1726,21 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["limit"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_users_count_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 map[string]interface{}
+	if tmp, ok := rawArgs["where"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("where"))
+		arg0, err = ec.unmarshalOusers_bool_exp2map(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["where"] = arg0
 	return args, nil
 }
 
@@ -2905,6 +2936,48 @@ func (ec *executionContext) _Query_logs(ctx context.Context, field graphql.Colle
 	res := resTmp.([]*model.Log)
 	fc.Result = res
 	return ec.marshalOlog2ᚕᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐLogᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_users_count(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_users_count_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().UsersCount(rctx, args["where"].(map[string]interface{}))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6322,6 +6395,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_logs(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "users_count":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_users_count(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 

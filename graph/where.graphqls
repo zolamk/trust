@@ -53,6 +53,7 @@ input string_expression {
 }
 
 input users_bool_exp {
+  _or: users_bool_exp
   avatar: string_expression
   created_at: string_expression
   email: string_expression

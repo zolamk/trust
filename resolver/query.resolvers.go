@@ -78,6 +78,17 @@ func (r *queryResolver) Logs(ctx context.Context, offset int, limit int) ([]*mod
 	return user.Logs(r.DB, r.Config, token, offset, limit)
 }
 
+func (r *queryResolver) UsersCount(ctx context.Context, where map[string]interface{}) (int, error) {
+
+	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
+
+	if !ok {
+		return 0, handlers.ErrInvalidJWT
+	}
+
+	return users.UsersCount(r.DB, r.Config, token, where)
+}
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 

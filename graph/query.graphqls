@@ -5,4 +5,5 @@ type Query {
   token(username: String!, password: String!): login_response!
   refresh: login_response!
   logs(offset: Int!, limit: Int!): [log!]
+  users_count(where: users_bool_exp): Int!
 }
