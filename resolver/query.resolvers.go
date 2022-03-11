@@ -79,7 +79,6 @@ func (r *queryResolver) Logs(ctx context.Context, offset int, limit int) ([]*mod
 }
 
 func (r *queryResolver) UsersCount(ctx context.Context, where map[string]interface{}) (int, error) {
-
 	token, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {

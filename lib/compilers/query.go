@@ -67,23 +67,37 @@ func andOps(key string, value interface{}) exp.ExpressionList {
 
 }
 
-func compileOr(where map[string]interface{}) exp.ExpressionList {
+func compileOr(where []interface{}) exp.ExpressionList {
 
 	or := goqu.Or()
 
-	for key, value := range where {
+	for _, value := range where {
 
-		if key == "_or" {
+		ands := goqu.And()
 
-			sub_or := compileOr(value.(map[string]interface{}))
+		for key, value := range value.(map[string]interface{}) {
 
-			or = or.Append(sub_or)
+			if key == "_or" {
 
-			continue
+				var sub_ors exp.ExpressionList
+
+				switch v := value.(type) {
+				case []interface{}:
+					sub_ors = compileOr(v)
+				// handle graphql list coercion
+				case []map[string]interface{}:
+					sub_ors = compileOr([]interface{}{v[0]})
+				}
+
+				ands = ands.Append(sub_ors)
+
+				continue
+
+			}
+
+			ands = ands.Append(andOps(key, value))
 
 		}
-
-		ands := andOps(key, value)
 
 		or = or.Append(ands)
 
@@ -101,7 +115,15 @@ func CompileWhere(where map[string]interface{}) exp.ExpressionList {
 
 		if key == "_or" {
 
-			or := compileOr(value.(map[string]interface{}))
+			var or exp.ExpressionList
+
+			switch v := value.(type) {
+			case []interface{}:
+				or = compileOr(v)
+			// handle graphql list coercion
+			case []map[string]interface{}:
+				or = compileOr([]interface{}{v[0]})
+			}
 
 			operations = operations.Append(or)
 

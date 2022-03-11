@@ -34,7 +34,7 @@ models:
     model:
       - github.com/zolamk/trust/model.User
   audit_log:
-    model: 
+    model:
       - github.com/zolamk/trust/model.AuditLog
   users_order_by:
     model: "github.com/zolamk/trust/model.Object"
