@@ -36,6 +36,10 @@ func AttachLogData(ip2location_db *ip2location.DB) func(http.Handler) http.Handl
 
 			}
 
+			// since there maybe multiple ips for multiple proxies
+			// get the left most ip as it is the clients ip
+			ip = strings.TrimSpace(strings.Split(ip, ",")[0])
+
 			location, err := ip2location_db.Get_all(ip)
 
 			if err != nil {

@@ -53,6 +53,24 @@ func TestAttachLogData(t *testing.T) {
 
 	AttachLogData(config.IP2LocationDB)(handler).ServeHTTP(res, req)
 
+	req.Header.Del("x-real-ip")
+
+	forwarded_for = "248.116.107.103, 10.42.0.1"
+
+	req.Header.Set("x-forwarded-for", forwarded_for)
+
+	handler = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+
+		log_data, ok := r.Context().Value(LogDataKey).(LogData)
+
+		assert.Equal(true, ok, "expected log data to be present in request context")
+
+		assert.Equal("248.116.107.103", log_data.IP, "expected ip in log data to match x-real-ip header")
+
+	})
+
+	AttachLogData(config.IP2LocationDB)(handler).ServeHTTP(res, req)
+
 	req.Header.Del("x-forwarded-for")
 
 	remote_addr := "196.188.12.81"
