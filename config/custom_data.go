@@ -45,6 +45,7 @@ func (f Field) validateString(name string, value interface{}) error {
 		if f.Required {
 			return fmt.Errorf("field %s is required", name)
 		}
+		return nil
 	case string:
 	default:
 		return fmt.Errorf("field %s expected string but got %T", name, v)
@@ -79,6 +80,7 @@ func (f Field) validateInteger(name string, value interface{}) error {
 		if f.Required {
 			return fmt.Errorf("field %s is required", name)
 		}
+		return nil
 	case uint, uint8, uint16, uint32, uint64, int, int8, int16, int32, int64:
 	default:
 		return fmt.Errorf("field %s expected integer but got %T", name, v)
@@ -105,6 +107,7 @@ func (f Field) validateFloat(name string, value interface{}) error {
 		if f.Required {
 			return fmt.Errorf("field %s is required", name)
 		}
+		return nil
 	case float32, float64:
 	default:
 		return fmt.Errorf("field %s expected float but got %T", name, v)
@@ -131,6 +134,7 @@ func (f Field) validateBoolean(name string, value interface{}) error {
 		if f.Required {
 			return fmt.Errorf("field %s is required", name)
 		}
+		return nil
 	case bool:
 	default:
 		return fmt.Errorf("field %s expected boolean but got %T", name, v)
