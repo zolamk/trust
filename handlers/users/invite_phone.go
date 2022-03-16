@@ -13,12 +13,12 @@ import (
 
 func InvitePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, name string, phone string, log_data *middleware.LogData) (*model.User, error) {
 
-	if config.DisableEmail {
-		return nil, handlers.ErrEmailDisabled
+	if config.DisablePhone {
+		return nil, handlers.ErrPhoneDisabled
 	}
 
 	if !config.PhoneRule.MatchString(phone) {
-		return nil, handlers.ErrInvalidEmail
+		return nil, handlers.ErrInvalidPhone
 	}
 
 	is_admin, err := token.HasAdminRole()

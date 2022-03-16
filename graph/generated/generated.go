@@ -59,6 +59,7 @@ type ComplexityRoot struct {
 		DeleteUser              func(childComplexity int, id string) int
 		InviteByEmail           func(childComplexity int, name string, email string) int
 		InviteByPhone           func(childComplexity int, name string, phone string) int
+		Logout                  func(childComplexity int) int
 		ResendEmailConfirmation func(childComplexity int, email string) int
 		ResendPhoneConfirmation func(childComplexity int, phone string) int
 		Reset                   func(childComplexity int, username string) int
@@ -158,6 +159,7 @@ type MutationResolver interface {
 	ConfirmReset(ctx context.Context, token string, password string) (bool, error)
 	ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error)
 	ResendEmailConfirmation(ctx context.Context, email string) (bool, error)
+	Logout(ctx context.Context) (*bool, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, id string) (*model.User, error)
@@ -377,6 +379,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.InviteByPhone(childComplexity, args["name"].(string), args["phone"].(string)), true
+
+	case "Mutation.logout":
+		if e.complexity.Mutation.Logout == nil {
+			break
+		}
+
+		return e.complexity.Mutation.Logout(childComplexity), true
 
 	case "Mutation.resend_email_confirmation":
 		if e.complexity.Mutation.ResendEmailConfirmation == nil {
@@ -977,6 +986,7 @@ var sources = []*ast.Source{
   confirm_reset(token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!
+  logout: Boolean
 }`, BuiltIn: false},
 	{Name: "graph/order_by.graphqls", Input: `enum order_direction {
   """Ascending"""
@@ -2704,6 +2714,38 @@ func (ec *executionContext) _Mutation_resend_email_confirmation(ctx context.Cont
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Logout(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6307,6 +6349,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "logout":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_logout(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

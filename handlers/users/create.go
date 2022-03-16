@@ -30,15 +30,19 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 	}
 
 	if !is_admin {
-
 		return nil, handlers.ErrAdminOnly
-
 	}
 
 	if form.Email == nil && form.Phone == nil {
-
 		return nil, handlers.ErrEmailOrPhoneRequired
+	}
 
+	if form.Email != nil && config.DisableEmail {
+		return nil, handlers.ErrEmailDisabled
+	}
+
+	if form.Phone != nil && config.DisablePhone {
+		return nil, handlers.ErrPhoneDisabled
 	}
 
 	err = form.Data.Validate(config.CustomDataSchema)

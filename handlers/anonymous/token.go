@@ -124,7 +124,11 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 
 			logrus.Error(err)
 
-			return handlers.ErrWebHook
+			e := handlers.ErrWebHook
+
+			e.Message = err.Error()
+
+			return e
 
 		}
 

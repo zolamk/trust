@@ -21,4 +21,5 @@ type Mutation {
   confirm_reset(token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!
+  logout: Boolean
 }

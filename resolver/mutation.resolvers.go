@@ -5,6 +5,7 @@ package resolver
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/zolamk/trust/graph/generated"
 	"github.com/zolamk/trust/handlers"
@@ -216,6 +217,14 @@ func (r *mutationResolver) ResendPhoneConfirmation(ctx context.Context, phone st
 
 func (r *mutationResolver) ResendEmailConfirmation(ctx context.Context, email string) (bool, error) {
 	return anonymous.ResendEmail(r.DB, r.Config, email)
+}
+
+func (r *mutationResolver) Logout(ctx context.Context) (*bool, error) {
+
+	writer := ctx.Value(middleware.WriterKey).(http.ResponseWriter)
+
+	return user.Logout(r.DB, r.Config, writer)
+
 }
 
 // Mutation returns generated.MutationResolver implementation.

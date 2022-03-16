@@ -79,7 +79,11 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 	}
 
 	if res.StatusCode >= 400 {
-		return nil, errors.New("webhook error")
+
+		message := fmt.Sprintf("webhook error! (%s)", res.Status)
+
+		return nil, errors.New(message)
+
 	}
 
 	if !strings.Contains(res.Header.Get("content-type"), "application/json") {
