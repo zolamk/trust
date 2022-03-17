@@ -16,14 +16,9 @@ func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, 
 
 	if config.AdminOnlyList {
 
-		is_admin, err := token.HasAdminRole()
+		has_access := token.HasAdminRole() || token.HasReadRole()
 
-		if err != nil {
-			logrus.Error(err)
-			return users, handlers.ErrInternal
-		}
-
-		if !is_admin {
+		if !has_access {
 			return users, handlers.ErrAdminOnly
 		}
 

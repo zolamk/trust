@@ -50,6 +50,7 @@ Defines which domain the access token will be sent to by the browser, specifical
 > The `Domain` attribute specifies which hosts can receive a cookie. If unspecified, the attribute defaults to the same host that set the cookie, _excluding subdomains_. If `Domain` _is_ specified, then subdomains are always included. Therefore, specifying `Domain` is less restrictive than omitting it.
 >
 > [https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define\_where\_cookies\_are\_sent](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define\_where\_cookies\_are\_sent)
+> 
 
 ### admin\_only\_list
 
@@ -60,6 +61,17 @@ Default - **true**
 {% endhint %}
 
 Determines whether non admin users can list users specifically whether non admin users can run the `users` and `user` graphql queries, setting this option to `false` will allow normal users to list user data
+
+### admin\_roles
+
+{% hint style="hint" %}
+Type - Array
+
+Default - ["trust:admin"]
+
+{% endhint %}
+
+Determines which roles are allowed to perform admin actions.
 
 ### change\_template
 
@@ -408,6 +420,17 @@ Default - **1995**
 {% endhint %}
 
 Determines what port trust will bind to
+
+### read\_only\_roles
+
+{% hint style="info" %}
+Type - Array
+
+Default - ["trust:read"]
+
+{% endhint %}
+
+Determines read only roles, specifically if a jwt generated for user contains any of the roles specified they will be able to read user data
 
 ### recovery\_template
 

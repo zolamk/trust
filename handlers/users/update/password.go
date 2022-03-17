@@ -14,12 +14,7 @@ import (
 
 func UpdatePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, password string, log_data *middleware.LogData) (*model.User, error) {
 
-	is_admin, err := token.HasAdminRole()
-
-	if err != nil {
-		logrus.Error(err)
-		return nil, handlers.ErrInternal
-	}
+	is_admin := token.HasAdminRole()
 
 	if !is_admin {
 		return nil, handlers.ErrAdminOnly
@@ -35,7 +30,7 @@ func UpdatePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, id strin
 
 	user := &model.User{}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 
 		if tx := db.Find(user, "id = ?", id); tx.Error != nil {
 

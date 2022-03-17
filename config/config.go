@@ -137,7 +137,8 @@ type Config struct {
 	SocialRedirectPage        string           `json:"social_redirect_page"`
 	CustomDataSchema          map[string]Field `json:"custom_data_schema"`
 	MetadataPath              *JSONPath        `json:"metadata_path"`
-	AdminRoleName             string           `json:"admin_role_name"`
+	AdminRoles                []string         `json:"admin_roles"`
+	ReadOnlyRoles             []string         `json:"read_only_roles"`
 	RolesPath                 JSONPath         `json:"roles_path"`
 }
 
@@ -160,7 +161,8 @@ func New(path string) (*Config, error) {
 	default_change_sms, _ := parseStringTemplate("Phone Change Code -  {{ phone_change_token }}")
 
 	config := Config{
-		AdminRoleName: "trust:admin",
+		AdminRoles:    []string{"trust:admin"},
+		ReadOnlyRoles: []string{"trust:read"},
 		DisableSignup: false,
 		Facebook: SocialConfig{
 			Enabled: false,

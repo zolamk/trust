@@ -78,32 +78,63 @@ func (j *JWT) Sign() (string, error) {
 
 }
 
-func (j *JWT) HasAdminRole() (bool, error) {
+func (j *JWT) roles() []interface{} {
+
+	roles := []interface{}{}
 
 	if j.Metadata == nil {
-		return false, nil
+		return roles
 	}
 
 	results := j.config.RolesPath.Get(*j.Metadata)
 
-	if len(results) == 0 {
-		return false, nil
-	}
-
 	switch results[0].(type) {
 	case []interface{}:
+		roles = results[0].([]interface{})
+	default:
+		return roles
+	}
 
-		roles := results[0].([]interface{})
+	return roles
 
-		for _, v := range roles {
+}
 
-			if v == j.config.AdminRoleName {
-				return true, nil
+func (j *JWT) HasReadRole() bool {
+
+	roles := j.roles()
+
+	for _, v := range roles {
+
+		for _, r := range j.config.ReadOnlyRoles {
+
+			if v == r {
+				return true
 			}
 
 		}
+
 	}
 
-	return false, nil
+	return false
+
+}
+
+func (j *JWT) HasAdminRole() bool {
+
+	roles := j.roles()
+
+	for _, v := range roles {
+
+		for _, r := range j.config.AdminRoles {
+
+			if v == r {
+				return true
+			}
+
+		}
+
+	}
+
+	return false
 
 }

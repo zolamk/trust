@@ -14,14 +14,9 @@ func UsersCount(db *gorm.DB, config *config.Config, token *jwt.JWT, where map[st
 
 	if config.AdminOnlyList {
 
-		is_admin, err := token.HasAdminRole()
+		has_access := token.HasAdminRole() || token.HasReadRole()
 
-		if err != nil {
-			logrus.Error(err)
-			return 0, handlers.ErrInternal
-		}
-
-		if !is_admin {
+		if !has_access {
 			return 0, handlers.ErrAdminOnly
 		}
 

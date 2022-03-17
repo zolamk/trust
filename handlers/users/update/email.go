@@ -15,12 +15,7 @@ func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 	user := &model.User{}
 
-	is_admin, err := token.HasAdminRole()
-
-	if err != nil {
-		logrus.Error(err)
-		return nil, handlers.ErrInternal
-	}
+	is_admin := token.HasAdminRole()
 
 	if !is_admin {
 		return nil, handlers.ErrAdminOnly
@@ -30,7 +25,7 @@ func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 		return nil, handlers.ErrCantChangeOwnAccount
 	}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 
 		res := tx.First(user, "email = ?", new_email)
 

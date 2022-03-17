@@ -21,12 +21,7 @@ func InvitePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, name string
 		return nil, handlers.ErrInvalidPhone
 	}
 
-	is_admin, err := token.HasAdminRole()
-
-	if err != nil {
-		logrus.Error(err)
-		return nil, handlers.ErrInternal
-	}
+	is_admin := token.HasAdminRole()
 
 	if !is_admin {
 		return nil, handlers.ErrAdminOnly
@@ -34,7 +29,7 @@ func InvitePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, name string
 
 	user := &model.User{}
 
-	err = db.Transaction(func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 
 		if tx := db.First(user, "phone = ?", phone); tx.Error == nil {
 
