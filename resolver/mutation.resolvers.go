@@ -220,11 +220,9 @@ func (r *mutationResolver) ResendEmailConfirmation(ctx context.Context, email st
 }
 
 func (r *mutationResolver) Logout(ctx context.Context) (*bool, error) {
-
 	writer := ctx.Value(middleware.WriterKey).(http.ResponseWriter)
 
 	return user.Logout(r.DB, r.Config, writer)
-
 }
 
 // Mutation returns generated.MutationResolver implementation.

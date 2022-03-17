@@ -1,6 +1,9 @@
 package users
 
 import (
+	"log"
+
+	"github.com/jackc/pgconn"
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
@@ -34,8 +37,25 @@ func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, 
 	logrus.WithField("params", params).Debug(*query)
 
 	if tx := db.Raw(*query, params...).Scan(&users); tx.Error != nil {
+
 		logrus.Error(tx.Error)
+
+		if pe, ok := tx.Error.(*pgconn.PgError); ok {
+
+			log.Println(pe.Code)
+
+			err := handlers.ErrDataException
+
+			switch pe.Code {
+			case "22007", "22008", "22P02":
+				err.Message = pe.Message
+				return users, err
+			}
+
+		}
+
 		return users, handlers.ErrInternal
+
 	}
 
 	return users, nil

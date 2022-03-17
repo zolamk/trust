@@ -46,7 +46,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 			return handlers.ErrPhoneNotConfirmed
 		}
 
-		if user.IncorrectLoginAttempts >= config.LockoutPolicy.Attempts {
+		if user.IncorrectLoginAttempts >= int(config.LockoutPolicy.Attempts) {
 
 			now := time.Now()
 
@@ -90,7 +90,7 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 
 				err.Extensions["password_set"] = user.Password != nil
 
-				err.Extensions["remaining_attempts"] = config.LockoutPolicy.Attempts - user.IncorrectLoginAttempts
+				err.Extensions["remaining_attempts"] = int(config.LockoutPolicy.Attempts) - user.IncorrectLoginAttempts
 
 				return handlers.ErrIncorrectUsernameOrPassword
 

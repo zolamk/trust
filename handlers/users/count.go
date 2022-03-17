@@ -1,7 +1,10 @@
 package users
 
 import (
+	"log"
+
 	"github.com/doug-martin/goqu/v9"
+	"github.com/jackc/pgconn"
 	"github.com/sirupsen/logrus"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
@@ -37,6 +40,20 @@ func UsersCount(db *gorm.DB, config *config.Config, token *jwt.JWT, where map[st
 	if tx := db.Raw(query, params...).Scan(&count); tx.Error != nil {
 
 		logrus.Error(tx.Error)
+
+		if pe, ok := tx.Error.(*pgconn.PgError); ok {
+
+			log.Println(pe.Code)
+
+			err := handlers.ErrDataException
+
+			switch pe.Code {
+			case "22007", "22008", "22P02":
+				err.Message = pe.Message
+				return 0, err
+			}
+
+		}
 
 		return 0, handlers.ErrInternal
 

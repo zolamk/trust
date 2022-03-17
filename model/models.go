@@ -27,6 +27,40 @@ type CreateUserForm struct {
 	Data     Object  `json:"data"`
 }
 
+type FloatExpression struct {
+	// Equals value
+	Eq *float64 `json:"_eq"`
+	// Does not equal value
+	Neq *float64 `json:"_neq"`
+	// Is greater than value
+	Gt *float64 `json:"_gt"`
+	// Is greater than or equals value
+	Gte *float64 `json:"_gte"`
+	// Is value null (true) or not null (false)
+	IsNull *bool `json:"_is_null"`
+	// Is lesser than value
+	Lt *float64 `json:"_lt"`
+	// Is lesser than or equals value
+	Lte *float64 `json:"_lte"`
+}
+
+type IntExpression struct {
+	// Equals value
+	Eq *int `json:"_eq"`
+	// Does not equal value
+	Neq *int `json:"_neq"`
+	// Is greater than value
+	Gt *int `json:"_gt"`
+	// Is greater than or equals value
+	Gte *int `json:"_gte"`
+	// Is value null (true) or not null (false)
+	IsNull *bool `json:"_is_null"`
+	// Is lesser than value
+	Lt *int `json:"_lt"`
+	// Is lesser than or equals value
+	Lte *int `json:"_lte"`
+}
+
 type LoginResponse struct {
 	AccessToken string `json:"access_token"`
 	ID          string `json:"id"`
@@ -58,6 +92,23 @@ type StringExpression struct {
 	Nlike *string `json:"_nlike"`
 	// Value not matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
 	Nilike *string `json:"_nilike"`
+	// Is value null (true) or not null (false)
+	IsNull *bool `json:"_is_null"`
+	// Is lesser than value
+	Lt *string `json:"_lt"`
+	// Is lesser than or equals value
+	Lte *string `json:"_lte"`
+}
+
+type TimeExpression struct {
+	// Equals value
+	Eq *string `json:"_eq"`
+	// Does not equal value
+	Neq *string `json:"_neq"`
+	// Is greater than value
+	Gt *string `json:"_gt"`
+	// Is greater than or equals value
+	Gte *string `json:"_gte"`
 	// Is value null (true) or not null (false)
 	IsNull *bool `json:"_is_null"`
 	// Is lesser than value

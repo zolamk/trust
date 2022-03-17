@@ -13,16 +13,17 @@ type user {
   recovery_token_sent_at: Time
   email_change_token_sent_at: Time
   phone_change_token_sent_at: Time
-  phone_changed_at: Time
-  email_changed_at: Time
   last_signin_at: Time
   created_at: Time!
-  updated_at: Time!
+  updated_at: Time
   invitation_token_sent_at: Time
   invitation_accepted_at: Time
-  new_phone: String
   new_email: String
+  new_phone: String
+  phone_changed_at: Time
+  email_changed_at: Time
   password_changed_at: Time
+  incorrect_login_attempts: Int!
   last_incorrect_login_attempt_at: Time
   data: object
 }

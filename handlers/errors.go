@@ -5,6 +5,12 @@ import (
 )
 
 var (
+	ErrDataException = &gqlerror.Error{
+		Message: "data error",
+		Extensions: map[string]interface{}{
+			"code": "data_exception",
+		},
+	}
 	ErrInternal = &gqlerror.Error{
 		Message: "internal error server",
 		Extensions: map[string]interface{}{
