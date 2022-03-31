@@ -98,6 +98,10 @@ func Run(config_file string, files embed.FS) {
 
 	router.Handle("/authorize/callback", provider.Callback(db, config)).Methods("GET")
 
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods("GET")
+
 	http.Handle("/", router)
 
 	host := fmt.Sprintf("%s:%d", config.Host, config.Port)

@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"os"
 )
 
@@ -20,6 +21,10 @@ func parsePKCS8PrivateKey(path string) (interface{}, error) {
 	}
 
 	block, _ := pem.Decode(raw_private_key)
+
+	if block == nil {
+		return nil, errors.New("private key block could not be decoded")
+	}
 
 	if private_key, err = x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
 		if private_key, err = x509.ParsePKCS1PrivateKey(block.Bytes); err != nil {
@@ -45,6 +50,10 @@ func parsePKIXPublicKey(path string) (interface{}, error) {
 
 	block, _ := pem.Decode(raw_public_key)
 
+	if block == nil {
+		return nil, errors.New("public key block could not be decoded")
+	}
+
 	if public_key, err = x509.ParsePKIXPublicKey(block.Bytes); err != nil {
 		return nil, err
 	}
@@ -66,6 +75,10 @@ func parseECPrivateKey(path string) (*ecdsa.PrivateKey, error) {
 	}
 
 	block, _ := pem.Decode(raw_private_key)
+
+	if block == nil {
+		return nil, errors.New("private key block could not be decoded")
+	}
 
 	if private_key, err = x509.ParseECPrivateKey(block.Bytes); err != nil {
 		return nil, err
