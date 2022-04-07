@@ -114,9 +114,9 @@ func Callback(db *gorm.DB, config *config.Config) http.HandlerFunc {
 
 		err = db.Transaction(func(tx *gorm.DB) error {
 
-			if tx := tx.First(user, "email = ?", user_data.Email); tx.Error != nil {
+			if err = tx.First(user, "email = ?", user_data.Email).Error; err != nil {
 
-				if tx.Error != gorm.ErrRecordNotFound {
+				if err != gorm.ErrRecordNotFound {
 
 					logrus.Error(tx.Error)
 
@@ -197,7 +197,7 @@ func Callback(db *gorm.DB, config *config.Config) http.HandlerFunc {
 				UserID: user.ID,
 			}
 
-			if err := refresh_token.Create(db); err != nil {
+			if err := refresh_token.Create(tx); err != nil {
 
 				logrus.Error(err)
 
