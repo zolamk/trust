@@ -103,7 +103,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*model.Us
 	return users.DeleteUser(r.DB, r.Config, jwt, id)
 }
 
-func (r *mutationResolver) UpdateEmail(ctx context.Context, id string, email string, confirm *bool) (*model.User, error) {
+func (r *mutationResolver) UpdateEmail(ctx context.Context, id string, email string, confirm bool) (*model.User, error) {
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -115,7 +115,7 @@ func (r *mutationResolver) UpdateEmail(ctx context.Context, id string, email str
 	return update.UpdateEmail(r.DB, r.Config, jwt, id, email, confirm, &log_data)
 }
 
-func (r *mutationResolver) UpdatePhone(ctx context.Context, id string, phone string, confirm *bool) (*model.User, error) {
+func (r *mutationResolver) UpdatePhone(ctx context.Context, id string, phone string, confirm bool) (*model.User, error) {
 	jwt, ok := ctx.Value(middleware.TokenKey).(*jwt.JWT)
 
 	if !ok {
@@ -199,10 +199,16 @@ func (r *mutationResolver) ConfirmEmailChange(ctx context.Context, token string)
 	return user.ConfirmEmailChange(r.DB, r.Config, jwt, token, &log_data)
 }
 
-func (r *mutationResolver) Reset(ctx context.Context, username string) (bool, error) {
+func (r *mutationResolver) ResetByEmail(ctx context.Context, email string) (bool, error) {
 	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
 
-	return reset.Reset(r.DB, r.Config, username, &log_data)
+	return reset.ResetByEmail(r.DB, r.Config, email, &log_data)
+}
+
+func (r *mutationResolver) ResetByPhone(ctx context.Context, phone string) (bool, error) {
+	log_data := ctx.Value(middleware.LogDataKey).(middleware.LogData)
+
+	return reset.ResetByPhone(r.DB, r.Config, phone, &log_data)
 }
 
 func (r *mutationResolver) ConfirmReset(ctx context.Context, token string, password string) (bool, error) {

@@ -22,8 +22,7 @@ Trust is configurable using a json file, a minimal json configuration file will 
     "jwt": {
         "algorithm": "HS256",
         "secret": "super_duper_tipper_secret"
-    },
-    "ip2location_db_path": "./test/ip2location-lite-db3.ipv6.bin"
+    }
 }
 ```
 
@@ -267,16 +266,6 @@ Phone Invitation Code - {{ phone_invitation_token }}
 
 phone invitation template will be passed `site_url`, `phone_invitation_token`, `instance_url`
 
-### ip2location\_db\_path
-
-{% hint style="info" %}
-Type - String
-
-Required
-{% endhint %}
-
-Trust uses [IP2Location](https://lite.ip2location.com/ip2location-lite) lite database to determine a users information such as `Country`, `Region`, `City` for user account audit logs, make sure you are using `DB3-LITE` version of the database in order to get the neccessary information.
-
 ### jwt
 
 {% hint style="info" %}
@@ -469,6 +458,32 @@ Type - String
 
 Default - **trust\_refresh\_token**
 {% endhint %}
+
+determines the name of the refresh token cookie
+
+### refresh\_token\_cookie\_domain**
+
+{% hint style="info" %}
+Type - String
+
+{% endhint %}
+
+Defines which domain the refresh token will be sent to by the browser, specifically sets the `Domain` attribute of the cookie
+
+> The `Domain` attribute specifies which hosts can receive a cookie. If unspecified, the attribute defaults to the same host that set the cookie, _excluding subdomains_. If `Domain` _is_ specified, then subdomains are always included. Therefore, specifying `Domain` is less restrictive than omitting it.
+>
+> [https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define\_where\_cookies\_are\_sent](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define\_where\_cookies\_are\_sent)
+> 
+### set\_cookies
+
+{% hint style="info" %}
+Type - string
+
+Default - **true**
+
+{% endhint %}
+
+determines if access token and refresh token cookies should be set
 
 ### site\_url
 

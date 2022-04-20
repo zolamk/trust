@@ -14,8 +14,11 @@ func Logs(db *gorm.DB, config *config.Config, token *jwt.JWT, offset, limit int)
 	logs := []*model.Log{}
 
 	if tx := db.Find(&logs, "user_id = ?", token.Subject).Offset(offset).Limit(limit); tx.Error != nil {
+
 		logrus.Error(tx.Error)
+
 		return logs, handlers.ErrInternal
+
 	}
 
 	return logs, nil

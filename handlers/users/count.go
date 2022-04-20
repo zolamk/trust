@@ -1,8 +1,6 @@
 package users
 
 import (
-	"log"
-
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jackc/pgconn"
 	"github.com/sirupsen/logrus"
@@ -20,7 +18,9 @@ func UsersCount(db *gorm.DB, config *config.Config, token *jwt.JWT, where map[st
 		has_access := token.HasAdminRole() || token.HasReadRole()
 
 		if !has_access {
+
 			return 0, handlers.ErrAdminOnly
+
 		}
 
 	}
@@ -32,25 +32,29 @@ func UsersCount(db *gorm.DB, config *config.Config, token *jwt.JWT, where map[st
 	query, params, err := goqu.From("trust.users").Prepared(true).Select(goqu.COUNT("*")).Where(complied_where).ToSQL()
 
 	if err != nil {
+
 		return 0, handlers.ErrInternal
+
 	}
 
 	logrus.WithField("params", params).Debug(query)
 
-	if tx := db.Raw(query, params...).Scan(&count); tx.Error != nil {
+	if err := db.Raw(query, params...).Scan(&count).Error; err != nil {
 
-		logrus.Error(tx.Error)
+		logrus.Error(err)
 
-		if pe, ok := tx.Error.(*pgconn.PgError); ok {
-
-			log.Println(pe.Code)
+		if pe, ok := err.(*pgconn.PgError); ok {
 
 			err := handlers.ErrDataException
 
 			switch pe.Code {
+
 			case "22007", "22008", "22P02":
+
 				err.Message = pe.Message
+
 				return 0, err
+
 			}
 
 		}

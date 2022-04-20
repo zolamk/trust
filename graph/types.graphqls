@@ -19,6 +19,7 @@ input signup_form {
 
 type login_response {
   access_token: String!
+  refresh_token: String!
   id: String!
 }
 

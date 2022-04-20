@@ -28,7 +28,7 @@ func ConfirmPhoneChange(db *gorm.DB, config *config.Config, token *jwt.JWT, phon
 
 		}
 
-		log := model.NewLog(user.ID, "phone change confirmed", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "phone change confirmed", log_data.IP, nil, log_data.UserAgent)
 
 		if err := user.ConfirmPhoneChange(tx, log); err != nil {
 

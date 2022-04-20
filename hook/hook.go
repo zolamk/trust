@@ -75,7 +75,9 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 	res, err := http.DefaultClient.Do(req)
 
 	if err != nil {
+
 		return nil, err
+
 	}
 
 	if res.StatusCode >= 400 {
@@ -87,7 +89,9 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 	}
 
 	if !strings.Contains(res.Header.Get("content-type"), "application/json") {
+
 		return nil, nil
+
 	}
 
 	var decoder oj.Parser
@@ -95,10 +99,15 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 	var hook_response interface{}
 
 	if hook_response, err = decoder.ParseReader(res.Body); err != nil {
+
 		if err == io.EOF {
+
 			return nil, nil
+
 		}
+
 		return nil, err
+
 	}
 
 	if config.MetadataPath != nil {
@@ -106,7 +115,9 @@ func TriggerHook(user_id string, event string, payload *map[string]interface{}, 
 		result := config.MetadataPath.Get(hook_response)
 
 		if len(result) > 0 {
+
 			return &result[0], nil
+
 		}
 
 		return nil, nil

@@ -22,7 +22,9 @@ func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, 
 		has_access := token.HasAdminRole() || token.HasReadRole()
 
 		if !has_access {
+
 			return users, handlers.ErrAdminOnly
+
 		}
 
 	}
@@ -30,8 +32,11 @@ func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, 
 	query, params, err := compilers.CompileQuery(fields, where, order_by, offset, limit)
 
 	if err != nil {
+
 		logrus.Error(err)
+
 		return nil, handlers.ErrInternal
+
 	}
 
 	logrus.WithField("params", params).Debug(*query)
@@ -47,9 +52,13 @@ func Users(db *gorm.DB, config *config.Config, token *jwt.JWT, fields []string, 
 			err := handlers.ErrDataException
 
 			switch pe.Code {
+
 			case "22007", "22008", "22P02":
+
 				err.Message = pe.Message
+
 				return users, err
+
 			}
 
 		}

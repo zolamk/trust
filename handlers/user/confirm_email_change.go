@@ -30,7 +30,7 @@ func ConfirmEmailChange(db *gorm.DB, config *config.Config, token *jwt.JWT, emai
 
 		}
 
-		log := model.NewLog(user.ID, "email change confirmed", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "email change confirmed", log_data.IP, nil, log_data.UserAgent)
 
 		if err := user.ConfirmEmailChange(tx, log); err != nil {
 

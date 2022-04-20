@@ -7,10 +7,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
-	"github.com/zolamk/trust/hook"
-	"github.com/zolamk/trust/jwt"
+	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
@@ -150,84 +148,15 @@ func Callback(db *gorm.DB, config *config.Config) http.HandlerFunc {
 
 			}
 
-			hook_user := *user
-
-			if !hook_user.EmailConfirmed {
-				hook_user.Email = nil
-			}
-
-			if !hook_user.PhoneConfirmed {
-				hook_user.Phone = nil
-			}
-
-			payload := &map[string]interface{}{
-				"event":    "login",
-				"provider": oauth_provider.name(),
-				"user":     hook_user,
-			}
-
-			hook_response, err := hook.TriggerHook(hook_user.ID, "login", payload, config)
+			signedToken, refreshToken, err := handlers.SignIn(user, log_data.IP, log_data.UserAgent, tx, res)
 
 			if err != nil {
 
-				logrus.Error(err)
-
 				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
 
-				return err
-
 			}
 
-			jwt := jwt.New(state.Provider, user, hook_response, config)
-
-			signed_token, err := jwt.Sign()
-
-			if err != nil {
-
-				logrus.Error(err)
-
-				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
-
-				return err
-
-			}
-
-			refresh_token := model.RefreshToken{
-				Token:  randstr.String(50),
-				UserID: user.ID,
-			}
-
-			if err := refresh_token.Create(tx); err != nil {
-
-				logrus.Error(err)
-
-				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
-
-				return err
-
-			}
-
-			log := model.NewLog(user.ID, "login", log_data.IP, nil, log_data.Location, log_data.UserAgent)
-
-			if err := user.SignedIn(tx, log); err != nil {
-
-				logrus.Error(err)
-
-				http.Redirect(res, req, internal_redirect, http.StatusTemporaryRedirect)
-
-				return err
-
-			}
-
-			cookie := &http.Cookie{
-				HttpOnly: true,
-				Name:     config.RefreshTokenCookieName,
-				Value:    refresh_token.Token,
-			}
-
-			http.SetCookie(res, cookie)
-
-			redirect_url := fmt.Sprintf("%s/%s?access_token=%s&id=%s", config.SiteURL, config.SocialRedirectPage, signed_token, user.ID)
+			redirect_url := fmt.Sprintf("%s/%s?access_token=%s&refresh_token=%s&id=%s", config.SiteURL, config.SocialRedirectPage, signedToken, refreshToken, user.ID)
 
 			http.Redirect(res, req, redirect_url, http.StatusTemporaryRedirect)
 

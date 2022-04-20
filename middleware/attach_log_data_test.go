@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/zolamk/trust/config"
 )
 
 func TestAttachLogData(t *testing.T) {
@@ -21,8 +20,6 @@ func TestAttachLogData(t *testing.T) {
 
 	req.Header.Add("x-real-ip", real_ip)
 
-	config, _ := config.New("../test/configs/complete.conf")
-
 	handler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 
 		log_data, ok := r.Context().Value(LogDataKey).(LogData)
@@ -33,7 +30,7 @@ func TestAttachLogData(t *testing.T) {
 
 	})
 
-	AttachLogData(config.IP2LocationDB)(handler).ServeHTTP(res, req)
+	AttachLogData(handler).ServeHTTP(res, req)
 
 	req.Header.Del("x-real-ip")
 
@@ -51,7 +48,7 @@ func TestAttachLogData(t *testing.T) {
 
 	})
 
-	AttachLogData(config.IP2LocationDB)(handler).ServeHTTP(res, req)
+	AttachLogData(handler).ServeHTTP(res, req)
 
 	req.Header.Del("x-real-ip")
 
@@ -69,7 +66,7 @@ func TestAttachLogData(t *testing.T) {
 
 	})
 
-	AttachLogData(config.IP2LocationDB)(handler).ServeHTTP(res, req)
+	AttachLogData(handler).ServeHTTP(res, req)
 
 	req.Header.Del("x-forwarded-for")
 
@@ -87,6 +84,6 @@ func TestAttachLogData(t *testing.T) {
 
 	})
 
-	AttachLogData(config.IP2LocationDB)(handler).ServeHTTP(res, req)
+	AttachLogData(handler).ServeHTTP(res, req)
 
 }

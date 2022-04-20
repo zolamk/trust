@@ -47,7 +47,7 @@ func ChangePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, old_pass
 
 		}
 
-		log := model.NewLog(user.ID, "password changed", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "password changed", log_data.IP, nil, log_data.UserAgent)
 
 		if err := user.ChangePassword(tx, log, new_password, int(config.PasswordHashCost)); err != nil {
 

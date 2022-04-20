@@ -4,3 +4,4 @@ private*
 public*
 .conf
 dist/
+tmp/

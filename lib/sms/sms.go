@@ -8,7 +8,7 @@ import (
 	"github.com/zolamk/trust/config"
 )
 
-func SendSMS(template *config.TemplateConfig, to *string, context *map[string]string, config *config.SMSConfig) error {
+func SendSMS(template *config.TemplateConfig, to string, context map[string]string, config *config.SMSConfig) error {
 
 	var message string
 

@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, phone string, confirm *bool, log_data *middleware.LogData) (*model.User, error) {
+func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, new_phone string, confirm bool, log_data *middleware.LogData) (*model.User, error) {
 
 	user := &model.User{}
 
@@ -27,7 +27,7 @@ func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 	err := db.Transaction(func(tx *gorm.DB) error {
 
-		err := tx.First(user, "phone = ?", phone).Error
+		err := tx.First(user, "phone = ?", new_phone).Error
 
 		if err != nil {
 
@@ -67,15 +67,15 @@ func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 		}
 
-		if !config.PhoneRule.MatchString(phone) {
+		if !config.PhoneRule.MatchString(new_phone) {
 
 			return handlers.ErrInvalidPhone
 
 		}
 
-		log := model.NewLog(user.ID, "phone change inititated by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "phone change inititated by admin", log_data.IP, &token.Subject, log_data.UserAgent)
 
-		if err := user.ChangePhone(tx, log, phone); err != nil {
+		if err := user.ChangePhone(tx, log, new_phone); err != nil {
 
 			logrus.Error(err)
 
@@ -83,9 +83,9 @@ func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 		}
 
-		if confirm != nil && *confirm {
+		if confirm {
 
-			log := model.NewLog(user.ID, "phone change confirmed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+			log := model.NewLog(user.ID, "phone change confirmed by admin", log_data.IP, &token.Subject, log_data.UserAgent)
 
 			if err := user.ConfirmPhoneChange(tx, log); err != nil {
 
@@ -99,14 +99,20 @@ func UpdatePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 		}
 
-		context := &map[string]string{
+		context := map[string]string{
 			"site_url":           config.SiteURL,
 			"phone_change_token": *user.PhoneChangeToken,
-			"new_phone":          *user.NewPhone,
+			"new_phone":          new_phone,
 			"instance_url":       config.InstanceURL,
 		}
 
-		if err := sms.SendSMS(config.ChangeTemplate, user.NewPhone, context, config.SMS); err != nil {
+		if user.Name != nil {
+
+			context["name"] = *user.Name
+
+		}
+
+		if err := sms.SendSMS(config.ChangeTemplate, new_phone, context, config.SMS); err != nil {
 
 			logrus.Error(err)
 

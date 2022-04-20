@@ -5,15 +5,15 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func SendEmail(template *config.TemplateConfig, context *map[string]string, to *string, config *config.Config) error {
+func SendEmail(template *config.TemplateConfig, context map[string]string, to string, config *config.SMTPConfig) error {
 
-	mailer := gomail.NewDialer(config.SMTP.Host, int(config.SMTP.Port), config.SMTP.Username, config.SMTP.Password)
+	mailer := gomail.NewDialer(config.Host, int(config.Port), config.Username, config.Password)
 
 	mail := gomail.NewMessage()
 
-	mail.SetHeader("From", config.SMTP.Email)
+	mail.SetHeader("From", config.Email)
 
-	mail.SetHeader("To", *to)
+	mail.SetHeader("To", to)
 
 	mail.SetHeader("Subject", template.Subject)
 

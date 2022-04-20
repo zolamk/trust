@@ -46,13 +46,19 @@ func UpdatePassword(db *gorm.DB, config *config.Config, token *jwt.JWT, id strin
 
 		}
 
-		user.SetPassword(password, int(config.PasswordHashCost))
+		if err := user.SetPassword(password, int(config.PasswordHashCost)); err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
 
 		now := time.Now()
 
 		user.PasswordChangedAt = &now
 
-		log := model.NewLog(user.ID, "password changed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "password changed by admin", log_data.IP, &token.Subject, log_data.UserAgent)
 
 		if err := user.ChangePassword(tx, log, password, int(config.PasswordHashCost)); err != nil {
 

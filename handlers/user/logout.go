@@ -14,6 +14,8 @@ func Logout(db *gorm.DB, config *config.Config, writer http.ResponseWriter) (*bo
 		HttpOnly: true,
 		Secure:   true,
 		Name:     config.RefreshTokenCookieName,
+		Domain:   config.RefreshTokenCookieDomain,
+		Path:     "/",
 		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Unix(0, 0),
 		Value:    "",
@@ -29,6 +31,7 @@ func Logout(db *gorm.DB, config *config.Config, writer http.ResponseWriter) (*bo
 		Value:    "",
 		Expires:  time.Unix(0, 0),
 		Domain:   config.AccessTokenCookieDomain,
+		Path:     "/",
 	}
 
 	http.SetCookie(writer, cookie)

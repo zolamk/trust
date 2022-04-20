@@ -24,8 +24,6 @@ input users_order_by {
   last_signin_at: order_direction
   created_at: order_direction
   updated_at: order_direction
-  invitation_token_sent_at: order_direction
-  invitation_accepted_at: order_direction
   new_email: order_direction
   new_phone: order_direction
   phone_changed_at: order_direction

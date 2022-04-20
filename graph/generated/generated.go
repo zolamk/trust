@@ -62,11 +62,12 @@ type ComplexityRoot struct {
 		Logout                  func(childComplexity int) int
 		ResendEmailConfirmation func(childComplexity int, email string) int
 		ResendPhoneConfirmation func(childComplexity int, phone string) int
-		Reset                   func(childComplexity int, username string) int
+		ResetByEmail            func(childComplexity int, email string) int
+		ResetByPhone            func(childComplexity int, phone string) int
 		Signup                  func(childComplexity int, object model.SignupForm) int
-		UpdateEmail             func(childComplexity int, id string, email string, confirm *bool) int
+		UpdateEmail             func(childComplexity int, id string, email string, confirm bool) int
 		UpdatePassword          func(childComplexity int, id string, password string) int
-		UpdatePhone             func(childComplexity int, id string, phone string, confirm *bool) int
+		UpdatePhone             func(childComplexity int, id string, phone string, confirm bool) int
 		UpdateUser              func(childComplexity int, id string, name *string, avatar *string) int
 	}
 
@@ -82,28 +83,16 @@ type ComplexityRoot struct {
 
 	Log struct {
 		At        func(childComplexity int) int
-		Bot       func(childComplexity int) int
-		City      func(childComplexity int) int
-		Country   func(childComplexity int) int
-		Desktop   func(childComplexity int) int
-		Device    func(childComplexity int) int
 		Event     func(childComplexity int) int
 		IPAddress func(childComplexity int) int
-		Mobile    func(childComplexity int) int
-		Name      func(childComplexity int) int
-		OS        func(childComplexity int) int
-		OSVersion func(childComplexity int) int
-		Region    func(childComplexity int) int
-		String    func(childComplexity int) int
-		Tablet    func(childComplexity int) int
-		URL       func(childComplexity int) int
+		UserAgent func(childComplexity int) int
 		UserID    func(childComplexity int) int
-		Version   func(childComplexity int) int
 	}
 
 	Login_response struct {
-		AccessToken func(childComplexity int) int
-		ID          func(childComplexity int) int
+		AccessToken  func(childComplexity int) int
+		ID           func(childComplexity int) int
+		RefreshToken func(childComplexity int) int
 	}
 
 	User struct {
@@ -118,8 +107,6 @@ type ComplexityRoot struct {
 		EmailConfirmedAt             func(childComplexity int) int
 		ID                           func(childComplexity int) int
 		IncorrectLoginAttempts       func(childComplexity int) int
-		InvitationAcceptedAt         func(childComplexity int) int
-		InvitationTokenSentAt        func(childComplexity int) int
 		LastIncorrectLoginAttemptAt  func(childComplexity int) int
 		LastSigninAt                 func(childComplexity int) int
 		Name                         func(childComplexity int) int
@@ -148,15 +135,16 @@ type MutationResolver interface {
 	CreateUser(ctx context.Context, object model.CreateUserForm) (*model.User, error)
 	UpdateUser(ctx context.Context, id string, name *string, avatar *string) (*model.User, error)
 	DeleteUser(ctx context.Context, id string) (*model.User, error)
-	UpdateEmail(ctx context.Context, id string, email string, confirm *bool) (*model.User, error)
-	UpdatePhone(ctx context.Context, id string, phone string, confirm *bool) (*model.User, error)
+	UpdateEmail(ctx context.Context, id string, email string, confirm bool) (*model.User, error)
+	UpdatePhone(ctx context.Context, id string, phone string, confirm bool) (*model.User, error)
 	UpdatePassword(ctx context.Context, id string, password string) (*model.User, error)
 	ChangePassword(ctx context.Context, oldPassword string, newPassword string) (*model.User, error)
 	ChangeEmail(ctx context.Context, email string) (*model.User, error)
 	ChangePhone(ctx context.Context, phone string) (*model.User, error)
 	ConfirmPhoneChange(ctx context.Context, token string) (*model.User, error)
 	ConfirmEmailChange(ctx context.Context, token string) (*model.User, error)
-	Reset(ctx context.Context, username string) (bool, error)
+	ResetByEmail(ctx context.Context, email string) (bool, error)
+	ResetByPhone(ctx context.Context, phone string) (bool, error)
 	ConfirmReset(ctx context.Context, token string, password string) (bool, error)
 	ResendPhoneConfirmation(ctx context.Context, phone string) (bool, error)
 	ResendEmailConfirmation(ctx context.Context, email string) (bool, error)
@@ -190,8 +178,6 @@ type users_order_byResolver interface {
 	LastSigninAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
 	CreatedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
 	UpdatedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
-	InvitationTokenSentAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
-	InvitationAcceptedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
 	NewEmail(ctx context.Context, obj model.Object, data *model.OrderDirection) error
 	NewPhone(ctx context.Context, obj model.Object, data *model.OrderDirection) error
 	PhoneChangedAt(ctx context.Context, obj model.Object, data *model.OrderDirection) error
@@ -415,17 +401,29 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ResendPhoneConfirmation(childComplexity, args["phone"].(string)), true
 
-	case "Mutation.reset":
-		if e.complexity.Mutation.Reset == nil {
+	case "Mutation.reset_by_email":
+		if e.complexity.Mutation.ResetByEmail == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_reset_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_reset_by_email_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.Reset(childComplexity, args["username"].(string)), true
+		return e.complexity.Mutation.ResetByEmail(childComplexity, args["email"].(string)), true
+
+	case "Mutation.reset_by_phone":
+		if e.complexity.Mutation.ResetByPhone == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reset_by_phone_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ResetByPhone(childComplexity, args["phone"].(string)), true
 
 	case "Mutation.signup":
 		if e.complexity.Mutation.Signup == nil {
@@ -449,7 +447,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateEmail(childComplexity, args["id"].(string), args["email"].(string), args["confirm"].(*bool)), true
+		return e.complexity.Mutation.UpdateEmail(childComplexity, args["id"].(string), args["email"].(string), args["confirm"].(bool)), true
 
 	case "Mutation.update_password":
 		if e.complexity.Mutation.UpdatePassword == nil {
@@ -473,7 +471,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdatePhone(childComplexity, args["id"].(string), args["phone"].(string), args["confirm"].(*bool)), true
+		return e.complexity.Mutation.UpdatePhone(childComplexity, args["id"].(string), args["phone"].(string), args["confirm"].(bool)), true
 
 	case "Mutation.update_user":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -568,41 +566,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Log.At(childComplexity), true
 
-	case "log.bot":
-		if e.complexity.Log.Bot == nil {
-			break
-		}
-
-		return e.complexity.Log.Bot(childComplexity), true
-
-	case "log.city":
-		if e.complexity.Log.City == nil {
-			break
-		}
-
-		return e.complexity.Log.City(childComplexity), true
-
-	case "log.country":
-		if e.complexity.Log.Country == nil {
-			break
-		}
-
-		return e.complexity.Log.Country(childComplexity), true
-
-	case "log.desktop":
-		if e.complexity.Log.Desktop == nil {
-			break
-		}
-
-		return e.complexity.Log.Desktop(childComplexity), true
-
-	case "log.device":
-		if e.complexity.Log.Device == nil {
-			break
-		}
-
-		return e.complexity.Log.Device(childComplexity), true
-
 	case "log.event":
 		if e.complexity.Log.Event == nil {
 			break
@@ -617,61 +580,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Log.IPAddress(childComplexity), true
 
-	case "log.mobile":
-		if e.complexity.Log.Mobile == nil {
+	case "log.user_agent":
+		if e.complexity.Log.UserAgent == nil {
 			break
 		}
 
-		return e.complexity.Log.Mobile(childComplexity), true
-
-	case "log.name":
-		if e.complexity.Log.Name == nil {
-			break
-		}
-
-		return e.complexity.Log.Name(childComplexity), true
-
-	case "log.os":
-		if e.complexity.Log.OS == nil {
-			break
-		}
-
-		return e.complexity.Log.OS(childComplexity), true
-
-	case "log.os_version":
-		if e.complexity.Log.OSVersion == nil {
-			break
-		}
-
-		return e.complexity.Log.OSVersion(childComplexity), true
-
-	case "log.region":
-		if e.complexity.Log.Region == nil {
-			break
-		}
-
-		return e.complexity.Log.Region(childComplexity), true
-
-	case "log.string":
-		if e.complexity.Log.String == nil {
-			break
-		}
-
-		return e.complexity.Log.String(childComplexity), true
-
-	case "log.tablet":
-		if e.complexity.Log.Tablet == nil {
-			break
-		}
-
-		return e.complexity.Log.Tablet(childComplexity), true
-
-	case "log.url":
-		if e.complexity.Log.URL == nil {
-			break
-		}
-
-		return e.complexity.Log.URL(childComplexity), true
+		return e.complexity.Log.UserAgent(childComplexity), true
 
 	case "log.user_id":
 		if e.complexity.Log.UserID == nil {
@@ -679,13 +593,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Log.UserID(childComplexity), true
-
-	case "log.version":
-		if e.complexity.Log.Version == nil {
-			break
-		}
-
-		return e.complexity.Log.Version(childComplexity), true
 
 	case "login_response.access_token":
 		if e.complexity.Login_response.AccessToken == nil {
@@ -700,6 +607,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Login_response.ID(childComplexity), true
+
+	case "login_response.refresh_token":
+		if e.complexity.Login_response.RefreshToken == nil {
+			break
+		}
+
+		return e.complexity.Login_response.RefreshToken(childComplexity), true
 
 	case "user.avatar":
 		if e.complexity.User.Avatar == nil {
@@ -777,20 +691,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.IncorrectLoginAttempts(childComplexity), true
-
-	case "user.invitation_accepted_at":
-		if e.complexity.User.InvitationAcceptedAt == nil {
-			break
-		}
-
-		return e.complexity.User.InvitationAcceptedAt(childComplexity), true
-
-	case "user.invitation_token_sent_at":
-		if e.complexity.User.InvitationTokenSentAt == nil {
-			break
-		}
-
-		return e.complexity.User.InvitationTokenSentAt(childComplexity), true
 
 	case "user.last_incorrect_login_attempt_at":
 		if e.complexity.User.LastIncorrectLoginAttemptAt == nil {
@@ -959,20 +859,7 @@ var sources = []*ast.Source{
     event: String!
     at: Time!
     ip_address: String!
-    country: String!
-    region: String!
-    city: String!
-    name: String!
-    version: String!
-    os: String!
-    os_version: String!
-    device: String!
-    mobile: Boolean!
-    tablet: Boolean!
-    desktop: Boolean!
-    bot: Boolean!
-    url: String!
-    string: String!
+    user_agent: String!
 }`, BuiltIn: false},
 	{Name: "graph/mutation.graphqls", Input: `type Mutation {
   signup(object: signup_form!): user!
@@ -985,15 +872,16 @@ var sources = []*ast.Source{
   create_user(object: create_user_form!): user!
   update_user(id: String!, name: String, avatar: String): user!
   delete_user(id: String!): user!
-  update_email(id: String!, email: String!, confirm: Boolean): user!
-  update_phone(id: String!, phone: String!, confirm: Boolean): user!
+  update_email(id: String!, email: String!, confirm: Boolean! = false): user!
+  update_phone(id: String!, phone: String!, confirm: Boolean! = false): user!
   update_password(id: String!, password: String!): user!
   change_password(old_password: String!, new_password: String!): user!
   change_email(email: String!): user!
   change_phone(phone: String!): user!
   confirm_phone_change(token: String!): user!
   confirm_email_change(token: String!): user!
-  reset(username: String!): Boolean!
+  reset_by_email(email: String!): Boolean!
+  reset_by_phone(phone: String!): Boolean!
   confirm_reset(token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!
@@ -1025,8 +913,6 @@ input users_order_by {
   last_signin_at: order_direction
   created_at: order_direction
   updated_at: order_direction
-  invitation_token_sent_at: order_direction
-  invitation_accepted_at: order_direction
   new_email: order_direction
   new_phone: order_direction
   phone_changed_at: order_direction
@@ -1065,6 +951,7 @@ input signup_form {
 
 type login_response {
   access_token: String!
+  refresh_token: String!
   id: String!
 }
 
@@ -1089,8 +976,6 @@ scalar object`, BuiltIn: false},
   last_signin_at: Time
   created_at: Time!
   updated_at: Time
-  invitation_token_sent_at: Time
-  invitation_accepted_at: Time
   new_email: String
   new_phone: String
   phone_changed_at: Time
@@ -1242,8 +1127,6 @@ input users_bool_exp {
   last_signin_at: time_expression
   created_at: time_expression
   updated_at: time_expression
-  invitation_token_sent_at: time_expression
-  invitation_accepted_at: time_expression
   new_email: string_expression
   new_phone: string_expression
   phone_changed_at: time_expression
@@ -1553,18 +1436,33 @@ func (ec *executionContext) field_Mutation_resend_phone_confirmation_args(ctx co
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_reset_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_reset_by_email_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["username"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+	if tmp, ok := rawArgs["email"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["username"] = arg0
+	args["email"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reset_by_phone_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["phone"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("phone"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["phone"] = arg0
 	return args, nil
 }
 
@@ -1604,10 +1502,10 @@ func (ec *executionContext) field_Mutation_update_email_args(ctx context.Context
 		}
 	}
 	args["email"] = arg1
-	var arg2 *bool
+	var arg2 bool
 	if tmp, ok := rawArgs["confirm"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("confirm"))
-		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1661,10 +1559,10 @@ func (ec *executionContext) field_Mutation_update_phone_args(ctx context.Context
 		}
 	}
 	args["phone"] = arg1
-	var arg2 *bool
+	var arg2 bool
 	if tmp, ok := rawArgs["confirm"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("confirm"))
-		arg2, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2324,7 +2222,7 @@ func (ec *executionContext) _Mutation_update_email(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateEmail(rctx, args["id"].(string), args["email"].(string), args["confirm"].(*bool))
+		return ec.resolvers.Mutation().UpdateEmail(rctx, args["id"].(string), args["email"].(string), args["confirm"].(bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2366,7 +2264,7 @@ func (ec *executionContext) _Mutation_update_phone(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdatePhone(rctx, args["id"].(string), args["phone"].(string), args["confirm"].(*bool))
+		return ec.resolvers.Mutation().UpdatePhone(rctx, args["id"].(string), args["phone"].(string), args["confirm"].(bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2635,7 +2533,7 @@ func (ec *executionContext) _Mutation_confirm_email_change(ctx context.Context, 
 	return ec.marshalNuser2ᚖgithubᚗcomᚋzolamkᚋtrustᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_reset(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_reset_by_email(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2652,7 +2550,7 @@ func (ec *executionContext) _Mutation_reset(ctx context.Context, field graphql.C
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_reset_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_reset_by_email_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -2660,7 +2558,49 @@ func (ec *executionContext) _Mutation_reset(ctx context.Context, field graphql.C
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Reset(rctx, args["username"].(string))
+		return ec.resolvers.Mutation().ResetByEmail(rctx, args["email"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_reset_by_phone(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_reset_by_phone_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ResetByPhone(rctx, args["phone"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4502,7 +4442,7 @@ func (ec *executionContext) _log_ip_address(ctx context.Context, field graphql.C
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _log_country(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
+func (ec *executionContext) _log_user_agent(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4520,462 +4460,7 @@ func (ec *executionContext) _log_country(ctx context.Context, field graphql.Coll
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Country, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_region(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Region, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_city(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.City, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_name(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_version(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Version, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_os(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.OS, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_os_version(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.OSVersion, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_device(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Device, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_mobile(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Mobile, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_tablet(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Tablet, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_desktop(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Desktop, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_bot(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Bot, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_url(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.URL, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _log_string(ctx context.Context, field graphql.CollectedField, obj *model.Log) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "log",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.String, nil
+		return obj.UserAgent, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5011,6 +4496,41 @@ func (ec *executionContext) _login_response_access_token(ctx context.Context, fi
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.AccessToken, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _login_response_refresh_token(ctx context.Context, field graphql.CollectedField, obj *model.LoginResponse) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "login_response",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RefreshToken, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5616,70 +5136,6 @@ func (ec *executionContext) _user_updated_at(ctx context.Context, field graphql.
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalOTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _user_invitation_token_sent_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "user",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.InvitationTokenSentAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*time.Time)
-	fc.Result = res
-	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _user_invitation_accepted_at(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "user",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.InvitationAcceptedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*time.Time)
-	fc.Result = res
-	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _user_new_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -6641,9 +6097,19 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "reset":
+		case "reset_by_email":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_reset(ctx, field)
+				return ec._Mutation_reset_by_email(ctx, field)
+			}
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "reset_by_phone":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reset_by_phone(ctx, field)
 			}
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, innerFunc)
@@ -7367,139 +6833,9 @@ func (ec *executionContext) _log(ctx context.Context, sel ast.SelectionSet, obj 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "country":
+		case "user_agent":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_country(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "region":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_region(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "city":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_city(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "name":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_name(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "version":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_version(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "os":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_os(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "os_version":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_os_version(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "device":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_device(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "mobile":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_mobile(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "tablet":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_tablet(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "desktop":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_desktop(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "bot":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_bot(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "url":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_url(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "string":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._log_string(ctx, field, obj)
+				return ec._log_user_agent(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -7531,6 +6867,16 @@ func (ec *executionContext) _login_response(ctx context.Context, sel ast.Selecti
 		case "access_token":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._login_response_access_token(ctx, field, obj)
+			}
+
+			out.Values[i] = innerFunc(ctx)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "refresh_token":
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._login_response_refresh_token(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)
@@ -7696,20 +7042,6 @@ func (ec *executionContext) _user(ctx context.Context, sel ast.SelectionSet, obj
 		case "updated_at":
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._user_updated_at(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-		case "invitation_token_sent_at":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._user_invitation_token_sent_at(ctx, field, obj)
-			}
-
-			out.Values[i] = innerFunc(ctx)
-
-		case "invitation_accepted_at":
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._user_invitation_accepted_at(ctx, field, obj)
 			}
 
 			out.Values[i] = innerFunc(ctx)

@@ -1,19 +1,82 @@
 package users
 
 import (
-	"time"
-
 	"github.com/sirupsen/logrus"
-	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
 	"github.com/zolamk/trust/jwt"
-	"github.com/zolamk/trust/lib/mail"
-	"github.com/zolamk/trust/lib/sms"
 	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"gorm.io/gorm"
 )
+
+func confirm(user *model.User, ip, ua, adminID string, tx *gorm.DB) error {
+
+	if user.Email != nil {
+
+		log := model.NewLog(user.ID, "email confirmed by admin", ip, &adminID, ua)
+
+		if err := user.ConfirmEmail(tx, log); err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
+	}
+
+	if user.Phone != nil {
+
+		log := model.NewLog(user.ID, "phone confirmed by admin", ip, &adminID, ua)
+
+		if err := user.ConfirmPhone(tx, log); err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
+	}
+
+	return nil
+
+}
+
+func validateForm(form model.CreateUserForm, config *config.Config) error {
+
+	if form.Email == nil && form.Phone == nil {
+
+		return handlers.ErrEmailOrPhoneRequired
+
+	}
+
+	if form.Email != nil && config.DisableEmail {
+
+		return handlers.ErrEmailDisabled
+
+	}
+
+	if form.Phone != nil && config.DisablePhone {
+
+		return handlers.ErrPhoneDisabled
+
+	}
+
+	if err := form.Data.Validate(config.CustomDataSchema); err != nil {
+
+		e := handlers.ErrObjectDoesntMatchSchema
+
+		e.Extensions["message"] = err.Error()
+
+		return e
+
+	}
+
+	return nil
+
+}
 
 func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.CreateUserForm, log_data *middleware.LogData) (*model.User, error) {
 
@@ -22,26 +85,15 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 	is_admin := token.HasAdminRole()
 
 	if !is_admin {
+
 		return nil, handlers.ErrAdminOnly
+
 	}
 
-	if form.Email == nil && form.Phone == nil {
-		return nil, handlers.ErrEmailOrPhoneRequired
-	}
+	if err = validateForm(form, config); err != nil {
 
-	if form.Email != nil && config.DisableEmail {
-		return nil, handlers.ErrEmailDisabled
-	}
+		return nil, err
 
-	if form.Phone != nil && config.DisablePhone {
-		return nil, handlers.ErrPhoneDisabled
-	}
-
-	err = form.Data.Validate(config.CustomDataSchema)
-
-	if err != nil {
-		logrus.Error(err)
-		return nil, handlers.ErrObjectDoesntMatchSchema
 	}
 
 	user := &model.User{
@@ -52,35 +104,27 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 		Data:   &form.Data,
 	}
 
-	if form.Email != nil {
+	if form.Password != nil {
 
-		if !config.EmailRule.MatchString(*form.Email) {
+		if !config.PasswordRule.MatchString(*form.Password) {
 
-			return nil, handlers.ErrInvalidEmail
+			return nil, handlers.ErrInvalidPassword
 
 		}
 
-		tx := db.First(user, "email = ?", *form.Email)
+		if err := user.SetPassword(*form.Password, int(config.PasswordHashCost)); err != nil {
 
-		if tx.Error != nil {
+			logrus.Error(err)
 
-			if tx.Error != gorm.ErrRecordNotFound {
+			return nil, handlers.ErrInternal
 
-				logrus.Error(tx.Error)
+		}
 
-				return nil, handlers.ErrInternal
+	}
 
-			}
+	if form.Email != nil {
 
-		} else {
-
-			err := handlers.ErrEmailRegistered
-
-			err.Extensions["email"] = user.Email
-
-			err.Extensions["phone"] = user.Phone
-
-			err.Extensions["id"] = user.ID
+		if err := handlers.ValidateEmail(*form.Email, db, config); err != nil {
 
 			return nil, err
 
@@ -90,33 +134,7 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 	if form.Phone != nil {
 
-		if !config.PhoneRule.MatchString(*form.Phone) {
-
-			return nil, handlers.ErrInvalidPhone
-
-		}
-
-		tx := db.First(user, "phone = ?", *form.Phone)
-
-		if tx.Error != nil {
-
-			if tx.Error != gorm.ErrRecordNotFound {
-
-				logrus.Error(tx.Error)
-
-				return nil, handlers.ErrInternal
-
-			}
-
-		} else {
-
-			err := handlers.ErrPhoneRegistered
-
-			err.Extensions["email"] = user.Email
-
-			err.Extensions["phone"] = user.Phone
-
-			err.Extensions["id"] = user.ID
+		if err := handlers.ValidatePhone(*form.Phone, db, config); err != nil {
 
 			return nil, err
 
@@ -124,31 +142,11 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 	}
 
-	if form.Password != nil {
-
-		if !config.PasswordRule.MatchString(*form.Password) {
-
-			return nil, handlers.ErrInvalidPassword
-
-		}
-
-		user.SetPassword(*form.Password, int(config.PasswordHashCost))
-
-	}
-
 	err = db.Transaction(func(tx *gorm.DB) error {
 
-		if err := user.Create(tx); err != nil {
+		log := model.NewLog(user.ID, "created by admin", log_data.IP, &token.Subject, log_data.UserAgent)
 
-			logrus.Error(err)
-
-			return handlers.ErrInternal
-
-		}
-
-		log := model.NewLog(user.ID, "created by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
-
-		if err := tx.Create(log).Error; err != nil {
+		if err := user.CreateWithLog(tx, &log); err != nil {
 
 			logrus.Error(err)
 
@@ -158,31 +156,9 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 		if form.Confirm != nil && *form.Confirm {
 
-			if user.Email != nil {
+			if err := confirm(user, log_data.IP, log_data.UserAgent, token.Subject, tx); err != nil {
 
-				log := model.NewLog(user.ID, "email confirmed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
-
-				if err := user.ConfirmEmail(tx, log); err != nil {
-
-					logrus.Error(err)
-
-					return handlers.ErrInternal
-
-				}
-
-			}
-
-			if user.Phone != nil {
-
-				log := model.NewLog(user.ID, "phone confirmed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
-
-				if err := user.ConfirmPhone(tx, log); err != nil {
-
-					logrus.Error(err)
-
-					return handlers.ErrInternal
-
-				}
+				return err
 
 			}
 
@@ -190,31 +166,9 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 		}
 
-		now := time.Now()
-
 		if user.Email != nil {
 
-			token := randstr.String(100)
-
-			user.EmailConfirmationToken = &token
-
-			user.EmailConfirmationTokenSentAt = &now
-
-			if err := user.Save(tx); err != nil {
-
-				logrus.Error(err)
-
-				return handlers.ErrInternal
-
-			}
-
-			context := &map[string]string{
-				"site_url":                 config.SiteURL,
-				"email_confirmation_token": *user.EmailConfirmationToken,
-				"instance_url":             config.InstanceURL,
-			}
-
-			if err := mail.SendEmail(config.ConfirmationTemplate, context, user.Email, config); err != nil {
+			if err := handlers.SendEmailConfirmation(user, tx, config); err != nil {
 
 				logrus.Error(err)
 
@@ -226,23 +180,7 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 		if user.Phone != nil {
 
-			token := randstr.String(6)
-
-			user.PhoneConfirmationToken = &token
-
-			user.PhoneConfirmationTokenSentAt = &now
-
-			if err := user.Save(tx); err != nil {
-				return err
-			}
-
-			context := &map[string]string{
-				"site_url":                 config.SiteURL,
-				"phone_confirmation_token": *user.PhoneConfirmationToken,
-				"instance_url":             config.InstanceURL,
-			}
-
-			if err := sms.SendSMS(config.ConfirmationTemplate, user.Phone, context, config.SMS); err != nil {
+			if err := handlers.SendPhoneConfirmation(user, tx, config); err != nil {
 
 				logrus.Error(err)
 
@@ -257,8 +195,11 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 	})
 
 	if err != nil {
+
 		return nil, err
+
 	}
 
 	return user, nil
+
 }

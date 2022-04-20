@@ -16,8 +16,6 @@ type user {
   last_signin_at: Time
   created_at: Time!
   updated_at: Time
-  invitation_token_sent_at: Time
-  invitation_accepted_at: Time
   new_email: String
   new_phone: String
   phone_changed_at: Time

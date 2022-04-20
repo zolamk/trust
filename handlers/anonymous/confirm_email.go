@@ -15,21 +15,21 @@ func ConfirmEmail(db *gorm.DB, config *config.Config, token string, log_data *mi
 
 	err := db.Transaction(func(tx *gorm.DB) error {
 
-		if tx := tx.First(user, "email_confirmation_token = ?", token); tx.Error != nil {
+		if err := tx.First(user, "email_confirmation_token = ?", token).Error; err != nil {
 
-			if tx.Error == gorm.ErrRecordNotFound {
+			if err == gorm.ErrRecordNotFound {
 
 				return handlers.ErrUserNotFound
 
 			}
 
-			logrus.Error(tx.Error)
+			logrus.Error(err)
 
 			return handlers.ErrInternal
 
 		}
 
-		log := model.NewLog(user.ID, "email confirmed", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "email confirmed", log_data.IP, nil, log_data.UserAgent)
 
 		if err := user.ConfirmEmail(tx, log); err != nil {
 

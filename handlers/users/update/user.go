@@ -14,21 +14,31 @@ func UpdateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, n
 	is_admin := token.HasAdminRole()
 
 	if !is_admin {
+
 		return nil, handlers.ErrAdminOnly
+
 	}
 
 	if token.Subject == id {
+
 		return nil, handlers.ErrCantChangeOwnAccount
+
 	}
 
 	user := &model.User{}
 
 	if tx := db.Find(user, "id = ?", id); tx.Error != nil {
+
 		if tx.Error == gorm.ErrRecordNotFound {
+
 			return nil, handlers.ErrUserNotFound
+
 		}
+
 		logrus.Error(tx.Error)
+
 		return nil, handlers.ErrInternal
+
 	}
 
 	user.Name = name
@@ -36,8 +46,11 @@ func UpdateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, n
 	user.Avatar = avatar
 
 	if err := user.Save(db); err != nil {
+
 		logrus.Error(err)
+
 		return nil, handlers.ErrInternal
+
 	}
 
 	return user, nil

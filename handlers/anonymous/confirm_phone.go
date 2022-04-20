@@ -13,7 +13,7 @@ func ConfirmPhone(db *gorm.DB, config *config.Config, token string, log_data *mi
 
 	user := &model.User{}
 
-	db.Transaction(func(tx *gorm.DB) error {
+	err := db.Transaction(func(tx *gorm.DB) error {
 
 		if tx := tx.First(user, "phone_confirmation_token = ?", token); tx.Error != nil {
 
@@ -29,7 +29,7 @@ func ConfirmPhone(db *gorm.DB, config *config.Config, token string, log_data *mi
 
 		}
 
-		log := model.NewLog(user.ID, "phone confirmed", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "phone confirmed", log_data.IP, nil, log_data.UserAgent)
 
 		if err := user.ConfirmPhone(tx, log); err != nil {
 
@@ -42,6 +42,13 @@ func ConfirmPhone(db *gorm.DB, config *config.Config, token string, log_data *mi
 		return nil
 
 	})
+
+	if err != nil {
+
+		return nil, err
+
+	}
+
 	return user, nil
 
 }

@@ -77,7 +77,7 @@ Type - String
 **Conditinally Required**
 {% endhint %}
 
-determines the private key to be used when signing json web tokens, the value for `private_key_path` should be a path to a file containing a private key encoded in PEM format, `private_key_path` is only required for assymetric algorithms(RS256, RS384, RS512, ES256, ES384, ES512) only.
+determines the private key to be used when signing json web tokens, the value for `private_key_path` should be a path to a file containing a private key encoded in PEM format, `private_key_path` is only required for asymmetric algorithms(RS256, RS384, RS512, ES256, ES384, ES512) only.
 
 ### public_key_path
 
@@ -87,7 +87,7 @@ Type - String
 **Conditinally Required**
 {% endhint %}
 
-determines the public key to be used when verifying json web tokens, the value for `public_key_path` should be a path to a file containing a public key encoded in PEM format, `public_key_path` is only required for assymetric algorithms(RS256, RS384, RS512, ES256, ES384, ES512) only.
+determines the public key to be used when verifying json web tokens, the value for `public_key_path` should be a path to a file containing a public key encoded in PEM format, `public_key_path` is only required for asymmetric algorithms(RS256, RS384, RS512, ES256, ES384, ES512) only.
 
 ### secret
 

@@ -140,8 +140,6 @@ input users_bool_exp {
   last_signin_at: time_expression
   created_at: time_expression
   updated_at: time_expression
-  invitation_token_sent_at: time_expression
-  invitation_accepted_at: time_expression
   new_email: string_expression
   new_phone: string_expression
   phone_changed_at: time_expression

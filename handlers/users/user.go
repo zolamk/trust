@@ -18,7 +18,9 @@ func User(db *gorm.DB, config *config.Config, token *jwt.JWT, id string) (*model
 		has_access := token.HasAdminRole() || token.HasReadRole()
 
 		if !has_access {
+
 			return nil, handlers.ErrAdminOnly
+
 		}
 
 	}
@@ -26,7 +28,9 @@ func User(db *gorm.DB, config *config.Config, token *jwt.JWT, id string) (*model
 	if tx := db.First(user, "id = ?", id); tx.Error != nil {
 
 		if tx.Error == gorm.ErrRecordNotFound {
+
 			return nil, handlers.ErrUserNotFound
+
 		}
 
 		logrus.Error(tx.Error)

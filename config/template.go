@@ -30,14 +30,14 @@ func (t *Template) UnmarshalText(text []byte) error {
 
 	temp, err := mustache.ParseString(string(text))
 
-	t = &Template{
-		temp,
-	}
+	t.Template = temp
 
 	return err
 
 }
 
 func (t *Template) MarshalText() ([]byte, error) {
+
 	return []byte{}, nil
+
 }

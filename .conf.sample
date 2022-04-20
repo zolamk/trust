@@ -52,7 +52,6 @@
         "for": 5,
         "attempts": 3
     },
-    "ip2location_db_path": "./test/ip2location-lite-db3.ipv6.bin",
     "minutes_between_phone_change": 1,
     "minutes_between_email_change": 1,
     "access_token_cookie_name": "zelalem_access_token",

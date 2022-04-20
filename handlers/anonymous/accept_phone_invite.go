@@ -13,25 +13,45 @@ func AcceptPhoneInvite(db *gorm.DB, c *config.Config, token string, password str
 
 	user := &model.User{}
 
-	if tx := db.First(user, "phone_invitation_token = ?", token); tx.Error != nil {
+	err := db.Transaction(func(tx *gorm.DB) error {
 
-		if tx.Error == gorm.ErrRecordNotFound {
-			return nil, handlers.ErrUserNotFound
+		if err := tx.First(user, "phone_confirmation_token = ?", token).Error; err != nil {
+
+			if err == gorm.ErrRecordNotFound {
+
+				return handlers.ErrUserNotFound
+
+			}
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
 		}
 
-		logrus.Error(tx.Error)
+		if err := user.SetPassword(password, int(c.PasswordHashCost)); err != nil {
 
-		return nil, handlers.ErrInternal
+			logrus.Error(err)
 
-	}
+			return handlers.ErrInternal
 
-	user.SetPassword(password, int(c.PasswordHashCost))
+		}
+		log := model.NewLog(user.ID, "accepted phone invitation", log_data.IP, nil, log_data.UserAgent)
 
-	log := model.NewLog(user.ID, "accepted phone invitation", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+		if err := user.AcceptPhoneInvite(tx, log); err != nil {
 
-	if err := user.AcceptPhoneInvite(db, log); err != nil {
-		logrus.Error(err)
-		return nil, handlers.ErrInternal
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
+		return nil
+
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return user, nil

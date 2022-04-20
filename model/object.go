@@ -28,12 +28,17 @@ func (o *Object) UnmarshalGQL(v interface{}) error {
 	m, ok := v.(map[string]interface{})
 
 	if !ok {
+
 		return fmt.Errorf("%T is not a map", v)
+
 	}
 
 	if m == nil {
-		o = nil
+
+		*o = nil
+
 		return nil
+
 	}
 
 	*o = Object(m)
@@ -70,7 +75,6 @@ func (o Object) Value() (driver.Value, error) {
 
 }
 
-// GormDataType gorm common data type
 func (Object) GormDataType() string {
 	return "json"
 }

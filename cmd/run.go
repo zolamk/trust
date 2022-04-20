@@ -84,7 +84,7 @@ func Run(config_file string, files embed.FS) {
 
 	router.Use(middleware.AttachResponse)
 
-	router.Use(middleware.AttachLogData(config.IP2LocationDB))
+	router.Use(middleware.AttachLogData)
 
 	router.Use(middleware.AttachRefreshToken(config))
 

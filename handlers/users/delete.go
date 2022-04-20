@@ -14,26 +14,39 @@ func DeleteUser(db *gorm.DB, config *config.Config, token *jwt.JWT, id string) (
 	is_admin := token.HasAdminRole()
 
 	if !is_admin {
+
 		return nil, handlers.ErrAdminOnly
+
 	}
 
 	if token.Subject == id {
+
 		return nil, handlers.ErrCantChangeOwnAccount
+
 	}
 
 	user := &model.User{}
 
-	if tx := db.First(user, "id = ?", id); tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
+	if err := db.First(user, "id = ?", id).Error; err != nil {
+
+		if err == gorm.ErrRecordNotFound {
+
 			return nil, handlers.ErrUserNotFound
+
 		}
-		logrus.Error(tx.Error)
+
+		logrus.Error(err)
+
 		return nil, handlers.ErrInternal
+
 	}
 
-	if tx := db.Delete(user, "id = ?", id); tx.Error != nil {
-		logrus.Error(tx.Error)
+	if err := db.Delete(user, "id = ?", id); err != nil {
+
+		logrus.Error(err)
+
 		return nil, handlers.ErrInternal
+
 	}
 
 	return user, nil

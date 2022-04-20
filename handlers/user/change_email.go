@@ -17,55 +17,51 @@ func ChangeEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, new_email s
 
 	user := &model.User{}
 
-	err := db.Transaction(func(tx *gorm.DB) error {
+	if !config.EmailRule.MatchString(new_email) {
 
-		if !config.EmailRule.MatchString(new_email) {
+		return nil, handlers.ErrInvalidPhone
 
-			return handlers.ErrInvalidPhone
+	}
+
+	if tx := db.First(user, "id = ?", token.Subject); tx.Error != nil {
+
+		if tx.Error == gorm.ErrRecordNotFound {
+
+			return nil, handlers.ErrUserNotFound
 
 		}
 
-		if tx := db.First(user, "id = ?", token.Subject); tx.Error != nil {
+		return nil, handlers.ErrInternal
 
-			if tx.Error == gorm.ErrRecordNotFound {
+	}
 
-				return handlers.ErrUserNotFound
+	if user.Email != nil && *user.Email == new_email {
 
-			}
+		return nil, handlers.ErrNewEmailSimilar
+
+	}
+
+	err := db.Transaction(func(tx *gorm.DB) error {
+
+		if err := db.First(user, "email = ?", new_email).Error; err == nil {
+
+			return handlers.ErrEmailRegistered
+
+		} else if err != gorm.ErrRecordNotFound {
+
+			logrus.Error(tx.Error)
 
 			return handlers.ErrInternal
 
 		}
 
-		if user.Email != nil && *user.Email == new_email {
-
-			return handlers.ErrNewEmailSimilar
-
-		}
-
-		if tx := db.First(user, "email = ?", new_email); tx.Error == nil {
-
-			return handlers.ErrEmailRegistered
-
-		} else {
-
-			if tx.Error != gorm.ErrRecordNotFound {
-
-				logrus.Error(tx.Error)
-
-				return handlers.ErrInternal
-
-			}
-
-		}
-
 		if user.EmailChangedAt != nil && time.Since(*user.EmailChangedAt).Minutes() < float64(config.MinutesBetweenEmailChange) {
 
-			changable_at := user.EmailChangedAt.Add(time.Minute * config.MinutesBetweenEmailChange)
+			changeable_at := user.EmailChangedAt.Add(time.Minute * config.MinutesBetweenEmailChange)
 
 			err := handlers.ErrCantChangeEmailNow
 
-			err.Extensions["changable_at"] = changable_at
+			err.Extensions["changeable_at"] = changeable_at
 
 			return err
 
@@ -77,21 +73,27 @@ func ChangeEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, new_email s
 
 		}
 
-		log := model.NewLog(user.ID, "email change initiated", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "email change initiated", log_data.IP, nil, log_data.UserAgent)
 
 		if err := user.ChangeEmail(tx, log, new_email); err != nil {
 			logrus.Error(err)
 			return handlers.ErrInternal
 		}
 
-		context := &map[string]string{
+		context := map[string]string{
 			"site_url":           config.SiteURL,
 			"email_change_token": *user.EmailChangeToken,
 			"new_email":          *user.NewEmail,
 			"instance_url":       config.InstanceURL,
 		}
 
-		if err := mail.SendEmail(config.ChangeTemplate, context, user.NewEmail, config); err != nil {
+		if user.Name != nil {
+
+			context["name"] = *user.Name
+
+		}
+
+		if err := mail.SendEmail(config.ChangeTemplate, context, *user.NewEmail, config.SMTP); err != nil {
 			logrus.Error(err)
 			return handlers.ErrInternal
 		}

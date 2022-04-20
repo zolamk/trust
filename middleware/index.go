@@ -1,11 +1,11 @@
 package middleware
 
-type contextKey struct {
-	name string
-}
+type contextKey string
 
-var TokenKey = &contextKey{"token"}
-var WriterKey = &contextKey{"writer"}
-var RefreshTokenKey = &contextKey{"refresh_token"}
-var ProviderKey = &contextKey{"provider"}
-var LogDataKey = &contextKey{"log"}
+const (
+	TokenKey        = contextKey("token")
+	WriterKey       = contextKey("writer")
+	LogDataKey      = contextKey("log_data")
+	ProviderKey     = contextKey("provider")
+	RefreshTokenKey = contextKey("refresh_token")
+)

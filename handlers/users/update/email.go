@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, new_email string, confirm *bool, log_data *middleware.LogData) (*model.User, error) {
+func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, new_email string, confirm bool, log_data *middleware.LogData) (*model.User, error) {
 
 	user := &model.User{}
 
@@ -73,7 +73,7 @@ func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 		}
 
-		log := model.NewLog(user.ID, "email change inititated by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "email change inititated by admin", log_data.IP, &token.Subject, log_data.UserAgent)
 
 		if err := user.ChangeEmail(tx, log, new_email); err != nil {
 
@@ -83,9 +83,9 @@ func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 		}
 
-		if confirm != nil && *confirm {
+		if confirm {
 
-			log := model.NewLog(user.ID, "email change confirmed by admin", log_data.IP, &token.Subject, log_data.Location, log_data.UserAgent)
+			log := model.NewLog(user.ID, "email change confirmed by admin", log_data.IP, &token.Subject, log_data.UserAgent)
 
 			if err := user.ConfirmEmailChange(tx, log); err != nil {
 
@@ -99,14 +99,20 @@ func UpdateEmail(db *gorm.DB, config *config.Config, token *jwt.JWT, id string, 
 
 		}
 
-		context := &map[string]string{
+		context := map[string]string{
 			"site_url":           config.SiteURL,
 			"email_change_token": *user.EmailChangeToken,
 			"new_email":          *user.NewEmail,
 			"instance_url":       config.InstanceURL,
 		}
 
-		if err := mail.SendEmail(config.ChangeTemplate, context, user.NewEmail, config); err != nil {
+		if user.Name != nil {
+
+			context["name"] = *user.Name
+
+		}
+
+		if err := mail.SendEmail(config.ChangeTemplate, context, new_email, config.SMTP); err != nil {
 
 			logrus.Error(err)
 

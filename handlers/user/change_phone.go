@@ -17,50 +17,50 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 
 	user := &model.User{}
 
+	if !config.PhoneRule.MatchString(phone) {
+
+		return nil, handlers.ErrInvalidPhone
+
+	}
+
+	if err := db.First(user, "id = ?", token.Subject).Error; err != nil {
+
+		if err == gorm.ErrRecordNotFound {
+
+			return nil, handlers.ErrUserNotFound
+
+		}
+
+		return nil, handlers.ErrInternal
+	}
+
+	if user.Phone != nil && *user.Phone == phone {
+
+		return nil, handlers.ErrNewPhoneSimilar
+
+	}
+
+	if err := db.First(user, "phone = ?", phone).Error; err == nil {
+
+		return nil, handlers.ErrPhoneRegistered
+
+	} else if err != gorm.ErrRecordNotFound {
+
+		logrus.Error(err)
+
+		return nil, handlers.ErrInternal
+
+	}
+
 	err := db.Transaction(func(tx *gorm.DB) error {
-
-		if !config.PhoneRule.MatchString(phone) {
-			return handlers.ErrInvalidPhone
-		}
-
-		if tx := tx.First(user, "id = ?", token.Subject); tx.Error != nil {
-
-			if tx.Error == gorm.ErrRecordNotFound {
-
-				return handlers.ErrUserNotFound
-
-			}
-
-			return handlers.ErrInternal
-		}
-
-		if user.Phone != nil && *user.Phone == phone {
-			return handlers.ErrNewPhoneSimilar
-		}
-
-		if tx := tx.First(user, "phone = ?", phone); tx.Error == nil {
-
-			return handlers.ErrPhoneRegistered
-
-		} else {
-
-			if tx.Error != gorm.ErrRecordNotFound {
-
-				logrus.Error(tx.Error)
-
-				return handlers.ErrInternal
-
-			}
-
-		}
 
 		if user.PhoneChangedAt != nil && time.Since(*user.PhoneChangedAt).Minutes() < float64(config.MinutesBetweenPhoneChange) {
 
-			changable_at := user.PhoneChangedAt.Add(time.Minute * config.MinutesBetweenPhoneChange)
+			changeable_at := user.PhoneChangedAt.Add(time.Minute * config.MinutesBetweenPhoneChange)
 
 			err := handlers.ErrCantChangePhoneNow
 
-			err.Extensions["changable_at"] = changable_at
+			err.Extensions["changeable_at"] = changeable_at
 
 			return err
 
@@ -72,7 +72,7 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 
 		}
 
-		log := model.NewLog(user.ID, "phone change initiated", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+		log := model.NewLog(user.ID, "phone change initiated", log_data.IP, nil, log_data.UserAgent)
 
 		if err := user.ChangePhone(tx, log, phone); err != nil {
 
@@ -82,16 +82,25 @@ func ChangePhone(db *gorm.DB, config *config.Config, token *jwt.JWT, phone strin
 
 		}
 
-		context := &map[string]string{
+		context := map[string]string{
 			"site_url":           config.SiteURL,
 			"phone_change_token": *user.PhoneChangeToken,
 			"new_phone":          *user.NewPhone,
 			"instance_url":       config.InstanceURL,
 		}
 
-		if err := sms.SendSMS(config.ChangeTemplate, user.NewPhone, context, config.SMS); err != nil {
+		if user.Name != nil {
+
+			context["name"] = *user.Name
+
+		}
+
+		if err := sms.SendSMS(config.ChangeTemplate, phone, context, config.SMS); err != nil {
+
 			logrus.Error(err)
+
 			return handlers.ErrInternal
+
 		}
 
 		return nil

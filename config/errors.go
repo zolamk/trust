@@ -2,7 +2,7 @@ package config
 
 import "errors"
 
-var ErrAssymetricKeyPathsNotSet = errors.New("expected jwt_private_key_path and jwt_public_key_path to be set for all supported assymetric algorithms")
+var ErrAsymmetricKeyPathsNotSet = errors.New("expected jwt_private_key_path and jwt_public_key_path to be set for all supported asymmetric algorithms")
 var ErrSymmetricSecretNotSet = errors.New("expected jwt_secret to be set for all symmetric algorithms")
 var ErrUnsupportedAlgorithm = errors.New("unsupported algorithm")
 var ErrUnableToReadTemplate = errors.New("unable to read template")
@@ -14,5 +14,4 @@ var ErrSMSNotConfigured = errors.New("expected sms to be set if phone support is
 var ErrEmailNotConfigured = errors.New("expected smtp to be set if email support is enabled")
 var ErrParsingPrivateKey = errors.New("unable to parse private key")
 var ErrParsingPublicKey = errors.New("unable to parse public key")
-var ErrUnableToReadLocationDB = errors.New("unable to read ip2location db")
 var ErrInvalidCustomDataSchema = errors.New("invalid custom data schema")

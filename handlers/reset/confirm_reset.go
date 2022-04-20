@@ -35,9 +35,15 @@ func ConfirmReset(db *gorm.DB, config *config.Config, recovery_token string, pwd
 
 		}
 
-		user.SetPassword(pwd, int(config.PasswordHashCost))
+		if err := user.SetPassword(pwd, int(config.PasswordHashCost)); err != nil {
 
-		log := model.NewLog(user.ID, "password reset confirmed", log_data.IP, nil, log_data.Location, log_data.UserAgent)
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
+		log := model.NewLog(user.ID, "password reset confirmed", log_data.IP, nil, log_data.UserAgent)
 
 		if err := user.ConfirmReset(tx, log); err != nil {
 

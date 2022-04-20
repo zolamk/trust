@@ -9,15 +9,16 @@ type Mutation {
   create_user(object: create_user_form!): user!
   update_user(id: String!, name: String, avatar: String): user!
   delete_user(id: String!): user!
-  update_email(id: String!, email: String!, confirm: Boolean): user!
-  update_phone(id: String!, phone: String!, confirm: Boolean): user!
+  update_email(id: String!, email: String!, confirm: Boolean! = false): user!
+  update_phone(id: String!, phone: String!, confirm: Boolean! = false): user!
   update_password(id: String!, password: String!): user!
   change_password(old_password: String!, new_password: String!): user!
   change_email(email: String!): user!
   change_phone(phone: String!): user!
   confirm_phone_change(token: String!): user!
   confirm_email_change(token: String!): user!
-  reset(username: String!): Boolean!
+  reset_by_email(email: String!): Boolean!
+  reset_by_phone(phone: String!): Boolean!
   confirm_reset(token: String!, password: String!): Boolean!
   resend_phone_confirmation(phone: String!): Boolean!
   resend_email_confirmation(email: String!): Boolean!

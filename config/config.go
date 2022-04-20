@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/ip2location/ip2location-go/v9"
 	"github.com/ohler55/ojg/jp"
 	"github.com/sirupsen/logrus"
 )
@@ -115,9 +114,7 @@ type Config struct {
 	Host                      string           `json:"host"`
 	InstanceURL               string           `json:"instance_url"`
 	InvitationTemplate        *TemplateConfig  `json:"invitation_template"`
-	IP2LocationDB             *ip2location.DB  `json:"-"`
-	IP2LocationDBPath         string           `json:"ip2location_db_path"`
-	JWT                       *JWTConfig       `json:"jwt"`
+	JWT                       JWTConfig        `json:"jwt"`
 	LockoutPolicy             LockoutPolicy    `json:"lockout_policy"`
 	LoginHook                 string           `json:"login_hook"`
 	LogLevel                  logrus.Level     `json:"log_level"`
@@ -131,6 +128,8 @@ type Config struct {
 	Port                      uint16           `json:"port"`
 	RecoveryTemplate          *TemplateConfig  `json:"recovery_template"`
 	RefreshTokenCookieName    string           `json:"refresh_token_cookie_name"`
+	RefreshTokenCookieDomain  string           `json:"refresh_token_cookie_domain"`
+	SetCookies                bool             `json:"set_cookies"`
 	SiteURL                   string           `json:"site_url"`
 	SMS                       *SMSConfig       `json:"sms"`
 	SMTP                      *SMTPConfig      `json:"smtp"`
@@ -142,25 +141,48 @@ type Config struct {
 	RolesPath                 JSONPath         `json:"roles_path"`
 }
 
-func New(path string) (*Config, error) {
+func NewDefaultConfig() *Config {
 
-	default_confirmation, _ := parseStringTemplate("<h2>Confirm Your Email Address</h2><p>Follow this link to confirm your email</p><p><a href='{{ site_url }}?token={{ email_confirmation_token }}'>Confirm</a></p>")
+	defaultConfirmationEmailTemplate, _ := parseStringTemplate(`
+	<h2>Confirm Your Email Address</h2>
+	<p>Follow this link to confirm your email</p>
+	<p>
+		<a href='{{ site_url }}?token={{ email_confirmation_token }}'>Confirm</a>
+	</p>
+	`)
 
-	default_invitation, _ := parseStringTemplate("<h2>You Have Been Invited</h2><p>Follow this link to accept your invitation</p><p><a href='{{ site_url }}?token={{ email_invitation_token }}'>Accept Invite</a></p>")
+	defaultInvitationEmailTemplate, _ := parseStringTemplate(`
+	<h2>You Have Been Invited</h2>
+	<p>Follow this link to accept your invitation</p>
+	<p>
+		<a href='{{ site_url }}?token={{ email_invitation_token }}'>Accept Invite</a>
+	</p>
+	`)
 
-	default_recovery, _ := parseStringTemplate("<h2>Recover Your Account</h2><p>Follow this link to recover you account</p><p><a href='{{ site_url }}?token={{ email_recovery_token }}'>Recover</a></p>")
+	defaultRecoveryEmailTemplate, _ := parseStringTemplate(`
+	<h2>Recover Your Account</h2>
+	<p>Follow this link to recover you account</p>
+	<p>
+		<a href='{{ site_url }}?token={{ email_recovery_token }}'>Recover</a>
+	</p>`)
 
-	default_change, _ := parseStringTemplate("<h2>Change Your Email Address</h2><p>Follow this link to confirm your email address change</p><p><a href='{{ site_url }}?token={{ email_change_token }}'>Confirm</a></p>")
+	defaultChangeEmailTemplate, _ := parseStringTemplate(`
+	<h2>Change Your Email Address</h2>
+	<p>Follow this link to confirm your email address change</p>
+	<p>
+		<a href='{{ site_url }}?token={{ email_change_token }}'>Confirm</a>
+	</p>
+	`)
 
-	default_confirmation_sms, _ := parseStringTemplate("Phone Confirmation Code - {{ phone_confirmation_token }}")
+	defaultConfirmationSMSTemplate, _ := parseStringTemplate("Phone Confirmation Code - {{ phone_confirmation_token }}")
 
-	default_invitation_sms, _ := parseStringTemplate("Phone Invitation Code - {{ phone_invitation_token }}")
+	defaultInvitationSMSTemplate, _ := parseStringTemplate("Phone Invitation Code - {{ phone_invitation_token }}")
 
-	default_recovery_sms, _ := parseStringTemplate("Phone Recovery Code - {{ phone_recovery_token }}")
+	defaultRecoverySMSTemplate, _ := parseStringTemplate("Phone Recovery Code - {{ phone_recovery_token }}")
 
-	default_change_sms, _ := parseStringTemplate("Phone Change Code -  {{ phone_change_token }}")
+	defaultChangeSMSTemplate, _ := parseStringTemplate("Phone Change Code -  {{ phone_change_token }}")
 
-	config := Config{
+	return &Config{
 		AdminRoles:    []string{"trust:admin"},
 		ReadOnlyRoles: []string{"trust:read"},
 		DisableSignup: false,
@@ -174,9 +196,9 @@ func New(path string) (*Config, error) {
 			Enabled: false,
 		},
 		Host: "localhost",
-		JWT: &JWTConfig{
+		JWT: JWTConfig{
 			Exp:  900,
-			Type: "assymetric",
+			Type: "asymmetric",
 			Aud:  "trust",
 			Iss:  "trust",
 		},
@@ -198,6 +220,7 @@ func New(path string) (*Config, error) {
 		RolesPath: JSONPath{
 			jp.MustParse([]byte("$.roles")),
 		},
+		SetCookies:            true,
 		AccessTokenCookieName: "trust_access_token",
 		LockoutPolicy: LockoutPolicy{
 			Attempts: 5,
@@ -205,25 +228,209 @@ func New(path string) (*Config, error) {
 		},
 		ConfirmationTemplate: &TemplateConfig{
 			Subject: "Confirm Your Account",
-			SMS:     default_confirmation_sms,
-			Email:   default_confirmation,
+			SMS:     defaultConfirmationSMSTemplate,
+			Email:   defaultConfirmationEmailTemplate,
 		},
 		InvitationTemplate: &TemplateConfig{
-			SMS:     default_invitation_sms,
+			SMS:     defaultInvitationSMSTemplate,
 			Subject: "You've Been Invited",
-			Email:   default_invitation,
+			Email:   defaultInvitationEmailTemplate,
 		},
 		RecoveryTemplate: &TemplateConfig{
-			SMS:     default_recovery_sms,
+			SMS:     defaultRecoverySMSTemplate,
 			Subject: "Recover Your Account",
-			Email:   default_recovery,
+			Email:   defaultRecoveryEmailTemplate,
 		},
 		ChangeTemplate: &TemplateConfig{
-			SMS:     default_change_sms,
+			SMS:     defaultChangeSMSTemplate,
 			Subject: "Confirm Email Change",
-			Email:   default_change,
+			Email:   defaultChangeEmailTemplate,
 		},
 	}
+
+}
+
+func validateAsymmetric(config *Config) error {
+
+	if config.JWT.PrivateKeyPath == "" || config.JWT.PublicKeyPath == "" {
+		return ErrAsymmetricKeyPathsNotSet
+	}
+
+	switch config.JWT.Alg {
+	case "RS256", "RS384", "RS512":
+
+		private_key, err := parsePKCS8PrivateKey(config.JWT.PrivateKeyPath)
+
+		if err != nil {
+
+			return ErrParsingPrivateKey
+
+		}
+
+		config.JWT.privateKey = private_key
+
+		public_key, err := parsePKIXPublicKey(config.JWT.PublicKeyPath)
+
+		if err != nil {
+
+			return ErrParsingPublicKey
+
+		}
+
+		config.JWT.publicKey = public_key
+
+	case "ES256", "ES384", "ES512":
+
+		private_key, err := parseECPrivateKey(config.JWT.PrivateKeyPath)
+
+		if err != nil {
+
+			return ErrParsingPrivateKey
+
+		}
+
+		config.JWT.privateKey = private_key
+
+		public_key, err := parsePKIXPublicKey(config.JWT.PublicKeyPath)
+
+		if err != nil {
+
+			return ErrParsingPublicKey
+
+		}
+
+		config.JWT.publicKey = public_key
+
+	default:
+		return ErrUnsupportedAlgorithm
+
+	}
+
+	return nil
+
+}
+
+func validateKeys(config *Config) error {
+	switch config.JWT.Alg {
+	case "RS256", "RS384", "RS512", "ES256", "ES384", "ES512":
+
+		return validateAsymmetric(config)
+
+	case "HS256", "HS384", "HS512":
+
+		if config.JWT.Secret == "" {
+			return ErrSymmetricSecretNotSet
+		}
+
+		config.JWT.Type = "symmetric"
+
+	default:
+		return ErrUnsupportedAlgorithm
+	}
+
+	return nil
+
+}
+
+func validateTemplates(config *Config) error {
+
+	var err error
+
+	if config.ConfirmationTemplate.Path != "" {
+
+		if config.ConfirmationTemplate.Email, err = parseFileTemplate(config.ConfirmationTemplate.Path); err != nil {
+
+			return ErrUnableToReadTemplate
+
+		}
+
+	}
+
+	if config.ChangeTemplate.Path != "" {
+
+		if config.ChangeTemplate.Email, err = parseFileTemplate(config.ChangeTemplate.Path); err != nil {
+
+			return ErrUnableToReadTemplate
+
+		}
+
+	}
+
+	if config.RecoveryTemplate.Path != "" {
+
+		if config.RecoveryTemplate.Email, err = parseFileTemplate(config.RecoveryTemplate.Path); err != nil {
+
+			return ErrUnableToReadTemplate
+
+		}
+
+	}
+
+	if config.InvitationTemplate.Path != "" {
+
+		if config.InvitationTemplate.Email, err = parseFileTemplate(config.InvitationTemplate.Path); err != nil {
+
+			return ErrUnableToReadTemplate
+
+		}
+
+	}
+
+	return nil
+
+}
+
+func validateSymbol(config *Config) error {
+
+	if config.Google.Enabled && (config.Google.ID == "" || config.Google.Secret == "") {
+
+		return ErrGoogleConfig
+
+	}
+
+	if config.Facebook.Enabled && (config.Facebook.ID == "" || config.Facebook.Secret == "") {
+
+		return ErrFacebookConfig
+
+	}
+
+	if config.Github.Enabled && (config.Github.ID == "" || config.Github.Secret == "") {
+
+		return ErrGithubConfig
+
+	}
+
+	return nil
+
+}
+
+func validateOther(config *Config) error {
+
+	if config.DisableEmail && config.DisablePhone {
+
+		return ErrPhoneEmailDisabled
+
+	}
+
+	if !config.DisablePhone && config.SMS == nil {
+
+		return ErrSMSNotConfigured
+
+	}
+
+	if !config.DisableEmail && config.SMTP == nil {
+
+		return ErrEmailNotConfigured
+
+	}
+
+	return nil
+
+}
+
+func New(path string) (*Config, error) {
+
+	config := NewDefaultConfig()
 
 	file, err := os.ReadFile(path)
 
@@ -235,178 +442,29 @@ func New(path string) (*Config, error) {
 		return nil, err
 	}
 
-	switch config.JWT.Alg {
-	case "RS256", "RS384", "RS512", "ES256", "ES384", "ES512":
-
-		if config.JWT.PrivateKeyPath == "" || config.JWT.PublicKeyPath == "" {
-			return nil, ErrAssymetricKeyPathsNotSet
-		}
-
-		switch config.JWT.Alg {
-		case "RS256", "RS384", "RS512":
-
-			private_key, err := parsePKCS8PrivateKey(config.JWT.PrivateKeyPath)
-
-			if err != nil {
-
-				logrus.Error(err)
-
-				return nil, ErrParsingPrivateKey
-
-			}
-
-			config.JWT.privateKey = private_key
-
-			public_key, err := parsePKIXPublicKey(config.JWT.PublicKeyPath)
-
-			if err != nil {
-
-				logrus.Error(err)
-
-				return nil, ErrParsingPublicKey
-
-			}
-
-			config.JWT.publicKey = public_key
-
-		case "ES256", "ES384", "ES512":
-
-			private_key, err := parseECPrivateKey(config.JWT.PrivateKeyPath)
-
-			if err != nil {
-
-				logrus.Error(err)
-
-				return nil, ErrParsingPrivateKey
-
-			}
-
-			config.JWT.privateKey = private_key
-
-			public_key, err := parsePKIXPublicKey(config.JWT.PublicKeyPath)
-
-			if err != nil {
-
-				logrus.Error(err)
-
-				return nil, ErrParsingPublicKey
-
-			}
-
-			config.JWT.publicKey = public_key
-
-		}
-
-	case "HS256", "HS384", "HS512":
-
-		if config.JWT.Secret == "" {
-			return nil, ErrSymmetricSecretNotSet
-		}
-
-		config.JWT.Type = "symmetric"
-
-	default:
-		return nil, ErrUnsupportedAlgorithm
+	if err = validateKeys(config); err != nil {
+		return nil, err
 	}
 
-	if config.ConfirmationTemplate.Path != "" {
-
-		if config.ConfirmationTemplate.Email, err = parseFileTemplate(config.ConfirmationTemplate.Path); err != nil {
-
-			logrus.Error(err)
-
-			return nil, ErrUnableToReadTemplate
-
-		}
-
+	if err = validateTemplates(config); err != nil {
+		return nil, err
 	}
 
-	if config.ChangeTemplate.Path != "" {
-
-		if config.ChangeTemplate.Email, err = parseFileTemplate(config.ChangeTemplate.Path); err != nil {
-
-			logrus.Error(err)
-
-			return nil, ErrUnableToReadTemplate
-
-		}
-
+	if err = validateSymbol(config); err != nil {
+		return nil, err
 	}
 
-	if config.RecoveryTemplate.Path != "" {
-
-		if config.RecoveryTemplate.Email, err = parseFileTemplate(config.RecoveryTemplate.Path); err != nil {
-
-			logrus.Error(err)
-
-			return nil, ErrUnableToReadTemplate
-
-		}
-
+	if err = validateOther(config); err != nil {
+		return nil, err
 	}
 
-	if config.InvitationTemplate.Path != "" {
-
-		if config.InvitationTemplate.Email, err = parseFileTemplate(config.InvitationTemplate.Path); err != nil {
-
-			logrus.Error(err)
-
-			return nil, ErrUnableToReadTemplate
-
-		}
-
-	}
-
-	if config.Google.Enabled && (config.Google.ID == "" || config.Google.Secret == "") {
-
-		return nil, ErrGoogleConfig
-
-	}
-
-	if config.Facebook.Enabled && (config.Facebook.ID == "" || config.Facebook.Secret == "") {
-
-		return nil, ErrFacebookConfig
-
-	}
-
-	if config.Github.Enabled && (config.Github.ID == "" || config.Github.Secret == "") {
-
-		return nil, ErrGithubConfig
-
-	}
-
-	if config.DisableEmail && config.DisablePhone {
-
-		return nil, ErrPhoneEmailDisabled
-
-	}
-
-	if !config.DisablePhone && config.SMS == nil {
-
-		return nil, ErrSMSNotConfigured
-
-	}
-
-	if !config.DisableEmail && config.SMTP == nil {
-
-		return nil, ErrEmailNotConfigured
-
-	}
-
-	config.IP2LocationDB, err = ip2location.OpenDB(config.IP2LocationDBPath)
-
-	if err != nil {
-		logrus.Error(err)
-		return nil, ErrUnableToReadLocationDB
-	}
-
-	return &config, nil
+	return config, nil
 
 }
 
 func (c *JWTConfig) GetSigningKey() interface{} {
 
-	if c.Type == "assymetric" {
+	if c.Type == "asymmetric" {
 		return c.privateKey
 	}
 
@@ -416,7 +474,7 @@ func (c *JWTConfig) GetSigningKey() interface{} {
 
 func (c *JWTConfig) GetDecodingKey() interface{} {
 
-	if c.Type == "assymetric" {
+	if c.Type == "asymmetric" {
 		return c.publicKey
 	}
 

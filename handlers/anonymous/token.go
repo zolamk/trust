@@ -5,11 +5,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/thanhpk/randstr"
 	"github.com/zolamk/trust/config"
 	"github.com/zolamk/trust/handlers"
-	"github.com/zolamk/trust/hook"
-	"github.com/zolamk/trust/jwt"
 	"github.com/zolamk/trust/middleware"
 	"github.com/zolamk/trust/model"
 	"golang.org/x/crypto/bcrypt"
@@ -18,9 +15,11 @@ import (
 
 func Token(db *gorm.DB, config *config.Config, username string, password string, writer http.ResponseWriter, log_data *middleware.LogData) (*model.LoginResponse, error) {
 
-	user := &model.User{}
+	user := model.NewUser(config)
 
 	var signed_token string
+
+	var refresh_token string
 
 	var err error
 
@@ -29,7 +28,9 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 		if err = tx.First(user, "phone = ? or email = ?", username, username).Error; err != nil {
 
 			if err == gorm.ErrRecordNotFound {
+
 				return handlers.ErrIncorrectUsernameOrPassword
+
 			}
 
 			logrus.Error(err)
@@ -39,30 +40,64 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 		}
 
 		if user.Email != nil && *user.Email == username && !user.EmailConfirmed {
+
 			return handlers.ErrEmailNotConfirmed
+
 		}
 
 		if user.Phone != nil && *user.Phone == username && !user.PhoneConfirmed {
+
 			return handlers.ErrPhoneNotConfirmed
+
 		}
 
-		if user.IncorrectLoginAttempts >= int(config.LockoutPolicy.Attempts) {
+		if err := checkLoginAttempt(user, tx); err != nil {
 
-			now := time.Now()
+			return err
 
-			unlocked_at := user.LastIncorrectLoginAttemptAt.Add(time.Minute * config.LockoutPolicy.For)
+		}
 
-			if now.Before(unlocked_at) {
+		if err = verifyPassword(password, log_data.IP, log_data.UserAgent, user, tx, config); err != nil {
 
-				err := handlers.ErrAccountLocked
+			return err
 
-				err.Extensions["unlocked_at"] = unlocked_at
+		}
 
-				return handlers.ErrAccountLocked
+		signed_token, refresh_token, err = handlers.SignIn(user, log_data.IP, log_data.UserAgent, tx, writer)
 
-			}
+		if err != nil {
 
-			if err = user.ResetAttempt(db); err != nil {
+			return err
+
+		}
+
+		return nil
+
+	})
+
+	if err != nil {
+
+		return nil, err
+
+	}
+
+	return &model.LoginResponse{
+		AccessToken:  signed_token,
+		RefreshToken: refresh_token,
+		ID:           user.ID,
+	}, nil
+
+}
+
+func verifyPassword(password, ip, ua string, user *model.User, tx *gorm.DB, config *config.Config) error {
+
+	if err := user.VerifyPassword(password); err != nil {
+
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+
+			log := model.NewLog(user.ID, "incorrect login attempt", ip, nil, ua)
+
+			if err = user.IncorrectAttempt(tx, log); err != nil {
 
 				logrus.Error(err)
 
@@ -70,136 +105,54 @@ func Token(db *gorm.DB, config *config.Config, username string, password string,
 
 			}
 
-		}
+			err := handlers.ErrIncorrectUsernameOrPassword
 
-		if err = user.VerifyPassword(password); err != nil {
+			err.Extensions["password_set"] = user.Password != nil
 
-			if err == bcrypt.ErrMismatchedHashAndPassword {
+			err.Extensions["remaining_attempts"] = int(config.LockoutPolicy.Attempts) - user.IncorrectLoginAttempts
 
-				log := model.NewLog(user.ID, "incorrect login", log_data.IP, nil, log_data.Location, log_data.UserAgent)
-
-				if err = user.IncorrectAttempt(db, log); err != nil {
-
-					logrus.Error(err)
-
-					return handlers.ErrInternal
-
-				}
-
-				err := handlers.ErrIncorrectUsernameOrPassword
-
-				err.Extensions["password_set"] = user.Password != nil
-
-				err.Extensions["remaining_attempts"] = int(config.LockoutPolicy.Attempts) - user.IncorrectLoginAttempts
-
-				return handlers.ErrIncorrectUsernameOrPassword
-
-			}
-
-			logrus.Error(err)
-
-			return handlers.ErrInternal
+			return handlers.ErrIncorrectUsernameOrPassword
 
 		}
 
-		hook_user := *user
+		logrus.Error(err)
 
-		if !hook_user.EmailConfirmed {
-			hook_user.Email = nil
-		}
+		return handlers.ErrInternal
 
-		if !hook_user.PhoneConfirmed {
-			hook_user.Phone = nil
-		}
-
-		payload := &map[string]interface{}{
-			"event":    "login",
-			"provider": "password",
-			"user":     hook_user,
-		}
-
-		hook_response, err := hook.TriggerHook(hook_user.ID, "login", payload, config)
-
-		if err != nil {
-
-			logrus.Error(err)
-
-			e := handlers.ErrWebHook
-
-			e.Message = err.Error()
-
-			return e
-
-		}
-
-		token := jwt.New("password", user, hook_response, config)
-
-		signed_token, err = token.Sign()
-
-		if err != nil {
-
-			logrus.Error(err)
-
-			return handlers.ErrInternal
-
-		}
-
-		refresh_token := model.RefreshToken{
-			Token:  randstr.String(50),
-			UserID: user.ID,
-		}
-
-		if err = refresh_token.Create(tx); err != nil {
-
-			logrus.Error(err)
-
-			return nil
-
-		}
-
-		log := model.NewLog(user.ID, "login", log_data.IP, nil, log_data.Location, log_data.UserAgent)
-
-		if err = user.SignedIn(tx, log); err != nil {
-
-			logrus.Error(err)
-
-			return handlers.ErrInternal
-
-		}
-
-		cookie := &http.Cookie{
-			HttpOnly: true,
-			Secure:   true,
-			Name:     config.RefreshTokenCookieName,
-			SameSite: http.SameSiteStrictMode,
-			Value:    refresh_token.Token,
-		}
-
-		http.SetCookie(writer, cookie)
-
-		cookie = &http.Cookie{
-			HttpOnly: true,
-			Secure:   true,
-			Name:     config.AccessTokenCookieName,
-			SameSite: http.SameSiteStrictMode,
-			Value:    signed_token,
-			Expires:  token.ExpiresAt.Time,
-			Domain:   config.AccessTokenCookieDomain,
-		}
-
-		http.SetCookie(writer, cookie)
-
-		return nil
-
-	})
-
-	if err != nil {
-		return nil, err
 	}
 
-	return &model.LoginResponse{
-		AccessToken: signed_token,
-		ID:          user.ID,
-	}, nil
+	return nil
+
+}
+
+func checkLoginAttempt(user *model.User, tx *gorm.DB) error {
+
+	if user.FinishedLoginAttempts() {
+
+		now := time.Now()
+
+		unlocked_at := user.AccountUnlockedAt()
+
+		if now.Before(unlocked_at) {
+
+			err := handlers.ErrAccountLocked
+
+			err.Extensions["unlocked_at"] = unlocked_at
+
+			return handlers.ErrAccountLocked
+
+		}
+
+		if err := user.ResetAttempt(tx); err != nil {
+
+			logrus.Errorln(err)
+
+			return handlers.ErrInternal
+
+		}
+
+	}
+
+	return nil
 
 }

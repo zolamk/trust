@@ -88,9 +88,9 @@ func (j *JWT) roles() []interface{} {
 
 	results := j.config.RolesPath.Get(*j.Metadata)
 
-	switch results[0].(type) {
+	switch rs := results[0].(type) {
 	case []interface{}:
-		roles = results[0].([]interface{})
+		roles = rs
 	default:
 		return roles
 	}
