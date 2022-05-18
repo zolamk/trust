@@ -144,9 +144,17 @@ func CreateUser(db *gorm.DB, config *config.Config, token *jwt.JWT, form model.C
 
 	err = db.Transaction(func(tx *gorm.DB) error {
 
+		if err := user.Create(tx); err != nil {
+
+			logrus.Error(err)
+
+			return handlers.ErrInternal
+
+		}
+
 		log := model.NewLog(user.ID, "created by admin", log_data.IP, &token.Subject, log_data.UserAgent)
 
-		if err := user.CreateWithLog(tx, &log); err != nil {
+		if err := tx.Create(log).Error; err != nil {
 
 			logrus.Error(err)
 
