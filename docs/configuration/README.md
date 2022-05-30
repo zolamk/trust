@@ -474,16 +474,27 @@ Defines which domain the refresh token will be sent to by the browser, specifica
 >
 > [https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define\_where\_cookies\_are\_sent](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#define\_where\_cookies\_are\_sent)
 > 
-### set\_cookies
+### set\_access\_token\_cookie
 
 {% hint style="info" %}
-Type - string
+Type - Boolean
 
 Default - **true**
 
 {% endhint %}
 
-determines if access token and refresh token cookies should be set
+determines if access token cookie should be set when `token` query is called
+
+### set\_refresh\_token\_cookie
+
+{% hint style="info" %}
+Type - Boolean
+
+Default - **true**
+
+{% endhint %}
+
+determines if refresh token cookie should be set when `token`, `refresh` queries are called
 
 ### site\_url
 

@@ -129,7 +129,8 @@ type Config struct {
 	RecoveryTemplate          *TemplateConfig  `json:"recovery_template"`
 	RefreshTokenCookieName    string           `json:"refresh_token_cookie_name"`
 	RefreshTokenCookieDomain  string           `json:"refresh_token_cookie_domain"`
-	SetCookies                bool             `json:"set_cookies"`
+	SetAccessTokenCookie      bool             `json:"set_access_token_cookie"`
+	SetRefreshTokenCookie     bool             `json:"set_refresh_token_cookie"`
 	SiteURL                   string           `json:"site_url"`
 	SMS                       *SMSConfig       `json:"sms"`
 	SMTP                      *SMTPConfig      `json:"smtp"`
@@ -220,7 +221,8 @@ func NewDefaultConfig() *Config {
 		RolesPath: JSONPath{
 			jp.MustParse([]byte("$.roles")),
 		},
-		SetCookies:            true,
+		SetAccessTokenCookie:  true,
+		SetRefreshTokenCookie: true,
 		AccessTokenCookieName: "trust_access_token",
 		LockoutPolicy: LockoutPolicy{
 			Attempts: 5,

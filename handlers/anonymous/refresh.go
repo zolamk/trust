@@ -88,7 +88,7 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string, provider string
 
 	}
 
-	if config.SetCookies {
+	if config.SetRefreshTokenCookie {
 
 		cookie := &http.Cookie{
 			HttpOnly: true,

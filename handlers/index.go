@@ -86,7 +86,7 @@ func SignIn(user *model.User, ip, ua string, tx *gorm.DB, res http.ResponseWrite
 
 	}
 
-	if user.Config.SetCookies {
+	if user.Config.SetRefreshTokenCookie {
 
 		cookie := &http.Cookie{
 			HttpOnly: true,
@@ -101,7 +101,11 @@ func SignIn(user *model.User, ip, ua string, tx *gorm.DB, res http.ResponseWrite
 
 		http.SetCookie(res, cookie)
 
-		cookie = &http.Cookie{
+	}
+
+	if user.Config.SetAccessTokenCookie {
+
+		cookie := &http.Cookie{
 			HttpOnly: true,
 			Secure:   true,
 			Path:     "/",
