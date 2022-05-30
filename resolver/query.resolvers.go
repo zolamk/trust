@@ -59,13 +59,15 @@ func (r *queryResolver) Token(ctx context.Context, username string, password str
 }
 
 func (r *queryResolver) Refresh(ctx context.Context) (*model.LoginResponse, error) {
+
 	writer := ctx.Value(middleware.WriterKey).(http.ResponseWriter)
 
-	refresh_token := ctx.Value(middleware.RefreshTokenKey).(string)
+	refresh_token := ctx.Value(middleware.RefreshTokenKey)
 
-	provider := ctx.Value(middleware.ProviderKey).(string)
+	provider := ctx.Value(middleware.ProviderKey)
 
 	return anonymous.RefreshToken(r.DB, r.Config, refresh_token, provider, writer)
+
 }
 
 func (r *queryResolver) Logs(ctx context.Context, offset int, limit int) ([]*model.Log, error) {

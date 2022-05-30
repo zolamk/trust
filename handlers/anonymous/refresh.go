@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RefreshToken(db *gorm.DB, config *config.Config, rt string, provider string, writer http.ResponseWriter) (*model.LoginResponse, error) {
+func RefreshToken(db *gorm.DB, config *config.Config, rt interface{}, pr interface{}, writer http.ResponseWriter) (*model.LoginResponse, error) {
 
 	var refresh_token model.RefreshToken
 
@@ -46,6 +46,12 @@ func RefreshToken(db *gorm.DB, config *config.Config, rt string, provider string
 
 		hook_user.Phone = nil
 
+	}
+
+	provider := "password"
+
+	if pr != nil {
+		provider = pr.(string)
 	}
 
 	payload := &map[string]interface{}{
