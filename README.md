@@ -1,4 +1,10 @@
-# User Registration, Authentication & Management GraphQL API
+# ⚠️ Unmaintained
+
+This has been a learning experience for me but I no longer have the bandwidth to continue working on this project, If you stumble on to this project please checkout this actively maintained projects instead
+- https://github.com/authorizerdev/authorizer
+- https://github.com/ory/kratos
+
+## User Registration, Authentication & Management GraphQL API
 
 ![GitHub](https://img.shields.io/github/license/zolamk/trust?style=for-the-badge) ![GitHub all releases](https://img.shields.io/github/downloads/zolamk/trust/total?style=for-the-badge)
 
@@ -6,7 +12,7 @@ Trust is an open source GraphQL API that can be used to handle user registration
 
 Trust documentation can be found at [https://trust.zelalem.me](https://trust.zelalem.me)
 
-## Features
+### Features
 
 - Email/Phone Registration & Authentication
 - Social Authentication (Google, Facebook, Github)
@@ -24,7 +30,7 @@ Trust documentation can be found at [https://trust.zelalem.me](https://trust.zel
 - Custom Data With Schema
 - And more [checkout the docs](https://trust.zelalem.me)
 
-## Upcoming Features
+### Upcoming Features
 
 - 2FA
 - EdDSA Alogrithm
