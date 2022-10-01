@@ -4,6 +4,8 @@ This has been a learning experience for me but I no longer have the bandwidth to
 - https://github.com/authorizerdev/authorizer
 - https://github.com/ory/kratos
 
+The site might be gone but you can find the documention in [Docs](./docs)
+
 ## User Registration, Authentication & Management GraphQL API
 
 ![GitHub](https://img.shields.io/github/license/zolamk/trust?style=for-the-badge) ![GitHub all releases](https://img.shields.io/github/downloads/zolamk/trust/total?style=for-the-badge)
@@ -28,10 +30,3 @@ Trust documentation can be found at [https://trust.zelalem.me](https://trust.zel
 - Various JWT Algorithms (HS256, HS384, HS512, RS256, RS384, RS512, ES256, E384, ES512, more coming soon)
 - Admin Queries & Mutation For User Management
 - Custom Data With Schema
-- And more [checkout the docs](https://trust.zelalem.me)
-
-### Upcoming Features
-
-- 2FA
-- EdDSA Alogrithm
-- ...
