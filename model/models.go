@@ -10,55 +10,55 @@ import (
 
 type BooleanExpression struct {
 	// Equals value
-	Eq *bool `json:"_eq"`
+	Eq *bool `json:"_eq,omitempty"`
 	// Is value null (true) or not null (false)
-	IsNull *bool `json:"_is_null"`
+	IsNull *bool `json:"_is_null,omitempty"`
 	// Does not equal value
-	Neq *bool `json:"_neq"`
+	Neq *bool `json:"_neq,omitempty"`
 }
 
 type CreateUserForm struct {
-	Email    *string `json:"email"`
-	Phone    *string `json:"phone"`
-	Password *string `json:"password"`
-	Name     *string `json:"name"`
-	Avatar   *string `json:"avatar"`
-	Confirm  *bool   `json:"confirm"`
-	Data     Object  `json:"data"`
+	Email    *string `json:"email,omitempty"`
+	Phone    *string `json:"phone,omitempty"`
+	Password *string `json:"password,omitempty"`
+	Name     *string `json:"name,omitempty"`
+	Avatar   *string `json:"avatar,omitempty"`
+	Confirm  *bool   `json:"confirm,omitempty"`
+	Data     Object  `json:"data,omitempty"`
 }
 
 type FloatExpression struct {
 	// Equals value
-	Eq *float64 `json:"_eq"`
+	Eq *float64 `json:"_eq,omitempty"`
 	// Does not equal value
-	Neq *float64 `json:"_neq"`
+	Neq *float64 `json:"_neq,omitempty"`
 	// Is greater than value
-	Gt *float64 `json:"_gt"`
+	Gt *float64 `json:"_gt,omitempty"`
 	// Is greater than or equals value
-	Gte *float64 `json:"_gte"`
+	Gte *float64 `json:"_gte,omitempty"`
 	// Is value null (true) or not null (false)
-	IsNull *bool `json:"_is_null"`
+	IsNull *bool `json:"_is_null,omitempty"`
 	// Is lesser than value
-	Lt *float64 `json:"_lt"`
+	Lt *float64 `json:"_lt,omitempty"`
 	// Is lesser than or equals value
-	Lte *float64 `json:"_lte"`
+	Lte *float64 `json:"_lte,omitempty"`
 }
 
 type IntExpression struct {
 	// Equals value
-	Eq *int `json:"_eq"`
+	Eq *int `json:"_eq,omitempty"`
 	// Does not equal value
-	Neq *int `json:"_neq"`
+	Neq *int `json:"_neq,omitempty"`
 	// Is greater than value
-	Gt *int `json:"_gt"`
+	Gt *int `json:"_gt,omitempty"`
 	// Is greater than or equals value
-	Gte *int `json:"_gte"`
+	Gte *int `json:"_gte,omitempty"`
 	// Is value null (true) or not null (false)
-	IsNull *bool `json:"_is_null"`
+	IsNull *bool `json:"_is_null,omitempty"`
 	// Is lesser than value
-	Lt *int `json:"_lt"`
+	Lt *int `json:"_lt,omitempty"`
 	// Is lesser than or equals value
-	Lte *int `json:"_lte"`
+	Lte *int `json:"_lte,omitempty"`
 }
 
 type LoginResponse struct {
@@ -68,54 +68,54 @@ type LoginResponse struct {
 }
 
 type SignupForm struct {
-	Name     *string `json:"name"`
-	Avatar   *string `json:"avatar"`
-	Email    *string `json:"email"`
-	Phone    *string `json:"phone"`
+	Name     *string `json:"name,omitempty"`
+	Avatar   *string `json:"avatar,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Phone    *string `json:"phone,omitempty"`
 	Password string  `json:"password"`
-	Data     Object  `json:"data"`
+	Data     Object  `json:"data,omitempty"`
 }
 
 type StringExpression struct {
 	// Equals value
-	Eq *string `json:"_eq"`
+	Eq *string `json:"_eq,omitempty"`
 	// Does not equal value
-	Neq *string `json:"_neq"`
+	Neq *string `json:"_neq,omitempty"`
 	// Is greater than value
-	Gt *string `json:"_gt"`
+	Gt *string `json:"_gt,omitempty"`
 	// Is greater than or equals value
-	Gte *string `json:"_gte"`
+	Gte *string `json:"_gte,omitempty"`
 	// Value matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
-	Like *string `json:"_like"`
+	Like *string `json:"_like,omitempty"`
 	// Value matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values having 'r' in second position
-	Ilike *string `json:"_ilike"`
+	Ilike *string `json:"_ilike,omitempty"`
 	// Value not matching pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
-	Nlike *string `json:"_nlike"`
+	Nlike *string `json:"_nlike,omitempty"`
 	// Value not matching (case-insensitive) pattern where '%' represents zero or more characters and '_' represents a single character. Eg. '_r%' finds values not having 'r' in second position
-	Nilike *string `json:"_nilike"`
+	Nilike *string `json:"_nilike,omitempty"`
 	// Is value null (true) or not null (false)
-	IsNull *bool `json:"_is_null"`
+	IsNull *bool `json:"_is_null,omitempty"`
 	// Is lesser than value
-	Lt *string `json:"_lt"`
+	Lt *string `json:"_lt,omitempty"`
 	// Is lesser than or equals value
-	Lte *string `json:"_lte"`
+	Lte *string `json:"_lte,omitempty"`
 }
 
 type TimeExpression struct {
 	// Equals value
-	Eq *string `json:"_eq"`
+	Eq *string `json:"_eq,omitempty"`
 	// Does not equal value
-	Neq *string `json:"_neq"`
+	Neq *string `json:"_neq,omitempty"`
 	// Is greater than value
-	Gt *string `json:"_gt"`
+	Gt *string `json:"_gt,omitempty"`
 	// Is greater than or equals value
-	Gte *string `json:"_gte"`
+	Gte *string `json:"_gte,omitempty"`
 	// Is value null (true) or not null (false)
-	IsNull *bool `json:"_is_null"`
+	IsNull *bool `json:"_is_null,omitempty"`
 	// Is lesser than value
-	Lt *string `json:"_lt"`
+	Lt *string `json:"_lt,omitempty"`
 	// Is lesser than or equals value
-	Lte *string `json:"_lte"`
+	Lte *string `json:"_lte,omitempty"`
 }
 
 type OrderDirection string
